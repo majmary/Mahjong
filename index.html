@@ -1030,6 +1030,90 @@
             text-align: center;
         }
 
+        /* ── Hint modal overlay ── */
+        #hintOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #hintOverlay.open {
+            display: flex;
+        }
+        #hintBox {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+            position: relative;
+        }
+        #hintBox h3 {
+            margin: 0 0 12px 0;
+            font-size: 15px;
+            color: var(--color-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #hintBox .hint-close {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--color-text-muted);
+            padding: 2px 6px;
+            line-height: 1;
+        }
+        #hintBox .hint-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--color-text-primary);
+        }
+        #hintBox .hint-sub {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            margin-top: 10px;
+            font-style: italic;
+        }
+        #hintBox .hint-card {
+            background: var(--color-primary-light);
+            border-left: 4px solid var(--color-primary);
+            border-radius: 0 6px 6px 0;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+        }
+        #hintBox .hint-card:last-child {
+            margin-bottom: 0;
+        }
+        #hintBox .hint-card-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--color-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        #hintBox .hint-card-text {
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--color-text-primary);
+        }
+        #hintBox .hint-card-sub {
+            font-size: 11px;
+            color: var(--color-text-muted);
+            margin-top: 5px;
+            font-style: italic;
+        }
+
         /* ── Bottom bar — always present, content swaps based on game state ── */
         #bottomBar {
             display: none; /* shown only during gameplay */
@@ -1233,6 +1317,15 @@
         </div>
 
     </div><!-- /gameView -->
+
+    <!-- Hint modal overlay -->
+    <div id="hintOverlay" onclick="closeHint(event)">
+        <div id="hintBox">
+            <button class="hint-close" onclick="closeHintDirect()">×</button>
+            <h3>💡 Hand Hints</h3>
+            <div id="hintContent"></div>
+        </div>
+    </div>
 
     <!-- Persistent bottom bar — always visible during gameplay -->
     <div id="bottomBar"></div>
@@ -1744,7 +1837,7 @@
             
             if (result.isWinning) {
                 // Player wins!
-                gameWon(humanPlayer, result.matchedPattern);
+                gameWon(humanPlayer, result.matchedPattern, result.bestMatch);
             } else {
                 // Show why they can't win
                 gameState.mahjongDialogOpen = true;
@@ -1765,7 +1858,7 @@
         /**
          * Handle game won
          */
-        function gameWon(winner, pattern) {
+        function gameWon(winner, pattern, match = null) {
             const section = pattern.Section || '';
             const handNum = pattern['hand number'] || '';
             const points = pattern.points || 0;
@@ -1774,6 +1867,7 @@
             gameState.gameOver = true;
             gameState.winner = winner;
             gameState.winningPattern = pattern;
+            gameState.winningMatch = match || null;
             
             // Update display to reveal all hands and show winning overlay
             updateDisplay();
@@ -1786,6 +1880,7 @@
             gameState.gameOver = true;
             gameState.winner = null;
             gameState.winningPattern = null;
+            gameState.winningMatch = null;
             gameState.isDraw = true;
 
             updateDisplay();
@@ -1825,6 +1920,7 @@
             gameState.gameOver = false;
             gameState.winner = null;
             gameState.winningPattern = null;
+            gameState.winningMatch = null;
             gameState.isDraw = false;
             // Use the existing test helper
             testWinDisplay();
@@ -6697,6 +6793,7 @@
             gameState.gameOver = false;
             gameState.winner = null;
             gameState.winningPattern = null;
+            gameState.winningMatch = null;
             gameState.isDraw = false;
             
             // Initialize game
@@ -7433,7 +7530,7 @@
                 // Check if bot has mahjong
                 const mahjongCheck = checkMahjong(player);
                 if (mahjongCheck.isWinning) {
-                    gameWon(player, mahjongCheck.matchedPattern);
+                    gameWon(player, mahjongCheck.matchedPattern, mahjongCheck.bestMatch);
                 } else {
                     // This shouldn't happen - bot thought it was mahjong but it's not
                     console.error('ERROR: Bot called for mahjong but does not have mahjong!');
@@ -7506,7 +7603,7 @@
             // Check if bot has mahjong after calling
             const mahjongCheck = checkMahjong(player);
             if (mahjongCheck.isWinning) {
-                gameWon(player, mahjongCheck.matchedPattern);
+                gameWon(player, mahjongCheck.matchedPattern, mahjongCheck.bestMatch);
                 return;
             }
             
@@ -7551,7 +7648,7 @@
                 // Check for mahjong first
                 const mahjongCheck = checkMahjong(player);
                 if (mahjongCheck.isWinning) {
-                    gameWon(player, mahjongCheck.matchedPattern);
+                    gameWon(player, mahjongCheck.matchedPattern, mahjongCheck.bestMatch);
                     return;
                 }
                 
@@ -7565,7 +7662,7 @@
                 // Check for mahjong first
                 const mahjongCheck = checkMahjong(player);
                 if (mahjongCheck.isWinning) {
-                    gameWon(player, mahjongCheck.matchedPattern);
+                    gameWon(player, mahjongCheck.matchedPattern, mahjongCheck.bestMatch);
                     return;
                 }
                 
@@ -7678,7 +7775,7 @@
                 gameState.discarderPosition = null;
                 
                 // Player wins!
-                gameWon(humanPlayer, mahjongCheck.matchedPattern);
+                gameWon(humanPlayer, mahjongCheck.matchedPattern, mahjongCheck.bestMatch);
             } else {
                 // Not actually mahjong - remove the tile and show error
                 humanPlayer.tiles.pop();
@@ -8177,6 +8274,61 @@
         // ── Shared helper: render all players' hands into a container ──
         // options.showWinnerBadge — show WIN/DRAW badges (game-over screen)
         // options.showCurrentTurn — show whose turn it is (mid-game peek)
+        /**
+         * Order the winner's tiles to match the winning hand pattern,
+         * with jokers placed exactly where they were used.
+         * Returns a flat array of tile strings (all 14 tiles).
+         */
+        function orderTilesByWinningMatch(player, winningMatch) {
+            const groups = winningMatch.result.groups;
+
+            // Build a flat ordered list from groups: each matchedTile is either a real tile or 'J' (joker sub)
+            const ordered = [];
+            groups.forEach(group => {
+                (group.matchedTiles || []).forEach(t => {
+                    // matchedTiles contains actual tile values OR '?' for unfilled (shouldn't happen on win)
+                    // Jokers used as substitutes are stored as 'J' in jokersUsed tracking,
+                    // but matchedTiles shows the REPRESENTED tile. We need to check if a joker
+                    // was actually used here via the group's joker tracking.
+                    ordered.push(t === '?' ? 'J' : t);
+                });
+            });
+
+            // Now reconcile: some entries in ordered are real tiles, some should be jokers.
+            // The match engine puts the actual tile value even when a joker represents it.
+            // We need to substitute jokers back in based on what's actually in the player's hand.
+            const allTiles = [
+                ...player.tiles,
+                ...(player.exposedSets || []).flatMap(s => s.tiles)
+            ];
+
+            // Count available real tiles (non-joker)
+            const available = {};
+            allTiles.forEach(t => {
+                if (t !== 'J') available[t] = (available[t] || 0) + 1;
+            });
+            const jokerCount = allTiles.filter(t => t === 'J').length;
+            let jokersLeft = jokerCount;
+
+            // Walk through ordered list; for each tile, use a real tile if available, else use a joker
+            const result = ordered.map(t => {
+                if (t === 'J') {
+                    // Explicitly a joker slot
+                    if (jokersLeft > 0) { jokersLeft--; return 'J'; }
+                    return t;
+                }
+                if (available[t] && available[t] > 0) {
+                    available[t]--;
+                    return t;
+                }
+                // Real tile not available — must be covered by a joker
+                if (jokersLeft > 0) { jokersLeft--; return 'J'; }
+                return t; // fallback
+            });
+
+            return result;
+        }
+
         function renderAllHandsIntoContainer(container, options = {}) {
             const humanPlayer = gameState.players.find(p => p.isHuman);
             if (!humanPlayer) return;
@@ -8257,40 +8409,76 @@
 
                 playerContainer.appendChild(headerLine);
 
+                // Add compact Play Again button to the first row's header (end screen only)
+                if (options.showWinnerBadge && displayOrder.indexOf(windIdx) === 0) {
+                    const playAgainBtn = document.createElement('button');
+                    playAgainBtn.textContent = '🎲 Play Again?';
+                    playAgainBtn.style.cssText = `
+                        margin-left: auto;
+                        padding: 4px 10px;
+                        font-size: 12px;
+                        font-weight: 700;
+                        background: var(--color-primary);
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        white-space: nowrap;
+                        flex-shrink: 0;
+                    `;
+                    playAgainBtn.onclick = playAgain;
+                    headerLine.appendChild(playAgainBtn);
+                }
+
                 // Tiles
                 const tilesContainer = document.createElement('div');
                 tilesContainer.className = 'hand-tiles';
 
-                const order = { 'F':0,'B':1,'C':2,'D':3,'GD':4,'RD':5,'WD':6,'N':7,'E':8,'S':9,'W':10,'J':11 };
-                const getSuitOrder = (tile) => {
-                    if (tile === 'F') return 0; if (tile === 'J') return 11;
-                    if (tile === 'GD') return 4; if (tile === 'RD') return 5; if (tile === 'WD') return 6;
-                    if (['N','E','S','W'].includes(tile)) return order[tile];
-                    return order[tile.slice(-1)];
-                };
-                const sortedTiles = [...player.tiles].sort((a, b) => {
-                    const diff = getSuitOrder(a) - getSuitOrder(b);
-                    if (diff !== 0) return diff;
-                    return (parseInt(a) || 0) - (parseInt(b) || 0);
-                });
+                const isWinner = options.showWinnerBadge && player === gameState.winner;
 
-                // Exposed sets first
-                if (player.exposedSets && player.exposedSets.length > 0) {
-                    player.exposedSets.forEach(exposure => {
-                        exposure.tiles.forEach(tile => {
-                            tilesContainer.appendChild(renderTile(tile, false, false, { isJoker: tile === 'J' }));
-                        });
-                        const sep = document.createElement('div');
-                        sep.style.cssText = 'width:2px;height:32px;background:#ccc;margin:0 2px;flex-shrink:0;';
-                        tilesContainer.appendChild(sep);
+                // Build the sorted tile list
+                let sortedTiles;
+                if (isWinner && gameState.winningMatch && gameState.winningMatch.result && gameState.winningMatch.result.groups) {
+                    // Order tiles by winning pattern groups, jokers placed where used
+                    sortedTiles = orderTilesByWinningMatch(player, gameState.winningMatch);
+                } else {
+                    const order = { 'F':0,'B':1,'C':2,'D':3,'GD':4,'RD':5,'WD':6,'N':7,'E':8,'S':9,'W':10,'J':11 };
+                    const getSuitOrder = (tile) => {
+                        if (tile === 'F') return 0; if (tile === 'J') return 11;
+                        if (tile === 'GD') return 4; if (tile === 'RD') return 5; if (tile === 'WD') return 6;
+                        if (['N','E','S','W'].includes(tile)) return order[tile];
+                        return order[tile.slice(-1)];
+                    };
+                    sortedTiles = [...player.tiles].sort((a, b) => {
+                        const diff = getSuitOrder(a) - getSuitOrder(b);
+                        if (diff !== 0) return diff;
+                        return (parseInt(a) || 0) - (parseInt(b) || 0);
                     });
                 }
 
-                // Hand tiles — human shown face-up, bots always face-up in this view
-                const isFaceDown = false;
-                sortedTiles.forEach(tile => {
-                    tilesContainer.appendChild(renderTile(tile, isFaceDown, false, { isJoker: tile === 'J' }));
-                });
+                // For winner with pattern ordering, all tiles (including exposed) are in sortedTiles already.
+                // For others, show exposed sets first with a separator, then hand tiles.
+                if (isWinner && gameState.winningMatch && gameState.winningMatch.result && gameState.winningMatch.result.groups) {
+                    sortedTiles.forEach(tile => {
+                        tilesContainer.appendChild(renderTile(tile, false, false, { isJoker: tile === 'J' }));
+                    });
+                } else {
+                    // Exposed sets first
+                    if (player.exposedSets && player.exposedSets.length > 0) {
+                        player.exposedSets.forEach(exposure => {
+                            exposure.tiles.forEach(tile => {
+                                tilesContainer.appendChild(renderTile(tile, false, false, { isJoker: tile === 'J' }));
+                            });
+                            const sep = document.createElement('div');
+                            sep.style.cssText = 'width:2px;height:32px;background:#ccc;margin:0 2px;flex-shrink:0;';
+                            tilesContainer.appendChild(sep);
+                        });
+                    }
+                    // Hand tiles
+                    sortedTiles.forEach(tile => {
+                        tilesContainer.appendChild(renderTile(tile, false, false, { isJoker: tile === 'J' }));
+                    });
+                }
 
                 playerContainer.appendChild(tilesContainer);
                 container.appendChild(playerContainer);
@@ -8315,26 +8503,6 @@
             }
             wonContainer.innerHTML = '';
             wonContainer.style.display = 'flex';
-
-            // Play Again button at the top of the end screen
-            const playAgainBtn = document.createElement('button');
-            playAgainBtn.textContent = '🎲 Play Again?';
-            playAgainBtn.style.cssText = `
-                display: block;
-                width: 100%;
-                padding: 14px;
-                font-size: 18px;
-                font-weight: 700;
-                background: var(--color-primary);
-                color: white;
-                border: none;
-                border-radius: 8px;
-                cursor: pointer;
-                margin-bottom: 10px;
-                box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-            `;
-            playAgainBtn.onclick = playAgain;
-            wonContainer.appendChild(playAgainBtn);
 
             renderAllHandsIntoContainer(wonContainer, { showWinnerBadge: true });
         }
@@ -9113,17 +9281,621 @@
 
         // Update wall display
         // ── Bottom bar — always present during gameplay, content depends on state ──
+        // ========================================
+        // HINT SYSTEM
+        // ========================================
+
+        function openHint() {
+            const human = gameState.players.find(p => p.isHuman);
+            if (!human) return;
+
+            let hints;
+            if (gameState.phase === 'charleston') {
+                hints = generateCharlestonHints(human.tiles);
+            } else if (gameState.phase === 'playing') {
+                hints = generatePlayingHints(human);
+            } else {
+                hints = [{ title: 'Hint', text: 'Hints are available during Charleston and gameplay.', sub: '' }];
+            }
+
+            const content = document.getElementById('hintContent');
+            content.innerHTML = '';
+            hints.forEach(hint => {
+                const card = document.createElement('div');
+                card.className = 'hint-card';
+
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'hint-card-title';
+                titleDiv.textContent = hint.title;
+                card.appendChild(titleDiv);
+
+                // Support either a pre-built DOM element or plain text
+                if (hint.domEl) {
+                    hint.domEl.className = 'hint-card-text';
+                    card.appendChild(hint.domEl);
+                } else {
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'hint-card-text';
+                    textDiv.textContent = hint.text || '';
+                    card.appendChild(textDiv);
+                }
+
+                if (hint.sub) {
+                    const subDiv = document.createElement('div');
+                    subDiv.className = 'hint-card-sub';
+                    subDiv.textContent = hint.sub;
+                    card.appendChild(subDiv);
+                }
+
+                content.appendChild(card);
+            });
+
+            document.getElementById('hintOverlay').classList.add('open');
+        }
+
+        function closeHint(e) {
+            // Close only if clicking the backdrop, not the box itself
+            if (e.target === document.getElementById('hintOverlay')) {
+                document.getElementById('hintOverlay').classList.remove('open');
+            }
+        }
+
+        function closeHintDirect() {
+            document.getElementById('hintOverlay').classList.remove('open');
+        }
+
+        /**
+         * Generate up to 2 Charleston hints:
+         * - If a sequence or cluster is found: show the stronger one + top section not already covered
+         * - If neither: show top 2 sections
+         */
+        function generateCharlestonHints(tiles) {
+            const seqHint     = detectNamedSequence(tiles);
+            const clusterHint = detectTileCluster(tiles);
+            const sections    = detectTopSections(tiles);
+
+            // Pick the stronger of sequence vs cluster (strength is tiles-present count)
+            const seqStrength     = (seqHint     && seqHint.strength     >= 2) ? seqHint.strength     : 0;
+            const clusterStrength = (clusterHint && clusterHint.strength >= 3) ? clusterHint.strength : 0;
+
+            const specific = seqStrength >= clusterStrength && seqStrength > 0 ? seqHint
+                           : clusterStrength > 0                               ? clusterHint
+                           : null;
+
+            if (specific) {
+                // Find the section keyword that the specific hint already covers
+                const SECTION_KEYWORDS = ['2468', '13579', '369', '2025', 'Winds', 'Consecutive', 'Any Like', 'Singles'];
+                const coveredKey = SECTION_KEYWORDS.find(kw =>
+                    (specific.title + ' ' + specific.text + ' ' + (specific.sub || '')).toLowerCase().includes(kw.toLowerCase())
+                );
+
+                // Pick the first top section not already covered
+                const secondHint = sections.find(s => {
+                    if (!coveredKey) return true;
+                    return !(s.title + ' ' + s.text + ' ' + (s.sub || '')).toLowerCase().includes(coveredKey.toLowerCase());
+                });
+
+                return secondHint ? [specific, secondHint] : [specific];
+            }
+
+            // No specific hint — return top 2 sections
+            return sections.slice(0, 2).length > 0
+                ? sections.slice(0, 2)
+                : [{ title: 'Hint', text: 'Keep an open mind — your hand is still taking shape.', sub: '' }];
+        }
+
+        /**
+         * Detect named sequences: consecutive runs, 2025, NEWS, 135/357/579, 369
+         * Returns { title, text, sub, strength } where strength = tiles already present
+         */
+        function detectNamedSequence(tiles) {
+            const suits = ['B', 'C', 'D'];
+            const suitName = { B: 'Bam', C: 'Crack', D: 'Dot' };
+            let best = null;
+
+            // ── NEWS (winds) ──
+            const winds = ['N', 'E', 'W', 'S'];
+            const windCount = winds.filter(w => tiles.includes(w)).length;
+            if (windCount >= 2) {
+                const have = winds.filter(w => tiles.includes(w)).join(', ');
+                const missing = winds.filter(w => !tiles.includes(w));
+                const text = windCount === 4
+                    ? `You have all four winds (NEWS) — look at Winds & Dragons hands!`
+                    : `You have ${windCount} of 4 winds (${have}). Missing: ${missing.join(', ')}. NEWS hands could work.`;
+                const candidate = { title: 'Winds Sequence', text, sub: 'NEWS hands appear in Winds & Dragons and 13579 sections.', strength: windCount };
+                if (!best || candidate.strength > best.strength) best = candidate;
+            }
+
+            // ── 2025 (needs: 2, 0=WD, 2, 5 across suits) ──
+            const twos = tiles.filter(t => t[0] === '2' && ['B','C','D'].includes(t[1])).length;
+            const fives = tiles.filter(t => t[0] === '5' && ['B','C','D'].includes(t[1])).length;
+            const hasWD = tiles.includes('WD');
+            const score2025 = Math.min(twos, 2) + Math.min(fives, 1) + (hasWD ? 1 : 0);
+            if (score2025 >= 2) {
+                const missing2025 = [];
+                if (twos < 2) missing2025.push(`${2 - twos} more 2`);
+                if (!hasWD) missing2025.push('White Dragon (0)');
+                if (fives < 1) missing2025.push('a 5');
+                const text = score2025 >= 4
+                    ? `You have all the key tiles for a 2025 hand — 2s, White Dragon, and 5s!`
+                    : `You have ${score2025} of 4 key tiles for a 2025 hand (2, 0, 2, 5). Missing: ${missing2025.join(', ')}.`;
+                const candidate = { title: '2025 Sequence', text, sub: 'The 2025 section has several strong hands built around these tiles.', strength: score2025 };
+                if (!best || candidate.strength > best.strength) best = candidate;
+            }
+
+            // ── 369 sequences ──
+            suits.forEach(suit => {
+                const has3 = tiles.filter(t => t === `3${suit}`).length;
+                const has6 = tiles.filter(t => t === `6${suit}`).length;
+                const has9 = tiles.filter(t => t === `9${suit}`).length;
+                const count369 = (has3 > 0 ? 1 : 0) + (has6 > 0 ? 1 : 0) + (has9 > 0 ? 1 : 0);
+                if (count369 >= 2) {
+                    const have = [has3 && `3`, has6 && `6`, has9 && `9`].filter(Boolean).join(', ');
+                    const missing = [!has3 && `3`, !has6 && `6`, !has9 && `9`].filter(Boolean).join(', ');
+                    const text = count369 === 3
+                        ? `You have 3, 6, and 9 of ${suitName[suit]} — a complete 369 sequence!`
+                        : `You have ${have} of ${suitName[suit]} toward a 369 sequence. Missing: ${missing}.`;
+                    const candidate = { title: '369 Sequence', text, sub: 'The 369 section has several strong hands using 3s, 6s, and 9s.', strength: count369 + (has3 > 1 || has6 > 1 || has9 > 1 ? 0.5 : 0) };
+                    if (!best || candidate.strength > best.strength) best = candidate;
+                }
+            });
+
+            // ── 13579 named sub-sequences: 135, 357, 579 ──
+            const oddSeqs = [
+                { nums: [1,3,5], label: '135' },
+                { nums: [3,5,7], label: '357' },
+                { nums: [5,7,9], label: '579' },
+                { nums: [1,3,5,7,9], label: '13579' },
+            ];
+            suits.forEach(suit => {
+                oddSeqs.forEach(seq => {
+                    const count = seq.nums.filter(n => tiles.some(t => t === `${n}${suit}`)).length;
+                    if (count >= 2) {
+                        const have = seq.nums.filter(n => tiles.some(t => t === `${n}${suit}`)).join(', ');
+                        const missing = seq.nums.filter(n => !tiles.some(t => t === `${n}${suit}`)).join(', ');
+                        const text = count === seq.nums.length
+                            ? `You have a complete ${seq.label} sequence in ${suitName[suit]}!`
+                            : `You have ${have} of ${suitName[suit]} toward a ${seq.label} sequence. Missing: ${missing}.`;
+                        const candidate = { title: `${seq.label} Sequence`, text, sub: 'The 13579 section has hands built around odd number runs.', strength: count };
+                        if (!best || candidate.strength > best.strength) best = candidate;
+                    }
+                });
+            });
+
+            // ── 2468 named sub-sequences: 24, 46, 68, 246, 468, 2468 ──
+            const evenSeqs = [
+                { nums: [2,4,6,8], label: '2468' },
+                { nums: [2,4,6], label: '246' },
+                { nums: [4,6,8], label: '468' },
+            ];
+            suits.forEach(suit => {
+                evenSeqs.forEach(seq => {
+                    const count = seq.nums.filter(n => tiles.some(t => t === `${n}${suit}`)).length;
+                    if (count >= 2) {
+                        const have = seq.nums.filter(n => tiles.some(t => t === `${n}${suit}`)).join(', ');
+                        const missing = seq.nums.filter(n => !tiles.some(t => t === `${n}${suit}`)).join(', ');
+                        const text = count === seq.nums.length
+                            ? `You have a complete ${seq.label} sequence in ${suitName[suit]}!`
+                            : `You have ${have} of ${suitName[suit]} toward a ${seq.label} sequence. Missing: ${missing}.`;
+                        const candidate = { title: `${seq.label} Sequence`, text, sub: 'The 2468 section has many strong hands built around even numbers.', strength: count };
+                        if (!best || candidate.strength > best.strength) best = candidate;
+                    }
+                });
+            });
+
+            // ── Consecutive runs (any 3+ in a row same suit) ──
+            suits.forEach(suit => {
+                for (let start = 1; start <= 7; start++) {
+                    const run = [start, start+1, start+2];
+                    const count = run.filter(n => tiles.some(t => t === `${n}${suit}`)).length;
+                    if (count >= 2) {
+                        const have = run.filter(n => tiles.some(t => t === `${n}${suit}`)).join('-');
+                        const missing = run.filter(n => !tiles.some(t => t === `${n}${suit}`)).join(', ');
+                        const text = count === 3
+                            ? `You have a complete run of ${run[0]}-${run[2]} in ${suitName[suit]}!`
+                            : `You have ${have} of ${suitName[suit]} toward a ${run[0]}-${run[2]} consecutive run. Missing: ${missing}.`;
+                        const candidate = { title: 'Consecutive Run', text, sub: 'Consecutive run hands use 3 or 4 tiles in sequence within the same suit.', strength: count };
+                        if (!best || candidate.strength > best.strength) best = candidate;
+                    }
+                }
+            });
+
+            return best;
+        }
+
+        /**
+         * Detect strong tile clusters (evens, odds, 369s, winds+dragons)
+         * Returns { title, text, sub, strength }
+         */
+        function detectTileCluster(tiles) {
+            const suits = ['B', 'C', 'D'];
+            const suitName = { B: 'Bam', C: 'Crack', D: 'Dot' };
+            let best = null;
+
+            const tryCandidate = (c) => { if (!best || c.strength > best.strength) best = c; };
+
+            // Even numbers (2,4,6,8)
+            const evens = tiles.filter(t => t.length === 2 && suits.includes(t[1]) && [2,4,6,8].includes(+t[0]));
+            if (evens.length >= 3) {
+                const suitCounts = {};
+                evens.forEach(t => { suitCounts[t[1]] = (suitCounts[t[1]] || 0) + 1; });
+                const suitDesc = Object.entries(suitCounts).map(([s,c]) => `${c} ${suitName[s]}`).join(', ');
+                tryCandidate({ title: 'Even Numbers', text: `You have ${evens.length} even-numbered tiles (${suitDesc}) — 2468 hands could suit you well.`, sub: 'The 2468 section has the most variety of even-number hands.', strength: evens.length });
+            }
+
+            // Odd numbers (1,3,5,7,9)
+            const odds = tiles.filter(t => t.length === 2 && suits.includes(t[1]) && [1,3,5,7,9].includes(+t[0]));
+            if (odds.length >= 3) {
+                const suitCounts = {};
+                odds.forEach(t => { suitCounts[t[1]] = (suitCounts[t[1]] || 0) + 1; });
+                const suitDesc = Object.entries(suitCounts).map(([s,c]) => `${c} ${suitName[s]}`).join(', ');
+                tryCandidate({ title: 'Odd Numbers', text: `You have ${odds.length} odd-numbered tiles (${suitDesc}) — 13579 hands could suit you well.`, sub: 'The 13579 section has many hands built around odd runs.', strength: odds.length });
+            }
+
+            // 369 family across suits
+            const family369 = tiles.filter(t => t.length === 2 && suits.includes(t[1]) && [3,6,9].includes(+t[0]));
+            if (family369.length >= 3) {
+                tryCandidate({ title: '369 Family', text: `You have ${family369.length} tiles from the 3/6/9 family across your suits — explore the 369 section.`, sub: 'The 369 section uses combinations of 3s, 6s, and 9s in 2 or 3 suits.', strength: family369.length });
+            }
+
+            // Any Like Numbers: 3+ tiles of the same number across different suits
+            for (let n = 1; n <= 9; n++) {
+                const matching = tiles.filter(t => t.length === 2 && suits.includes(t[1]) && +t[0] === n);
+                if (matching.length >= 3) {
+                    const suitDesc = matching.map(t => suitName[t[1]]).join(', ');
+                    tryCandidate({ title: 'Any Like Numbers', text: `You have ${matching.length} ${n}s (${suitDesc}) — "Any Like Numbers" hands use the same number across suits.`, sub: 'Any Like Numbers hands use 3 or 4 of the same number in different suits.', strength: matching.length + 0.5, section: 'Any Like Numbers' });
+                }
+            }
+
+            // Winds + Dragons
+            const specialTiles = tiles.filter(t => ['N','E','W','S','GD','RD','WD'].includes(t));
+            if (specialTiles.length >= 3) {
+                const names = specialTiles.map(t => {
+                    if (t === 'GD') return 'Green Dragon';
+                    if (t === 'RD') return 'Red Dragon';
+                    if (t === 'WD') return 'White Dragon';
+                    return t === 'N' ? 'North' : t === 'E' ? 'East' : t === 'W' ? 'West' : 'South';
+                });
+                tryCandidate({ title: 'Winds & Dragons', text: `You have ${specialTiles.length} wind and dragon tiles (${names.slice(0,3).join(', ')}${names.length > 3 ? '…' : ''}) — Winds & Dragons hands could be a good fit.`, sub: 'The Winds & Dragons section uses combinations of winds (N/E/W/S) and dragons.', strength: specialTiles.length });
+            }
+
+            return best;
+        }
+
+        /**
+         * Return top 2 section hints from evaluateBestMatch, sorted by score.
+         */
+        function detectTopSections(tiles) {
+            try {
+                const ev = evaluateBestMatch(tiles, 20);
+                if (!ev.topMatches || ev.topMatches.length === 0) {
+                    return [{ title: 'Hint', text: 'Keep an open mind — your hand is still taking shape.', sub: '', strength: 0 }];
+                }
+                // Sum scores per section
+                const sectionScores = {};
+                const sectionBestMatch = {};
+                ev.topMatches.forEach(m => {
+                    const sec = m.pattern.Section || 'Other';
+                    sectionScores[sec] = (sectionScores[sec] || 0) + m.score;
+                    if (!sectionBestMatch[sec] || m.score > sectionBestMatch[sec].score) {
+                        sectionBestMatch[sec] = m;
+                    }
+                });
+
+                const ranked = Object.entries(sectionScores)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 2);
+
+                return ranked.map(([sec]) => {
+                    const best = sectionBestMatch[sec];
+                    const tilesNeeded = best ? best.tilesNeeded : '?';
+                    return {
+                        title: sec,
+                        text: `Your hand fits the "${sec}" section well. Your closest hand there needs ${tilesNeeded} more tile${tilesNeeded !== 1 ? 's' : ''}.`,
+                        sub: 'Focus on collecting tiles that fit this section during the Charleston.',
+                        strength: 0,
+                        section: sec,
+                    };
+                });
+            } catch(e) {
+                return [{ title: 'Hint', text: 'Keep an open mind — your hand is still taking shape.', sub: '', strength: 0 }];
+            }
+        }
+
+        /**
+         * Render a pattern description array into a container element with colors.
+         * description is an array of { text, color, bold } parts.
+         */
+        function renderPatternDescription(container, pattern) {
+            const section = pattern.Section || '';
+            const sectionSpan = document.createElement('span');
+            sectionSpan.style.cssText = 'font-weight:700;margin-right:4px;';
+            sectionSpan.textContent = section + ':';
+            container.appendChild(sectionSpan);
+
+            if (pattern.description && Array.isArray(pattern.description)) {
+                pattern.description.forEach(part => {
+                    const s = document.createElement('span');
+                    s.textContent = part.text;
+                    if (part.color === 'red') s.style.cssText = 'color:#d32f2f;font-weight:700;';
+                    else if (part.color === 'green') s.style.cssText = 'color:#2e7d32;font-weight:700;';
+                    else if (part.color === 'navy' || part.color === 'blue') s.style.cssText = 'color:#0D47A1;font-weight:700;';
+                    else if (part.bold) s.style.fontWeight = '700';
+                    container.appendChild(s);
+                });
+            } else {
+                container.appendChild(document.createTextNode(pattern.description || pattern.code || ''));
+            }
+        }
+
+        /**
+         * Generate playing phase hints: one offensive card + one defensive card.
+         * Returns array of { title, textEl (DOM element), sub } hint objects for openHint to render.
+         */
+        function generatePlayingHints(human) {
+            const hints = [];
+
+            // ── OFFENSIVE: top 2 hands ──
+            const lockedGroups = (human.exposedSets || [])
+                .map(resolveExposureToLockedTiles)
+                .filter(g => g !== null);
+            const fullHand = [...human.tiles, ...lockedGroups.flat()];
+            const ev = evaluateBestMatch(fullHand, 5, lockedGroups);
+
+            if (ev.topMatches && ev.topMatches.length > 0) {
+                const offEl = document.createElement('div');
+                offEl.style.lineHeight = '1.7';
+
+                const top = ev.topMatches.slice(0, 2);
+                top.forEach((m, i) => {
+                    const row = document.createElement('div');
+                    row.style.marginBottom = i === 0 && top.length > 1 ? '6px' : '0';
+
+                    const label = document.createElement('span');
+                    label.style.cssText = 'font-size:11px;color:#888;margin-right:4px;';
+                    label.textContent = i === 0 ? '①' : '②';
+                    row.appendChild(label);
+
+                    renderPatternDescription(row, m.pattern);
+
+                    const needed = document.createElement('span');
+                    needed.style.cssText = 'margin-left:6px;font-size:12px;color:#555;white-space:nowrap;';
+                    if (m.tilesNeeded === 0) {
+                        needed.textContent = '✓ Complete!';
+                        needed.style.color = '#2e7d32';
+                        needed.style.fontWeight = '700';
+                    } else if (m.tilesNeeded === 1) {
+                        needed.textContent = '— 1 tile away!';
+                        needed.style.color = '#e65100';
+                        needed.style.fontWeight = '700';
+                    } else {
+                        needed.textContent = `— ${m.tilesNeeded} tiles needed`;
+                    }
+                    row.appendChild(needed);
+                    offEl.appendChild(row);
+                });
+
+                hints.push({ title: 'Your Best Hands', domEl: offEl, sub: 'Focus on collecting tiles that fit these hands.' });
+            }
+
+            // ── DEFENSIVE ──
+            const defHint = generateDefensiveHint(human);
+            if (defHint) hints.push(defHint);
+
+            return hints;
+        }
+
+        /**
+         * Generate one defensive hint.
+         * Priority: 1) bots with 2 exposures (try to name hand), 2) bots with 1 exposure (neighbor warning),
+         * 3) discard pool analysis, 4) flower fallback
+         */
+        function generateDefensiveHint(human) {
+            const bots = gameState.players.filter(p => !p.isHuman && p.exposedSets && p.exposedSets.length > 0);
+
+            // Collect all exposed tiles for context
+            const allExposed = [];
+            gameState.players.forEach(p => {
+                if (p.exposedSets) p.exposedSets.forEach(set => allExposed.push(...set.tiles));
+            });
+
+            // ── Priority 1 & 2: bots with exposures ──
+            // Sort: bots with 2+ exposures first
+            const sortedBots = [...bots].sort((a, b) => b.exposedSets.length - a.exposedSets.length);
+
+            for (const bot of sortedBots) {
+                const exposureCount = bot.exposedSets.length;
+                const allBotTiles = bot.exposedSets.flatMap(s => s.tiles);
+
+                if (exposureCount >= 2) {
+                    // Try to match to a hand pattern
+                    const botEv = evaluateBestMatch(allBotTiles, 3);
+                    if (botEv.bestMatch) {
+                        const pattern = botEv.bestMatch.pattern;
+                        const descEl = document.createElement('div');
+                        descEl.style.lineHeight = '1.6';
+
+                        const warningLine = document.createElement('div');
+                        warningLine.style.marginBottom = '5px';
+                        warningLine.textContent = `${bot.name} has ${exposureCount} exposures and looks to be building toward:`;
+                        descEl.appendChild(warningLine);
+
+                        const handLine = document.createElement('div');
+                        handLine.style.marginBottom = '5px';
+                        renderPatternDescription(handLine, pattern);
+                        descEl.appendChild(handLine);
+
+                        // Figure out what tiles the pattern still needs
+                        const neededTiles = new Set();
+                        if (botEv.bestMatch.result && botEv.bestMatch.result.groups) {
+                            botEv.bestMatch.result.groups.forEach(group => {
+                                (group.matchedTiles || []).forEach((t, i) => {
+                                    if (t === '?') {
+                                        const raw = group.tiles && group.tiles[i];
+                                        if (raw && raw !== 'J') neededTiles.add(raw);
+                                    }
+                                });
+                            });
+                        }
+
+                        if (neededTiles.size > 0) {
+                            const dangerLine = document.createElement('div');
+                            dangerLine.style.color = '#c62828';
+                            dangerLine.style.fontWeight = '600';
+                            const tileList = [...neededTiles].slice(0, 4).map(t => {
+                                const d = getTileDisplay(t);
+                                return d.number && d.label ? `${d.number} ${d.label}` : t;
+                            }).join(', ');
+                            dangerLine.textContent = `Avoid discarding: ${tileList}`;
+                            descEl.appendChild(dangerLine);
+                        }
+
+                        return { title: `⚠️ Watch ${bot.name}`, domEl: descEl, sub: null };
+                    }
+                }
+
+                if (exposureCount >= 1) {
+                    // Generic neighbor hint for single exposure
+                    const exposure = bot.exposedSets[0];
+                    const naturalTiles = exposure.tiles.filter(t => t !== 'J');
+                    if (naturalTiles.length === 0) continue;
+
+                    // Find the dominant tile in the exposure
+                    const tileCounts = {};
+                    naturalTiles.forEach(t => { tileCounts[t] = (tileCounts[t] || 0) + 1; });
+                    const dominantTile = Object.entries(tileCounts).sort((a,b) => b[1]-a[1])[0][0];
+                    const d = getTileDisplay(dominantTile);
+
+                    // Build neighbor tiles to avoid
+                    const suits = ['B','C','D'];
+                    const avoidTiles = new Set();
+                    const num = parseInt(dominantTile);
+                    const suit = dominantTile.slice(-1);
+
+                    if (!isNaN(num) && suits.includes(suit)) {
+                        // Same suit neighbors ±1 and ±2
+                        [-2,-1,1,2].forEach(offset => {
+                            const n = num + offset;
+                            if (n >= 1 && n <= 9) avoidTiles.add(`${n}${suit}`);
+                        });
+                        // Same number other suits
+                        suits.filter(s => s !== suit).forEach(s => avoidTiles.add(`${num}${s}`));
+                    } else {
+                        // Wind/dragon: same tile type is already exposed, warn about same-suit numbers if dragon
+                        if (['GD','RD','WD'].includes(dominantTile)) {
+                            avoidTiles.add('GD'); avoidTiles.add('RD'); avoidTiles.add('WD');
+                        }
+                    }
+
+                    // Remove tiles already in the exposure
+                    naturalTiles.forEach(t => avoidTiles.delete(t));
+
+                    const descEl = document.createElement('div');
+                    descEl.style.lineHeight = '1.6';
+
+                    const countText = `${tileCounts[dominantTile]}`;
+                    const exposureDesc = `${d.number || dominantTile} ${d.label} × ${countText}`;
+
+                    const line1 = document.createElement('div');
+                    line1.style.marginBottom = '5px';
+                    line1.textContent = `${bot.name} has ${exposureDesc} exposed.`;
+                    descEl.appendChild(line1);
+
+                    if (avoidTiles.size > 0) {
+                        const line2 = document.createElement('div');
+                        line2.style.color = '#c62828';
+                        line2.style.fontWeight = '600';
+                        const avoidList = [...avoidTiles].slice(0, 5).map(t => {
+                            const td = getTileDisplay(t);
+                            return td.number && td.label ? `${td.number} ${td.label}` : t;
+                        }).join(', ');
+                        line2.textContent = `Consider avoiding: ${avoidList}`;
+                        descEl.appendChild(line2);
+                    }
+
+                    return { title: `⚠️ Watch ${bot.name}`, domEl: descEl, sub: null };
+                }
+            }
+
+            // ── Priority 3: Discard pool analysis ──
+            if (gameState.discardPool && gameState.discardPool.length >= 6) {
+                const pool = gameState.discardPool;
+                const suits = ['B','C','D'];
+                const suitName = { B: 'Bam', C: 'Crack', D: 'Dot' };
+
+                // Count odds vs evens per suit, and overall suit totals
+                const suitCounts = { B: 0, C: 0, D: 0 };
+                const oddCounts  = { B: 0, C: 0, D: 0 };
+                const evenCounts = { B: 0, C: 0, D: 0 };
+
+                pool.forEach(t => {
+                    const suit = t.slice(-1);
+                    const num = parseInt(t);
+                    if (suits.includes(suit) && !isNaN(num)) {
+                        suitCounts[suit]++;
+                        if (num % 2 === 0) evenCounts[suit]++;
+                        else oddCounts[suit]++;
+                    }
+                });
+
+                // Find the most-discarded pattern
+                let bestMsg = null;
+                let bestCount = 4; // minimum threshold to mention
+
+                suits.forEach(suit => {
+                    if (oddCounts[suit] >= bestCount) {
+                        bestCount = oddCounts[suit];
+                        bestMsg = `Many odd ${suitName[suit]} tiles have already been discarded — odd ${suitName[suit]} tiles may be relatively safe to throw.`;
+                    }
+                    if (evenCounts[suit] >= bestCount) {
+                        bestCount = evenCounts[suit];
+                        bestMsg = `Many even ${suitName[suit]} tiles have already been discarded — even ${suitName[suit]} tiles may be relatively safe to throw.`;
+                    }
+                    if (suitCounts[suit] >= bestCount + 2) {
+                        bestCount = suitCounts[suit];
+                        bestMsg = `A lot of ${suitName[suit]} tiles have been discarded — ${suitName[suit]} tiles are less likely to be dangerous to throw right now.`;
+                    }
+                });
+
+                if (bestMsg) {
+                    const el = document.createElement('div');
+                    el.textContent = bestMsg;
+                    return { title: '🗑️ Discard Pile', domEl: el, sub: 'Based on what\'s already been thrown.' };
+                }
+            }
+
+            // ── Priority 4: Flower fallback ──
+            const el = document.createElement('div');
+            el.textContent = 'Flowers appear in many hands across the card — hold onto them if you can, they\'re rarely a safe discard early on.';
+            return { title: '💐 General Tip', domEl: el, sub: null };
+        }
+
         function updateBottomBar() {
             const bar = document.getElementById('bottomBar');
             if (!bar) return;
             bar.innerHTML = '';
 
-            // Only show during playing phase
-            if (gameState.phase !== 'playing') {
+            // Show during charleston AND playing phase
+            if (gameState.phase !== 'playing' && gameState.phase !== 'charleston') {
                 bar.classList.remove('active');
                 return;
             }
             bar.classList.add('active');
+
+            // Helper to append the hint button to the bar
+            const addHintBtn = () => {
+                const hintBtn = document.createElement('button');
+                hintBtn.textContent = '💡 Hint';
+                hintBtn.style.background = '#7b5ea7';
+                hintBtn.onclick = openHint;
+                bar.appendChild(hintBtn);
+            };
+
+            // ── Charleston phase: just show the hint button ──
+            if (gameState.phase === 'charleston') {
+                addHintBtn();
+                return;
+            }
 
             const humanPlayer = gameState.players.find(p => p.isHuman);
 
@@ -9243,6 +10015,8 @@
                 mjBtn.onclick = handleCallForMahjong;
                 bar.appendChild(mjBtn);
 
+                addHintBtn();
+
             // ── State 2: Human player's turn — show action buttons ──
             } else if (gameState.currentTurn === humanPlayer && !gameState.callDialogOpen) {
                 const discardBtn = document.createElement('button');
@@ -9258,11 +10032,13 @@
                 jokerBtn.onclick = attemptJokerExchangeWithSelectedTile;
                 bar.appendChild(jokerBtn);
 
-                const mjBtn = document.createElement('button');
-                mjBtn.textContent = 'Declare Mahjong';
-                mjBtn.style.background = '#4caf50';
-                mjBtn.onclick = openMahjongDialog;
-                bar.appendChild(mjBtn);
+                const mjBtn2 = document.createElement('button');
+                mjBtn2.textContent = 'Declare Mahjong';
+                mjBtn2.style.background = '#4caf50';
+                mjBtn2.onclick = openMahjongDialog;
+                bar.appendChild(mjBtn2);
+
+                addHintBtn();
 
             // ── State 3: Bot's turn — idle label ──
             } else if (!gameState.callDialogOpen) {
@@ -9271,6 +10047,8 @@
                 const whose = gameState.currentTurn ? `${gameState.currentTurn.name}'s turn…` : 'Waiting…';
                 idle.textContent = whose;
                 bar.appendChild(idle);
+
+                addHintBtn();
             }
         }
 
