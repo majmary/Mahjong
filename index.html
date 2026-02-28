@@ -489,10 +489,12 @@
         /* Charleston controls */
         .charleston-controls {
             display: flex;
-            flex-direction: column;
-            gap: 10px;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 8px;
             margin-top: 10px;
-            align-items: center;
+            align-items: stretch;
+            justify-content: center;
         }
 
         .pass-arrow {
@@ -8823,6 +8825,12 @@
                         vetoBtn.style.background = 'var(--color-warning)';
                         vetoBtn.onclick = () => handleOptionalVeto(false);
                         btnContainer.appendChild(vetoBtn);
+
+                        const hintBtn = document.createElement('button');
+                        hintBtn.textContent = '💡 Hint';
+                        hintBtn.style.cssText = 'background:#7b5ea7;line-height:1;';
+                        hintBtn.onclick = openHint;
+                        btnContainer.appendChild(hintBtn);
                         
                         charlestonControls.appendChild(btnContainer);
                     } else if (gameState.charlestonPhase !== 'complete') {
@@ -8853,6 +8861,12 @@
                         
                         passBtn.onclick = executeCharlestonPass;
                         charlestonControls.appendChild(passBtn);
+
+                        const hintBtn = document.createElement('button');
+                        hintBtn.textContent = '💡 Hint';
+                        hintBtn.style.cssText = 'background:#7b5ea7;line-height:1;';
+                        hintBtn.onclick = openHint;
+                        charlestonControls.appendChild(hintBtn);
                     }
                     
                     handArea.appendChild(charlestonControls);
@@ -9891,9 +9905,9 @@
                 bar.appendChild(hintBtn);
             };
 
-            // ── Charleston phase: just show the hint button ──
+            // ── Charleston phase: hint is already next to the pass button in the hand area ──
             if (gameState.phase === 'charleston') {
-                addHintBtn();
+                bar.classList.remove('active');
                 return;
             }
 
