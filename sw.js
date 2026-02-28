@@ -5,11 +5,11 @@
 const CACHE_VERSION = 'mahjong-v1';
 
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
+  '/mahjong/',
+  '/mahjong/index.html',
+  '/mahjong/manifest.json',
+  '/mahjong/icon-192.png',
+  '/mahjong/icon-512.png',
 ];
 
 // ── Install: cache all assets ──
