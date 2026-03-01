@@ -4659,6 +4659,21 @@
                         return;
                     }
 
+                    // All-joker branch: if this tile would bind an unbound numVar or suitVar,
+                    // also explore a path where jokers cover the entire group without binding
+                    // the variable — keeping it free for another group to bind it correctly.
+                    // This handles e.g. JJJJ as a valid kong when numVar is not yet resolved.
+                    const wouldBindNum = ['X', 'V', 'Y', 'M'].includes(tile) && group.numVar && !localNumMap[group.numVar];
+                    const wouldBindSuit = group.suitVar && !localSuitMap[group.suitVar];
+                    if ((wouldBindNum || wouldBindSuit)) {
+                        const jokersAvail = poolSoFar.filter(t => t === JOKER).length;
+                        const slotsLeft = group.tiles.length - i;
+                        if (jokersAvail >= slotsLeft) {
+                            // Explore the all-joker path: mark remaining slots '?' without binding vars
+                            assignTile(i + 1, [...matchedSoFar, '?'], poolSoFar, { ...localNumMap }, { ...localSuitMap }, { ...localKLenMap }, { ...localRMap }, cloneKValueSets(localKValueSets));
+                        }
+                    }
+
                     for (let j = 0; j < poolSoFar.length; j++) {
                         const cand = poolSoFar[j];
                         if (!cands.includes(cand)) continue;
@@ -9855,8 +9870,11 @@
                 const allBotTiles = bot.exposedSets.flatMap(s => s.tiles);
 
                 if (exposureCount >= 2) {
-                    // Try to match to a hand pattern
-                    const botEv = evaluateBestMatch(allBotTiles, 3);
+                    // Try to match to a hand pattern using only exposed sets as locked groups
+                    const lockedGroups = (bot.exposedSets || [])
+                        .map(resolveExposureToLockedTiles)
+                        .filter(g => g !== null);
+                    const botEv = evaluateBestMatch(lockedGroups.flat(), 3, lockedGroups);
                     if (botEv.bestMatch) {
                         const pattern = botEv.bestMatch.pattern;
                         const descEl = document.createElement('div');
