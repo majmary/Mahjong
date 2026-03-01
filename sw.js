@@ -2,16 +2,20 @@
 // American Mahjong — Service Worker
 // Bump CACHE_VERSION whenever you deploy an update.
 // ─────────────────────────────────────────────
-const CACHE_VERSION = 'mahjong-v4';
+const CACHE_VERSION = 'mahjong-v5';
 
 const ASSETS = [
-  '/mahjong/',
-  '/mahjong/index.html',
-  '/mahjong/manifest.json',
-  '/mahjong/icon-192.png',
-  '/mahjong/icon-512.png',
+  '/Mahjong/',
+  '/Mahjong/index.html',
+  '/Mahjong/manifest.json',
+  '/Mahjong/icon-192.png',
+  '/Mahjong/icon-512.png',
+  '/Mahjong/data/card-2025.js',
+  '/Mahjong/data/card-2024.js',
+  '/Mahjong/js/card-loader.js',
+  '/Mahjong/js/sound.js',
+  '/Mahjong/js/patterns.js',
 ];
-
 // ── Install: cache all assets ──
 self.addEventListener('install', event => {
   event.waitUntil(
