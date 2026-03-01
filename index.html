@@ -1278,6 +1278,7 @@
                 <button onclick="confirmNewGame()">🔄 New Game</button>
                 <button onclick="showHandPeek()">🃏 View All Hands</button>
                 <button onclick="previewEndScreen(); document.getElementById('cornerMenuDropdown').classList.remove('open');">🔍 Preview End Screen</button>
+                <button id="muteBtn" onclick="SoundEngine.toggleMute(); document.getElementById('cornerMenuDropdown').classList.remove('open');">🔊 Mute</button>
             </div>
         </div>
 
@@ -1541,6 +1542,7 @@
          */
         function executeJokerExchange(currentPlayer, exposureOwner, exposureIndex, jokerIndex, tileToGive) {
             console.log(`Executing joker exchange: ${currentPlayer.name} gives ${tileToGive} to ${exposureOwner.name}`);
+            SoundEngine.jokerExchange();
             
             // Remove tile from current player's hand
             const tileIndexInHand = currentPlayer.tiles.indexOf(tileToGive);
@@ -1870,6 +1872,9 @@
             gameState.winner = winner;
             gameState.winningPattern = pattern;
             gameState.winningMatch = match || null;
+
+            if (winner.isHuman) SoundEngine.playerWins();
+            else SoundEngine.botWins();
             
             // Update display to reveal all hands and show winning overlay
             updateDisplay();
@@ -2098,6 +2103,126 @@
                 }
             });
         }
+
+        // ========================================
+        // SOUND ENGINE
+        // ========================================
+
+        const SoundEngine = {
+            _ctx: null,
+            _muted: localStorage.getItem('mahjong_muted') === 'true',
+
+            get ctx() {
+                if (!this._ctx) this._ctx = new (window.AudioContext || window.webkitAudioContext)();
+                return this._ctx;
+            },
+
+            get muted() { return this._muted; },
+
+            toggleMute() {
+                this._muted = !this._muted;
+                localStorage.setItem('mahjong_muted', this._muted);
+                // Update corner menu button label
+                const btn = document.getElementById('muteBtn');
+                if (btn) btn.textContent = this._muted ? '🔇 Unmute' : '🔊 Mute';
+            },
+
+            // Low-level helpers
+            _osc(type, freq, startTime, duration, gainVal, ctx) {
+                const g = ctx.createGain();
+                g.connect(ctx.destination);
+                g.gain.setValueAtTime(gainVal, startTime);
+                g.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+                const o = ctx.createOscillator();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, startTime);
+                o.connect(g);
+                o.start(startTime);
+                o.stop(startTime + duration);
+            },
+
+            _noise(startTime, duration, gainVal, ctx) {
+                const bufSize = ctx.sampleRate * duration;
+                const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+                const data = buf.getChannelData(0);
+                for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+                const src = ctx.createBufferSource();
+                src.buffer = buf;
+                const g = ctx.createGain();
+                g.gain.setValueAtTime(gainVal, startTime);
+                g.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+                src.connect(g);
+                g.connect(ctx.destination);
+                src.start(startTime);
+                src.stop(startTime + duration);
+            },
+
+            // ── Individual sounds ──
+
+            tileClick() {
+                if (this._muted) return;
+                try {
+                    const ctx = this.ctx;
+                    const t = ctx.currentTime;
+                    // Soft low thud — slightly louder
+                    this._osc('sine', 180, t, 0.12, 0.14, ctx);
+                    this._osc('sine', 120, t, 0.10, 0.08, ctx);
+                } catch(e) {}
+            },
+
+            botCall() {
+                if (this._muted) return;
+                try {
+                    const ctx = this.ctx;
+                    const t = ctx.currentTime;
+                    // Two ascending tones — alert chime
+                    this._osc('sine', 520, t,        0.18, 0.12, ctx);
+                    this._osc('sine', 780, t + 0.14, 0.22, 0.10, ctx);
+                } catch(e) {}
+            },
+
+            jokerExchange() {
+                if (this._muted) return;
+                try {
+                    const ctx = this.ctx;
+                    const t = ctx.currentTime;
+                    // Quick rising arpeggio — sparkle
+                    [523, 659, 784, 1047].forEach((freq, i) => {
+                        this._osc('sine', freq, t + i * 0.06, 0.15, 0.08, ctx);
+                    });
+                } catch(e) {}
+            },
+
+            playerWins() {
+                if (this._muted) return;
+                try {
+                    const ctx = this.ctx;
+                    const t = ctx.currentTime;
+                    // Gentle fanfare — ascending phrase with a final chord
+                    const melody = [523, 659, 784, 659, 784, 1047];
+                    const times  = [0,   0.18, 0.36, 0.54, 0.72, 0.90];
+                    melody.forEach((freq, i) => {
+                        this._osc('sine', freq, t + times[i], 0.25, 0.10, ctx);
+                        // Soft harmony a fifth below on the last note
+                        if (i === melody.length - 1) {
+                            this._osc('sine', freq * 0.75, t + times[i], 0.35, 0.06, ctx);
+                        }
+                    });
+                } catch(e) {}
+            },
+
+            botWins() {
+                if (this._muted) return;
+                try {
+                    const ctx = this.ctx;
+                    const t = ctx.currentTime;
+                    // Gentle descending sine tones — soft and sad, not harsh
+                    this._osc('sine', 392, t,        0.45, 0.07, ctx);
+                    this._osc('sine', 330, t + 0.35, 0.50, 0.06, ctx);
+                    this._osc('sine', 262, t + 0.70, 0.60, 0.05, ctx);
+                } catch(e) {}
+            },
+        };
 
         // Initialize game
         function startGame() {
@@ -4443,7 +4568,12 @@
                             else matched.push('?');
                         }
 
-                        if (presentCount >= Math.ceil(L / 2)) {
+                        // Accept this run if we have at least 1 natural tile, OR if there
+                        // are enough jokers in the pool to cover every missing slot.
+                        const jokersInPool = handPool.filter(t => t === JOKER).length;
+                        const missingCount = matched.filter(t => t === '?').length;
+                        const canFillWithJokers = jokersInPool >= missingCount;
+                        if (presentCount >= 1 || canFillWithJokers) {
                             const newGroup = { ...group, matchedTiles: matched };
                             const newPool = handPool.filter((_, i) => !usedIndices.has(i));
                             const newNumMap = { ...numVarMap };
@@ -6917,6 +7047,8 @@
             
             // Can't select jokers during Charleston
             if (tile === 'J' && gameState.phase === 'charleston') return;
+
+            SoundEngine.tileClick();
             
             const selectedIdx = gameState.charlestonSelectedTiles.indexOf(tileIndex);
             
@@ -7469,6 +7601,7 @@
             console.log(`Executing call for ${player.name}:`);
             console.log('  Called tile:', calledTile);
             console.log('  Tiles from hand to expose:', tilesForExposure);
+            SoundEngine.botCall();
             
             // Find and remove the tiles from hand
             const exposedTiles = [];
@@ -7718,6 +7851,7 @@
             if (gameState.phase !== 'playing') return;
             if (!gameState.currentTurn || !gameState.currentTurn.isHuman) return;
             
+            SoundEngine.tileClick();
             gameState.selectedTileIndex = tileIndex;
             updateDisplay();
         }
@@ -8279,56 +8413,18 @@
         /**
          * Order the winner's tiles to match the winning hand pattern,
          * with jokers placed exactly where they were used.
-         * Returns a flat array of tile strings (all 14 tiles).
+         * matchedTiles already has 'J' where jokers substitute, real tile codes elsewhere.
+         * Returns a flat array of 14 tile strings.
          */
         function orderTilesByWinningMatch(player, winningMatch) {
             const groups = winningMatch.result.groups;
-
-            // Build a flat ordered list from groups: each matchedTile is either a real tile or 'J' (joker sub)
             const ordered = [];
             groups.forEach(group => {
                 (group.matchedTiles || []).forEach(t => {
-                    // matchedTiles contains actual tile values OR '?' for unfilled (shouldn't happen on win)
-                    // Jokers used as substitutes are stored as 'J' in jokersUsed tracking,
-                    // but matchedTiles shows the REPRESENTED tile. We need to check if a joker
-                    // was actually used here via the group's joker tracking.
-                    ordered.push(t === '?' ? 'J' : t);
+                    if (t !== '?') ordered.push(t);
                 });
             });
-
-            // Now reconcile: some entries in ordered are real tiles, some should be jokers.
-            // The match engine puts the actual tile value even when a joker represents it.
-            // We need to substitute jokers back in based on what's actually in the player's hand.
-            const allTiles = [
-                ...player.tiles,
-                ...(player.exposedSets || []).flatMap(s => s.tiles)
-            ];
-
-            // Count available real tiles (non-joker)
-            const available = {};
-            allTiles.forEach(t => {
-                if (t !== 'J') available[t] = (available[t] || 0) + 1;
-            });
-            const jokerCount = allTiles.filter(t => t === 'J').length;
-            let jokersLeft = jokerCount;
-
-            // Walk through ordered list; for each tile, use a real tile if available, else use a joker
-            const result = ordered.map(t => {
-                if (t === 'J') {
-                    // Explicitly a joker slot
-                    if (jokersLeft > 0) { jokersLeft--; return 'J'; }
-                    return t;
-                }
-                if (available[t] && available[t] > 0) {
-                    available[t]--;
-                    return t;
-                }
-                // Real tile not available — must be covered by a joker
-                if (jokersLeft > 0) { jokersLeft--; return 'J'; }
-                return t; // fallback
-            });
-
-            return result;
+            return ordered;
         }
 
         function renderAllHandsIntoContainer(container, options = {}) {
@@ -8495,6 +8591,7 @@
 
             const gameLayoutDiv = document.querySelector('.game-layout');
             if (gameLayoutDiv) gameLayoutDiv.style.display = 'none';
+            document.getElementById('bottomBar').style.display = 'none';
 
             let wonContainer = document.getElementById('gameWonContainer');
             if (!wonContainer) {
@@ -9368,9 +9465,10 @@
             const clusterHint = detectTileCluster(tiles);
             const sections    = detectTopSections(tiles);
 
-            // Pick the stronger of sequence vs cluster (strength is tiles-present count)
+            // Pick the stronger of sequence vs cluster
+            // Sequences need strength >= 2; clusters need >= 5 to be worth surfacing over sections
             const seqStrength     = (seqHint     && seqHint.strength     >= 2) ? seqHint.strength     : 0;
-            const clusterStrength = (clusterHint && clusterHint.strength >= 3) ? clusterHint.strength : 0;
+            const clusterStrength = (clusterHint && clusterHint.strength >= 5) ? clusterHint.strength : 0;
 
             const specific = seqStrength >= clusterStrength && seqStrength > 0 ? seqHint
                            : clusterStrength > 0                               ? clusterHint
@@ -9497,20 +9595,55 @@
                 });
             });
 
-            // ── Consecutive runs (any 3+ in a row same suit) ──
+            // ── Consecutive runs — find the longest contiguous run per suit ──
+            // Strength scales aggressively: 3-tile=4, 4-tile=6, 5-tile=9, 6+=12
+            // so a solid run always outranks a loose cluster of the same count
             suits.forEach(suit => {
-                for (let start = 1; start <= 7; start++) {
-                    const run = [start, start+1, start+2];
-                    const count = run.filter(n => tiles.some(t => t === `${n}${suit}`)).length;
-                    if (count >= 2) {
-                        const have = run.filter(n => tiles.some(t => t === `${n}${suit}`)).join('-');
-                        const missing = run.filter(n => !tiles.some(t => t === `${n}${suit}`)).join(', ');
-                        const text = count === 3
-                            ? `You have a complete run of ${run[0]}-${run[2]} in ${suitName[suit]}!`
-                            : `You have ${have} of ${suitName[suit]} toward a ${run[0]}-${run[2]} consecutive run. Missing: ${missing}.`;
-                        const candidate = { title: 'Consecutive Run', text, sub: 'Consecutive run hands use 3 or 4 tiles in sequence within the same suit.', strength: count };
-                        if (!best || candidate.strength > best.strength) best = candidate;
+                // Find all numbers present in this suit (unique)
+                const present = new Set();
+                tiles.forEach(t => { if (t.length === 2 && t[1] === suit) present.add(+t[0]); });
+
+                // Slide a window to find the longest contiguous run
+                let longestRun = [];
+                let currentRun = [];
+                for (let n = 1; n <= 9; n++) {
+                    if (present.has(n)) {
+                        currentRun.push(n);
+                        if (currentRun.length > longestRun.length) longestRun = [...currentRun];
+                    } else {
+                        currentRun = [];
                     }
+                }
+
+                if (longestRun.length >= 2) {
+                    const runLen = longestRun.length;
+                    const runStr = longestRun.join('-');
+                    // Strength: 2=2, 3=4, 4=6, 5=9, 6+=12 — exponential reward for longer runs
+                    const strengthMap = [0, 0, 2, 4, 6, 9, 12, 12, 12, 12];
+                    const strength = strengthMap[Math.min(runLen, 9)];
+
+                    let text;
+                    if (runLen >= 5) {
+                        text = `You have a ${runLen}-tile run of ${runStr} in ${suitName[suit]} — this is a very strong start for a Consecutive Runs hand!`;
+                    } else if (runLen === 4) {
+                        text = `You have a 4-tile run of ${runStr} in ${suitName[suit]} — strong Consecutive Runs potential.`;
+                    } else if (runLen === 3) {
+                        text = `You have a complete 3-tile run of ${runStr} in ${suitName[suit]}.`;
+                    } else {
+                        const missing = [];
+                        for (let n = longestRun[0]; n <= longestRun[longestRun.length-1]+1; n++) {
+                            if (!present.has(n)) missing.push(n);
+                        }
+                        text = `You have ${runStr} in ${suitName[suit]} — one more tile could complete a run.`;
+                    }
+
+                    const candidate = {
+                        title: 'Consecutive Run',
+                        text,
+                        sub: 'The Consecutive Runs section has many hands built on runs of 3 or more tiles in one suit.',
+                        strength
+                    };
+                    if (!best || candidate.strength > best.strength) best = candidate;
                 }
             });
 
@@ -9528,18 +9661,18 @@
 
             const tryCandidate = (c) => { if (!best || c.strength > best.strength) best = c; };
 
-            // Even numbers (2,4,6,8)
+            // Even numbers (2,4,6,8) — only noteworthy with 7+
             const evens = tiles.filter(t => t.length === 2 && suits.includes(t[1]) && [2,4,6,8].includes(+t[0]));
-            if (evens.length >= 3) {
+            if (evens.length >= 7) {
                 const suitCounts = {};
                 evens.forEach(t => { suitCounts[t[1]] = (suitCounts[t[1]] || 0) + 1; });
                 const suitDesc = Object.entries(suitCounts).map(([s,c]) => `${c} ${suitName[s]}`).join(', ');
                 tryCandidate({ title: 'Even Numbers', text: `You have ${evens.length} even-numbered tiles (${suitDesc}) — 2468 hands could suit you well.`, sub: 'The 2468 section has the most variety of even-number hands.', strength: evens.length });
             }
 
-            // Odd numbers (1,3,5,7,9)
+            // Odd numbers (1,3,5,7,9) — only noteworthy with 7+
             const odds = tiles.filter(t => t.length === 2 && suits.includes(t[1]) && [1,3,5,7,9].includes(+t[0]));
-            if (odds.length >= 3) {
+            if (odds.length >= 7) {
                 const suitCounts = {};
                 odds.forEach(t => { suitCounts[t[1]] = (suitCounts[t[1]] || 0) + 1; });
                 const suitDesc = Object.entries(suitCounts).map(([s,c]) => `${c} ${suitName[s]}`).join(', ');
@@ -10461,6 +10594,10 @@
         // Initialize on load — just show landing page
         window.addEventListener('load', () => {
             // Nothing to init — landing page is shown by default
+
+            // Set correct mute button label based on saved preference
+            const muteBtn = document.getElementById('muteBtn');
+            if (muteBtn) muteBtn.textContent = SoundEngine.muted ? '🔇 Unmute' : '🔊 Mute';
 
             // Register service worker for PWA offline support
             if ('serviceWorker' in navigator) {
