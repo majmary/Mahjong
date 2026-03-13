@@ -2,7 +2,7 @@
 // American Mahjong — Service Worker
 // Bump CACHE_VERSION whenever you deploy an update.
 // ─────────────────────────────────────────────
-const CACHE_VERSION = 'mahjong-v10';
+const CACHE_VERSION = 'mahjong-v11';
 
 const ASSETS = [
   '/mahjong/',
