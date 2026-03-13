@@ -1277,9 +1277,10 @@
                     "south";
                 grid-template-columns: 1fr;
                 grid-template-rows: auto auto;
+                align-content: start;
                 width: 100%;
                 gap: 2px;
-                padding: 0 6px 6px;
+                padding: 0 6px 90px;
                 box-sizing: border-box;
             }
 
@@ -1514,7 +1515,7 @@
             winningPattern: null, // The winning pattern object
             isDraw: false, // Whether the round ended in a draw
             // Scoring state
-            scores: { E: 100, S: 100, W: 100, N: 100 }, // Current point totals per position
+            scores: {}, // Current point totals keyed by player name
             mahjongWonFromWall: false, // True if winning tile was self-drawn from wall
             lastRoundScoreDeltas: null, // { E: 0, S: 0, W: 0, N: 0 } point changes from last round
             lastRoundJokerFreeBonus: false, // True if joker-free bonus applied last round
@@ -1532,8 +1533,9 @@
         // ========================================
 
         function loadScores() {
-            // Scores are per-game (100 pts each); no cross-session persistence
-            gameState.scores = { E: 100, S: 100, W: 100, N: 100 };
+            // Scores follow player name, not wind position
+            gameState.scores = {};
+            gameState.players.forEach(p => { gameState.scores[p.name] = 100; });
         }
 
         function saveScores() {
@@ -1541,7 +1543,8 @@
         }
 
         function resetScores() {
-            gameState.scores = { E: 100, S: 100, W: 100, N: 100 };
+            gameState.scores = {};
+            gameState.players.forEach(p => { gameState.scores[p.name] = 100; });
         }
 
         // Tile creation
@@ -2072,8 +2075,9 @@
             const basePoints = pattern.points || 0;
             if (basePoints === 0) return; // No points to award
 
-            const winnerPos = winner.position;
+            const winnerName = winner.name;
             const discarderPos = gameState.mahjongWonFromWall ? null : gameState.discarderPosition;
+            const discarderPlayer = discarderPos ? gameState.players.find(p => p.position === discarderPos) : null;
 
             // Joker-free check: scan tiles in hand + all exposed sets for any 'J'
             const isSinglesAndPairs = (pattern.Section || '').includes('Singles');
@@ -2089,36 +2093,37 @@
             }
             const jokerFreeBonus = !hasJoker && !isSinglesAndPairs;
 
-            // Build payment amounts each loser owes
-            const deltas = { E: 0, S: 0, W: 0, N: 0 };
+            // Build payment amounts each loser owes — keyed by player name
+            const deltas = {};
+            gameState.players.forEach(p => { deltas[p.name] = 0; });
             let totalWon = 0;
 
             gameState.players.forEach(player => {
-                if (player.position === winnerPos) return; // winner pays nothing
+                if (player.name === winnerName) return; // winner pays nothing
 
                 let owed;
                 if (gameState.mahjongWonFromWall) {
                     owed = basePoints * 2;
                 } else {
                     // Discard win: discarder pays 2×, others pay 1×
-                    owed = (player.position === discarderPos) ? basePoints * 2 : basePoints;
+                    owed = (discarderPlayer && player.name === discarderPlayer.name) ? basePoints * 2 : basePoints;
                 }
 
                 if (jokerFreeBonus) owed *= 2; // No-joker doubling
 
                 // Player pays what they can (drain to 0 if short)
-                const actualPayment = Math.min(owed, gameState.scores[player.position]);
-                deltas[player.position] = -actualPayment;
+                const actualPayment = Math.min(owed, gameState.scores[player.name]);
+                deltas[player.name] = -actualPayment;
                 totalWon += actualPayment;
             });
 
-            deltas[winnerPos] = totalWon;
+            deltas[winnerName] = totalWon;
 
             // Apply deltas
-            for (const pos of ['E', 'S', 'W', 'N']) {
-                gameState.scores[pos] += deltas[pos];
-                if (gameState.scores[pos] < 0) gameState.scores[pos] = 0;
-            }
+            gameState.players.forEach(p => {
+                gameState.scores[p.name] += deltas[p.name];
+                if (gameState.scores[p.name] < 0) gameState.scores[p.name] = 0;
+            });
 
             gameState.lastRoundScoreDeltas = deltas;
             gameState.lastRoundJokerFreeBonus = jokerFreeBonus;
@@ -2126,8 +2131,6 @@
 
             // Build payment details for the summary screen
             const multiplier = (gameState.mahjongWonFromWall ? 2 : 1) * (jokerFreeBonus ? 2 : 1);
-            const normalPayment = basePoints * (jokerFreeBonus ? 2 : 1); // what non-discarders pay (wall win = basePoints*2 covered by multiplier display)
-            const discarderPlayer = discarderPos ? gameState.players.find(p => p.position === discarderPos) : null;
             gameState.lastRoundPaymentDetails = {
                 winnerName: winner.isHuman ? 'You' : winner.name,
                 isHumanWinner: winner.isHuman,
@@ -3405,7 +3408,7 @@
             gameState.isDraw = false;
             gameState.courtesyPassIncomingTiles = new Set();
             // Reset scoring and hand tracking for a fresh game
-            gameState.scores = { E: 100, S: 100, W: 100, N: 100 };
+            gameState.scores = {};
             gameState.mahjongWonFromWall = false;
             gameState.lastRoundScoreDeltas = null;
             gameState.lastRoundJokerFreeBonus = false;
@@ -3417,6 +3420,8 @@
             
             // Initialize game
             startGame();
+            // Assign starting scores by player name (players now exist)
+            gameState.players.forEach(p => { gameState.scores[p.name] = 100; });
             // Deal tiles
             dealTiles();
             // Immediately start Charleston
@@ -3446,8 +3451,8 @@
                 // Apply 10% penalty to human player
                 const human = gameState.players.find(p => p.isHuman);
                 if (human) {
-                    const penalty = Math.max(1, Math.floor(gameState.scores[human.position] * 0.1));
-                    gameState.scores[human.position] = Math.max(0, gameState.scores[human.position] - penalty);
+                    const penalty = Math.max(1, Math.floor(gameState.scores[human.name] * 0.1));
+                    gameState.scores[human.name] = Math.max(0, gameState.scores[human.name] - penalty);
                 }
                 // No wind rotation, no hand increment
             } else if (wasWallGame) {
@@ -5065,7 +5070,7 @@
                     info.innerHTML += ' <span class="wind-indicator" style="background:var(--color-primary);color:white;">TURN</span>';
                 }
                 // Score badge
-                const scoreVal = gameState.scores[player.position];
+                const scoreVal = gameState.scores[player.name];
                 info.innerHTML += ` <span style="font-size:10px;font-weight:700;color:var(--color-primary);">${scoreVal} pts</span>`;
                 headerLine.appendChild(info);
 
@@ -5268,7 +5273,7 @@
             const table = document.createElement('div');
             table.style.cssText = 'border-top:1px solid #eee; padding-top:14px; text-align:left;';
             gameState.players.forEach(p => {
-                const delta = d.deltas[p.position] || 0;
+                const delta = d.deltas[p.name] || 0;
                 const row = document.createElement('div');
                 row.style.cssText = `display:flex; justify-content:space-between; padding:5px 0;
                     font-size:14px; ${p.isHuman ? 'font-weight:700;' : ''}`;
@@ -5296,6 +5301,9 @@
                 clearTimeout(autoTimer);
                 gameState.showPaymentSummary = false;
                 overlay.remove();
+                // Refresh score displays with updated values
+                updateTopInfoBar();
+                updatePortraitBotStrip();
                 // Show the game-won hands layout
                 const gameLayoutDiv = document.querySelector('.game-layout');
                 let wonContainer = document.getElementById('gameWonContainer');
@@ -5348,16 +5356,16 @@
             label.style.cssText = 'font-size:12px; color:#555; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
             if (isLastHand) {
                 const sorted = [...gameState.players].sort((a,b) =>
-                    gameState.scores[b.position] - gameState.scores[a.position]);
+                    gameState.scores[b.name] - gameState.scores[a.name]);
                 label.innerHTML = `🏁 <strong>Game Over</strong> &nbsp;${sorted.map((p,i) =>
-                    `${'🥇🥈🥉 '[i]}${p.isHuman?'You':p.name} ${gameState.scores[p.position]}`
+                    `${'🥇🥈🥉 '[i]}${p.isHuman?'You':p.name} ${gameState.scores[p.name]}`
                 ).join(' · ')}`;
             } else if (gameState.isDraw) {
                 label.innerHTML = `🤝 <strong>Draw</strong> — hand ${gameState.currentHand} of ${gameState.totalHands} replays`;
             } else {
                 const delta = gameState.lastRoundScoreDeltas;
                 const humanPlayer = gameState.players.find(p => p.isHuman);
-                const humanDelta = humanPlayer && delta ? delta[humanPlayer.position] : 0;
+                const humanDelta = humanPlayer && delta ? delta[humanPlayer.name] : 0;
                 const deltaStr = humanDelta > 0 ? `<strong style="color:#2e7d32;">+${humanDelta}</strong>` :
                                  humanDelta < 0 ? `<strong style="color:#c62828;">${humanDelta}</strong>` :
                                  `<strong>±0</strong>`;
@@ -5378,8 +5386,8 @@
                 };
                 // Fireworks if human is leading
                 const humanPlayer = gameState.players.find(p => p.isHuman);
-                const topScore = Math.max(...gameState.players.map(p => gameState.scores[p.position]));
-                if (humanPlayer && gameState.scores[humanPlayer.position] >= topScore) {
+                const topScore = Math.max(...gameState.players.map(p => gameState.scores[p.name]));
+                if (humanPlayer && gameState.scores[humanPlayer.name] >= topScore) {
                     const canvas = document.createElement('canvas');
                     canvas.id = 'fireworksCanvas';
                     canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;';
@@ -5526,7 +5534,7 @@
 
             const youChip = document.createElement('span');
             youChip.style.cssText = 'font-size:11px; font-weight:700; color:var(--color-primary); white-space:nowrap; flex-shrink:0;';
-            youChip.textContent = `You: ${gameState.scores[humanPlayer.position]}`;
+            youChip.textContent = `You: ${gameState.scores[humanPlayer.name]}`;
             header.appendChild(youChip);
 
             strip.appendChild(header);
@@ -5555,7 +5563,7 @@
                 const cardHeader = document.createElement('div');
                 cardHeader.className = 'portrait-bot-header';
                 const dealerIcon = player === gameState.currentDealer ? ' 🎲' : '';
-                const score = gameState.scores[player.position] ?? '—';
+                const score = gameState.scores[player.name] ?? '—';
                 cardHeader.innerHTML = `${player.name} <span class="wind-indicator">${player.position}</span>${dealerIcon} <span style="font-size:9px;color:#888;font-weight:500;">${score}</span>`;
                 card.appendChild(cardHeader);
 
@@ -5656,7 +5664,7 @@
                     color:${p.isHuman ? 'white' : 'var(--color-text-primary)'};
                     font-weight:${p.isHuman ? '700' : '500'};
                     white-space:nowrap;`;
-                chip.textContent = `${p.isHuman ? 'You' : p.name}: ${gameState.scores[p.position]}`;
+                chip.textContent = `${p.isHuman ? 'You' : p.name}: ${gameState.scores[p.name]}`;
                 scoresDiv.appendChild(chip);
             });
             bar.appendChild(scoresDiv);
@@ -5753,8 +5761,7 @@
                     info.innerHTML += ' <span style="font-size:11px;opacity:0.7;" title="Dealer">🎲</span>';
                 }
                 // Score badge
-                const score = gameState.scores[player.position];
-                const scoreBadge = document.createElement('span');
+                const score = gameState.scores[player.name];
                 scoreBadge.style.cssText = 'display:block; font-size:11px; font-weight:700; color: var(--color-primary); margin-top:2px; text-align:center;';
                 scoreBadge.textContent = `${score} pts`;
                 info.appendChild(scoreBadge);
@@ -7383,7 +7390,7 @@
 
             // Build a choice dialog: re-deal (penalty) vs full reset
             const humanPlayer = gameState.players.find(p => p.isHuman);
-            const humanScore = humanPlayer ? gameState.scores[humanPlayer.position] : 100;
+            const humanScore = humanPlayer ? gameState.scores[humanPlayer.name] : 100;
             const penalty = humanScore < 10 ? 1 : Math.floor(humanScore * 0.1);
 
             // Remove any existing dialog
