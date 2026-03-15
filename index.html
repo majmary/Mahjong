@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Mary on Mahjong test</title>
+    <title>Mary on Mahjong</title>
 
     <!-- PWA manifest -->
     <link rel="manifest" href="/mahjong/manifest.json">
@@ -1388,7 +1388,7 @@
     <!-- ══ LANDING VIEW ══ -->
     <div id="landingView">
         <h1>🀄 Mary on Mahjong</h1>
-        <p>TEST  TEST Smart Bot AI · American Mahjong</p>
+        <p>Smart Bot AI · American Mahjong</p>
         <button class="start-btn" onclick="launchGame()">Play American Mahjong<br><span style="font-size:14px; font-weight:400; opacity:0.85">with the current NMJL card</span></button>
         <button class="start-btn" onclick="showCardPicker()" style="font-size:16px; padding:14px 36px; margin-top:12px;">Play with a different card</button>
     </div>
@@ -4113,16 +4113,30 @@
             const humanPlayer = gameState.players.find(p => p.isHuman);
             const timerDuration = (player === humanPlayer) ? 1500 : 15000; // 1.5s for bot to decide, 15s for human
             
-            // After timer expires, close calling window and move to discard pool
+            // After timer expires, check if any bot wants to call before moving on
             gameState.callingWindowTimer = setTimeout(() => {
                 gameState.callingWindowOpen = false;
+                
+                // Check if any bot wants to call — covers both human and bot discards
+                if (!gameState.callDialogOpen) {
+                    const botCallResult = checkBotsWantToCall(discardedTile, player.position);
+                    if (botCallResult) {
+                        console.log(`🤖 ${botCallResult.player.name} calls ${discardedTile} via timer`);
+                        // Bot takes the tile — don't push to pool, don't advance turn
+                        gameState.lastDiscardedTile = null;
+                        gameState.tileBeingCalled = null;
+                        executeBotCall(botCallResult.player, discardedTile, botCallResult.decision.tilesForExposure);
+                        return;
+                    }
+                }
+                
+                // No bot called — tile goes to pool, advance turn normally
                 gameState.discardPool.push(discardedTile);
                 gameState.lastDiscardedTile = null;
                 gameState.tileBeingCalled = null;
                 gameState.lastPlayerAction = null; // Clear action tracking
                 updateDisplay();
                 
-                // Move to next turn (only if no one called)
                 if (!gameState.callDialogOpen) {
                     nextTurn();
                 }
