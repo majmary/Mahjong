@@ -46,15 +46,6 @@ function parsePattern(pattern) {
         else if (tiles.length === 1) priority = 3;  // Singles
         else if (allIdentical(tiles) && tiles.includes('Q')) priority = 3;  // Q groups
 
-        // Promote suitVar-less suited groups to P0 so they run before any suitVar groups
-        // can lock suits, preventing them from being incorrectly excluded.
-        // Applies to any priority level — this year's card only triggers it at P4 but
-        // future cards could have no-suitVar groups at P1/P2/P3 as well.
-        const SUITED_TILES = ['D','X','V','Y','M','Q','R','K'];
-        if (!suitVar && tiles.some(t => SUITED_TILES.includes(t) || /^[1-9]$/.test(t))) {
-            priority = 0;
-        }
-        
         return { 
             raw: seq, 
             tiles, 
@@ -72,9 +63,13 @@ function parsePattern(pattern) {
 // Get candidate tiles from pool for a specific tile character
 function candidatesForTile(tile, pool, localNumMap, localSuitMap, localKLengthMap, localRMap, group) {
     const currentSuitVar = group.suitVar;
-    const lockedSuits = Object.entries(localSuitMap)
-        .filter(([varName, suit]) => varName !== currentSuitVar && suit)
-        .map(([_, suit]) => suit);
+    // If this group has no suitVar it is not part of the suit-locking system,
+    // so no suits should be excluded from it. Only restrict when we have a suitVar.
+    const lockedSuits = currentSuitVar
+        ? Object.entries(localSuitMap)
+            .filter(([varName, suit]) => varName !== currentSuitVar && suit)
+            .map(([_, suit]) => suit)
+        : [];
     
     // Handle honor tiles
     if ('NEWSF'.includes(tile)) return pool.filter(p => p === tile);
@@ -360,7 +355,7 @@ function evaluatePattern(hand, pattern) {
     });
 
     let states = [{ handPool: [...hand], numVarMap: {}, suitVarMap: {}, kLengthMap: kLenCheck, rVarMap: {}, kValueSets: {}, groups: groups.map(g => ({ ...g })) }];
-    const priorities = [0, 1, 2, 3, 4];
+    const priorities = [1, 2, 3, 4];
 
     priorities.forEach(priority => {
         const newStates = [];
@@ -383,9 +378,9 @@ function evaluatePattern(hand, pattern) {
                     partialStates = partialStates.map(ps => ({ ...ps, groups: [...ps.groups, { ...g, matchedTiles: Array(g.tiles.length).fill('?') }] }));
                     return;
                 }
-                // For Priority 4 and 0, keep ALL possible fills to explore all combinations
+                // For Priority 4, keep ALL possible fills to explore all combinations
                 // For other priorities, keep only the best fills for this group
-                if (priority === 4 || priority === 0) {
+                if (priority === 4) {
                     partialStates = temp;
                 } else {
                     const maxFilled = Math.max(...temp.map(t => t.groups[t.groups.length - 1].matchedTiles.filter(x => x !== '?').length));
@@ -404,14 +399,12 @@ function evaluatePattern(hand, pattern) {
         s.totalFilled = s.groups.reduce((acc, g) => acc + g.matchedTiles.filter(t => t !== '?').length, 0);
         // Calculate MISSING counts by priority for better comparison
         // Missing = total tiles in that priority level - filled tiles
-        s.p0Missing = s.groups.filter(g => g.priority === 0).reduce((acc, g) => acc + g.matchedTiles.filter(t => t === '?').length, 0);
         s.p1Missing = s.groups.filter(g => g.priority === 1).reduce((acc, g) => acc + g.matchedTiles.filter(t => t === '?').length, 0);
         s.p2Missing = s.groups.filter(g => g.priority === 2).reduce((acc, g) => acc + g.matchedTiles.filter(t => t === '?').length, 0);
         s.p3Missing = s.groups.filter(g => g.priority === 3).reduce((acc, g) => acc + g.matchedTiles.filter(t => t === '?').length, 0);
         s.p4Missing = s.groups.filter(g => g.priority === 4).reduce((acc, g) => acc + g.matchedTiles.filter(t => t === '?').length, 0);
         
         // Also keep filled counts for backward compatibility
-        s.p0Filled = s.groups.filter(g => g.priority === 0).reduce((acc, g) => acc + g.matchedTiles.filter(t => t !== '?').length, 0);
         s.p1Filled = s.groups.filter(g => g.priority === 1).reduce((acc, g) => acc + g.matchedTiles.filter(t => t !== '?').length, 0);
         s.p2Filled = s.groups.filter(g => g.priority === 2).reduce((acc, g) => acc + g.matchedTiles.filter(t => t !== '?').length, 0);
         s.p3Filled = s.groups.filter(g => g.priority === 3).reduce((acc, g) => acc + g.matchedTiles.filter(t => t !== '?').length, 0);
@@ -420,7 +413,6 @@ function evaluatePattern(hand, pattern) {
     // Sort by LEAST missing at each priority level (ascending order)
     // This favors patterns that are closest to complete at each priority
     states.sort((a, b) => {
-        if (a.p0Missing !== b.p0Missing) return a.p0Missing - b.p0Missing;
         if (a.p1Missing !== b.p1Missing) return a.p1Missing - b.p1Missing;
         if (a.p2Missing !== b.p2Missing) return a.p2Missing - b.p2Missing;
         if (a.p3Missing !== b.p3Missing) return a.p3Missing - b.p3Missing;
@@ -444,12 +436,10 @@ function evaluatePattern(hand, pattern) {
         rVarMap: s.rVarMap,
         jokersRemaining: s.handPool.filter(t => t === JOKER).length,
         totalFilled: s.totalFilled,
-        p0Filled: s.p0Filled,
         p1Filled: s.p1Filled,
         p2Filled: s.p2Filled,
         p3Filled: s.p3Filled,
         p4Filled: s.p4Filled,
-        p0Missing: s.p0Missing,
         p1Missing: s.p1Missing,
         p2Missing: s.p2Missing,
         p3Missing: s.p3Missing,
@@ -528,8 +518,7 @@ function evaluateBestMatch(hand, topN = 5, lockedGroups = []) {
             
             // Calculate score using priority-based formula
             const score = (result.totalFilled * 10) - 
-                         (result.p0Missing * 1 +
-                          result.p1Missing * 5 + 
+                         (result.p1Missing * 5 + 
                           result.p2Missing * 5 + 
                           result.p3Missing * 1 + 
                           result.p4Missing * 1 +
@@ -537,10 +526,10 @@ function evaluateBestMatch(hand, topN = 5, lockedGroups = []) {
             
             // Apply closed hand penalty only when far from complete (4+ tiles needed).
             // Once within striking distance (<4 tiles needed), no penalty — committing is correct.
+            const tilesNeeded = 14 - result.totalFilled;
+            
             const closedPenalty = (handDef.status === 'closed' && tilesNeeded >= 4) ? 0.7 : 1.0;
             const finalScore = score * closedPenalty;
-            
-            const tilesNeeded = 14 - result.totalFilled;
             
             allMatches.push({
                 score: finalScore,
