@@ -214,7 +214,10 @@ function fillGroup(group, handPool, numVarMap, suitVarMap, kLengthMap, rVarMap, 
 
     } else {
         // recursive assignment for non-K groups
-        function assignTile(i, matchedSoFar, poolSoFar, localNumMap, localSuitMap, localKLenMap, localRMap, localKValueSets) {
+        // groupNumSuit: suit locked by the first numbered/wildcard tile matched in this group (null = unlocked)
+        // groupDragonSuit: suit locked by the first dragon (D or 0) matched in this group (null = unlocked)
+        // These enforce same-suit within a group independently of suitVar, which handles cross-group constraints.
+        function assignTile(i, matchedSoFar, poolSoFar, localNumMap, localSuitMap, localKLenMap, localRMap, localKValueSets, groupNumSuit, groupDragonSuit) {
             if (i >= group.tiles.length) {
                 results.push({
                     group: { ...group, matchedTiles: [...matchedSoFar] },
@@ -230,12 +233,19 @@ function fillGroup(group, handPool, numVarMap, suitVarMap, kLengthMap, rVarMap, 
 
             const tile = group.tiles[i];
 
+            // Classify tile for group-suit locking purposes:
+            // - isNumericTile: resolves to [number][suit] — locks/checks groupNumSuit
+            // - isDragonTile: resolves to GD/RD/WD — locks/checks groupDragonSuit
+            // - Honor tiles (N/E/W/S/F): no group-suit participation
+            const isNumericTile = !isNaN(parseInt(tile)) || ['X', 'V', 'Y', 'M', 'Q', 'R'].includes(tile);
+            const isDragonTile = tile === 'D' || tile === '0';
+
             // Special handling for R when we need to pick from K values
             if (tile === 'R' && group.kName && (!localRMap || localRMap[group.kName] === undefined)) {
                 const kValues = localKValueSets && localKValueSets[group.kName] ? localKValueSets[group.kName] : null;
                 if (!kValues || kValues.size === 0) {
                     // No known K values -> can't resolve R now; put '?'
-                    assignTile(i + 1, [...matchedSoFar, '?'], poolSoFar, { ...localNumMap }, { ...localSuitMap }, { ...localKLenMap }, { ...localRMap }, cloneKValueSets(localKValueSets));
+                    assignTile(i + 1, [...matchedSoFar, '?'], poolSoFar, { ...localNumMap }, { ...localSuitMap }, { ...localKLenMap }, { ...localRMap }, cloneKValueSets(localKValueSets), groupNumSuit, groupDragonSuit);
                     return;
                 }
 
@@ -243,10 +253,13 @@ function fillGroup(group, handPool, numVarMap, suitVarMap, kLengthMap, rVarMap, 
                 Array.from(kValues).forEach(val => {
                     const chosenNum = val;
                     const newRMap = { ...localRMap }; newRMap[group.kName] = chosenNum;
-                    const cands = candidatesForTile('R', poolSoFar, localNumMap, localSuitMap, localKLenMap, newRMap, group);
+                    let cands = candidatesForTile('R', poolSoFar, localNumMap, localSuitMap, localKLenMap, newRMap, group);
+
+                    // Apply group-level num-suit lock (R is a numeric wildcard)
+                    if (groupNumSuit !== null) cands = cands.filter(c => c.length === 2 && c[1] === groupNumSuit);
 
                     if (cands.length === 0) {
-                        assignTile(i + 1, [...matchedSoFar, '?'], poolSoFar, { ...localNumMap }, { ...localSuitMap }, { ...localKLenMap }, newRMap, cloneKValueSets(localKValueSets));
+                        assignTile(i + 1, [...matchedSoFar, '?'], poolSoFar, { ...localNumMap }, { ...localSuitMap }, { ...localKLenMap }, newRMap, cloneKValueSets(localKValueSets), groupNumSuit, groupDragonSuit);
                     } else {
                         for (let j = 0; j < poolSoFar.length; j++) {
                             const cand = poolSoFar[j];
@@ -254,7 +267,8 @@ function fillGroup(group, handPool, numVarMap, suitVarMap, kLengthMap, rVarMap, 
                             const newPool = poolSoFar.slice(); newPool.splice(j, 1);
                             const newNumMap = { ...localNumMap }, newSuitMap = { ...localSuitMap };
                             if (group.suitVar && !newSuitMap[group.suitVar]) newSuitMap[group.suitVar] = cand[1];
-                            assignTile(i + 1, [...matchedSoFar, cand], newPool, newNumMap, newSuitMap, localKLenMap, newRMap, cloneKValueSets(localKValueSets));
+                            const newGroupNumSuit = groupNumSuit !== null ? groupNumSuit : cand[1];
+                            assignTile(i + 1, [...matchedSoFar, cand], newPool, newNumMap, newSuitMap, localKLenMap, newRMap, cloneKValueSets(localKValueSets), newGroupNumSuit, groupDragonSuit);
                         }
                     }
                 });
@@ -263,9 +277,18 @@ function fillGroup(group, handPool, numVarMap, suitVarMap, kLengthMap, rVarMap, 
             }
 
             // Normal candidate resolution
-            const cands = candidatesForTile(tile, poolSoFar, localNumMap, localSuitMap, localKLenMap, localRMap, group);
+            let cands = candidatesForTile(tile, poolSoFar, localNumMap, localSuitMap, localKLenMap, localRMap, group);
+
+            // Apply group-level suit locks after candidatesForTile
+            if (isNumericTile && groupNumSuit !== null) {
+                cands = cands.filter(c => c.length === 2 && c[1] === groupNumSuit);
+            }
+            if (isDragonTile && groupDragonSuit !== null) {
+                cands = cands.filter(c => c === DRAGON_MAP[groupDragonSuit]);
+            }
+
             if (cands.length === 0) {
-                assignTile(i + 1, [...matchedSoFar, '?'], poolSoFar, { ...localNumMap }, { ...localSuitMap }, { ...localKLenMap }, { ...localRMap }, cloneKValueSets(localKValueSets));
+                assignTile(i + 1, [...matchedSoFar, '?'], poolSoFar, { ...localNumMap }, { ...localSuitMap }, { ...localKLenMap }, { ...localRMap }, cloneKValueSets(localKValueSets), groupNumSuit, groupDragonSuit);
                 return;
             }
 
@@ -275,6 +298,19 @@ function fillGroup(group, handPool, numVarMap, suitVarMap, kLengthMap, rVarMap, 
                 const newPool = poolSoFar.slice(); newPool.splice(j, 1);
                 const newNumMap = { ...localNumMap }, newSuitMap = { ...localSuitMap }, newRMap = { ...localRMap };
                 const newKValueSets2 = cloneKValueSets(localKValueSets);
+
+                // Update group-level suit locks when a tile is matched
+                let newGroupNumSuit = groupNumSuit;
+                let newGroupDragonSuit = groupDragonSuit;
+                if (isNumericTile && newGroupNumSuit === null && cand.length === 2) {
+                    newGroupNumSuit = cand[1];
+                }
+                if (tile === 'D' && newGroupDragonSuit === null) {
+                    newGroupDragonSuit = Object.entries(DRAGON_MAP).find(([k, v]) => v === cand)[0];
+                }
+                if (tile === '0' && newGroupDragonSuit === null) {
+                    newGroupDragonSuit = 'D'; // 0 is always WD, which is suit D
+                }
 
                 // preserve variable assignment behavior exactly as before
                 if (['X', 'V', 'Y', 'M'].includes(tile)) {
@@ -290,12 +326,13 @@ function fillGroup(group, handPool, numVarMap, suitVarMap, kLengthMap, rVarMap, 
                     if (group.suitVar && !newSuitMap[group.suitVar]) newSuitMap[group.suitVar] = Object.entries(DRAGON_MAP).find(([k, v]) => v === cand)[0];
                 }
 
-                assignTile(i + 1, [...matchedSoFar, cand], newPool, newNumMap, newSuitMap, localKLenMap, newRMap, newKValueSets2);
+                assignTile(i + 1, [...matchedSoFar, cand], newPool, newNumMap, newSuitMap, localKLenMap, newRMap, newKValueSets2, newGroupNumSuit, newGroupDragonSuit);
             }
         }
 
         // initial call: clone incoming kValueSets so branch copies are safe
-        assignTile(0, [], handPool, { ...numVarMap }, { ...suitVarMap }, { ...kLengthMap }, { ...rVarMap }, cloneKValueSets(kValueSets));
+        // groupNumSuit and groupDragonSuit both start null (unlocked) for each new group
+        assignTile(0, [], handPool, { ...numVarMap }, { ...suitVarMap }, { ...kLengthMap }, { ...rVarMap }, cloneKValueSets(kValueSets), null, null);
     }
 
     return results;
