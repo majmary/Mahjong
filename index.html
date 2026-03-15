@@ -1757,16 +1757,24 @@
             
             if (opportunities.length === 0) return false;
             
-            // For now, always exchange jokers when possible
-            // TODO: Add smarter logic - don't exchange if it breaks a valuable combination
             for (const opp of opportunities) {
-                // Check if exchanging this tile would hurt bot's hand
-                // For now, simple heuristic: don't exchange if it's the only copy of a priority tile
+                // OWN EXPOSURE: always exchange — getting your joker back is a free upgrade,
+                // since a joker can substitute for anything and the natural tile is locked anyway.
+                if (opp.player === botPlayer) {
+                    console.log(`${botPlayer.name} exchanges joker in own exposure for ${opp.tileNeeded} (always beneficial)`);
+                    executeJokerExchange(botPlayer, opp.player, opp.exposureIndex, opp.jokerIndex, opp.tileNeeded);
+                    return true;
+                }
+                
+                // OTHER PLAYER'S EXPOSURE: only exchange if the tile is expendable.
+                // Don't trade away a natural tile that the bot's best hand actually needs
+                // (e.g. trading away N when targeting NEWS would be disastrous, since
+                // jokers cannot substitute for wind/dragon tiles in those groups).
                 const evaluation = evaluateBestMatch(botPlayer.tiles, 3);
                 const bestMatch = evaluation.bestMatch;
                 
                 if (!bestMatch) {
-                    // No good hands - go ahead and exchange
+                    // No good hands — freely exchange
                     executeJokerExchange(botPlayer, opp.player, opp.exposureIndex, opp.jokerIndex, opp.tileNeeded);
                     return true;
                 }
@@ -1774,7 +1782,7 @@
                 // Count how many of this tile we have
                 const tileCount = botPlayer.tiles.filter(t => t === opp.tileNeeded).length;
                 
-                // Check if tile is needed by best match
+                // Check how many the best match actually uses
                 let neededByBest = 0;
                 if (bestMatch.result && bestMatch.result.groups) {
                     bestMatch.result.groups.forEach(group => {
@@ -1782,10 +1790,13 @@
                     });
                 }
                 
-                // Only exchange if we have extras beyond what's needed
+                // Only exchange if we have more copies than the best hand needs
                 if (tileCount > neededByBest) {
+                    console.log(`${botPlayer.name} exchanges joker in ${opp.player.name}'s exposure for ${opp.tileNeeded} (has ${tileCount}, needs ${neededByBest})`);
                     executeJokerExchange(botPlayer, opp.player, opp.exposureIndex, opp.jokerIndex, opp.tileNeeded);
                     return true;
+                } else {
+                    console.log(`${botPlayer.name} skips joker exchange in ${opp.player.name}'s exposure — ${opp.tileNeeded} is needed (has ${tileCount}, needs ${neededByBest})`);
                 }
             }
             
@@ -3729,7 +3740,11 @@
                     player.tiles.splice(idx, 1);
                 });
             });
-            
+
+            // 🔍 BUG3 LOG: tile counts after removal, before redistribution
+            console.log(`[Charleston ${gameState.charlestonPhase}] Tile counts AFTER removal, BEFORE redistribution:`);
+            gameState.players.forEach(p => console.log(`  ${p.name} (${p.position}): ${p.tiles.length} in hand, passing ${(tilesToPass.get(p.position) || []).length}`));
+
             // Distribute tiles to recipients
             gameState.charlestonIncomingTiles.clear();
             
@@ -3880,6 +3895,12 @@
             // Clear selection
             gameState.charlestonSelectedTiles = [];
             
+            // 🔍 BUG3 LOG: tile counts after redistribution
+            console.log(`[Charleston ${gameState.charlestonPhase}] Tile counts AFTER redistribution:`);
+            gameState.players.forEach(p => console.log(`  ${p.name} (${p.position}): ${p.tiles.length} tiles`));
+            const totalTiles = gameState.players.reduce((sum, p) => sum + p.tiles.length, 0);
+            console.log(`  TOTAL in hands: ${totalTiles} (expect ${gameState.players.length * 13})`);
+
             // If this was the courtesy pass, save the human's new tile indices so they
             // stay highlighted after the phase transitions to 'playing'
             if (gameState.charlestonPhase === 'courtesy-pass') {
@@ -4092,16 +4113,30 @@
             const humanPlayer = gameState.players.find(p => p.isHuman);
             const timerDuration = (player === humanPlayer) ? 1500 : 15000; // 1.5s for bot to decide, 15s for human
             
-            // After timer expires, close calling window and move to discard pool
+            // After timer expires, check if any bot wants to call before moving on
             gameState.callingWindowTimer = setTimeout(() => {
                 gameState.callingWindowOpen = false;
+                
+                // Check if any bot wants to call — covers both human and bot discards
+                if (!gameState.callDialogOpen) {
+                    const botCallResult = checkBotsWantToCall(discardedTile, player.position);
+                    if (botCallResult) {
+                        console.log(`🤖 ${botCallResult.player.name} calls ${discardedTile} via timer`);
+                        // Bot takes the tile — don't push to pool, don't advance turn
+                        gameState.lastDiscardedTile = null;
+                        gameState.tileBeingCalled = null;
+                        executeBotCall(botCallResult.player, discardedTile, botCallResult.decision.tilesForExposure);
+                        return;
+                    }
+                }
+                
+                // No bot called — tile goes to pool, advance turn normally
                 gameState.discardPool.push(discardedTile);
                 gameState.lastDiscardedTile = null;
                 gameState.tileBeingCalled = null;
                 gameState.lastPlayerAction = null; // Clear action tracking
                 updateDisplay();
                 
-                // Move to next turn (only if no one called)
                 if (!gameState.callDialogOpen) {
                     nextTurn();
                 }
