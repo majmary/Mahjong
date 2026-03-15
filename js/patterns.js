@@ -34,7 +34,7 @@ function parsePattern(pattern) {
         const name = m[1] || null;  // Bracket name like "K1"
         const tiles = m[2].toUpperCase().split('');
         const numVar = m[3] || null;
-        const suitVar = m[4] ? m[4].toUpperCase() : null;
+        const suitVar = m[4] ? m[4].toLowerCase() : null; // kept lowercase to avoid collision with suit letters B/C/D
         const offset = m[5] ? parseInt(m[5], 10) : 0;
         
         // Assign priority based on difficulty
