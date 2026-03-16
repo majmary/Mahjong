@@ -1408,6 +1408,7 @@
         <div id="cornerMenu">
             <button id="cornerMenuBtn" onclick="toggleCornerMenu()" title="Menu">☰</button>
             <div id="cornerMenuDropdown">
+                <div id="cornerMenuCardLabel" style="padding: 8px 12px; font-size: 11px; color: var(--color-text-muted); font-weight: 600; letter-spacing: 0.05em; border-bottom: 1px solid var(--color-border); margin-bottom: 4px; text-align: center;">🀄 NMJL 2025</div>
                 <button onclick="confirmNewGame()">🔄 New Game</button>
                 <button onclick="showHandPeek()">🃏 View All Hands</button>
                 <button id="muteBtn" onclick="SoundEngine.toggleMute(); document.getElementById('cornerMenuDropdown').classList.remove('open');">🔊 Mute</button>
@@ -1474,6 +1475,9 @@
     <div id="bottomBar"></div>
 
     <script>
+        // Currently active card label (e.g. "NMJL 2025") — set when launching a game
+        let activeCardLabel = 'NMJL 2025';
+
         // Game state
         const gameState = {
             players: [],
@@ -1752,7 +1756,7 @@
          * Bot decides whether to exchange jokers and executes if beneficial
          * Should be called at the start of bot's turn (after drawing)
          */
-        function botCheckJokerExchange(botPlayer) {
+        function botCheckJokerExchange(botPlayer, upcomingDiscard = null) {
             const opportunities = findJokerExchangeOpportunities(botPlayer);
             
             if (opportunities.length === 0) return false;
@@ -1790,9 +1794,15 @@
                     });
                 }
                 
-                // Only exchange if we have more copies than the best hand needs
-                if (tileCount > neededByBest) {
-                    console.log(`${botPlayer.name} exchanges joker in ${opp.player.name}'s exposure for ${opp.tileNeeded} (has ${tileCount}, needs ${neededByBest})`);
+                // Only exchange if we have more copies than the best hand needs,
+                // OR if we were about to discard this tile anyway — in that case, grabbing
+                // a joker is strictly better than throwing the tile into the discard pool.
+                const aboutToDiscard = (upcomingDiscard !== null && upcomingDiscard === opp.tileNeeded);
+                if (tileCount > neededByBest || aboutToDiscard) {
+                    const reason = aboutToDiscard
+                        ? `was about to discard it anyway`
+                        : `has ${tileCount}, needs ${neededByBest}`;
+                    console.log(`${botPlayer.name} exchanges joker in ${opp.player.name}'s exposure for ${opp.tileNeeded} (${reason})`);
                     executeJokerExchange(botPlayer, opp.player, opp.exposureIndex, opp.jokerIndex, opp.tileNeeded);
                     return true;
                 } else {
@@ -3163,13 +3173,19 @@
                     continue;
                 }
 
-                // Apply jokers and score each fill, keep only those at the top rounded score
-                const scoredFills = fills.map(f => {
+                // Apply jokers and score each fill, keep only those at the best raw score for
+                // this pattern. We intentionally do NOT compare against topRoundedScore here,
+                // because topRoundedScore may have been adjusted by personality multipliers
+                // (e.g. Dan's 1.5× on 13579) and scoreFill returns raw values — comparing them
+                // would mean no fill ever passes for personality-boosted bots.
+                const allScoredFills = fills.map(f => {
                     const enhanced = jokersInHand > 0 ? useJokersForScoring(f, jokersInHand) : f;
                     return { fill: enhanced, score: scoreFill(enhanced, false) };
-                }).filter(sf => sf.score === topRoundedScore);
+                });
+                const bestFillScore = Math.max(...allScoredFills.map(sf => sf.score));
+                const scoredFills = allScoredFills.filter(sf => sf.score === bestFillScore);
 
-                if (DEBUG_CALLING) console.log(`  Fills at top score (${topRoundedScore}):`, scoredFills.length);
+                if (DEBUG_CALLING) console.log(`  Fills at best raw score (${bestFillScore}):`, scoredFills.length);
 
                 for (const { fill } of scoredFills) {
                     // Work with joker-free view to see true tile needs
@@ -4413,10 +4429,12 @@
                     return;
                 }
                 
-                // Check for joker exchange
-                botCheckJokerExchange(player);
-                
+                // Determine discard BEFORE joker exchange check, so the exchange logic
+                // knows which tile is being thrown away and can grab a joker instead of discarding.
                 const tileToDiscard = botSelectDiscard(player);
+                const discardTileValue = player.tiles[tileToDiscard];
+                botCheckJokerExchange(player, discardTileValue);
+                
                 discardTile(player, tileToDiscard);
             } else {
                 // Normal turn: already drew tile
@@ -4428,10 +4446,11 @@
                     return;
                 }
                 
-                // Check for joker exchange
-                botCheckJokerExchange(player);
-                
+                // Determine discard BEFORE joker exchange check (same reason as above).
                 const tileToDiscard = botSelectDiscard(player);
+                const discardTileValue = player.tiles[tileToDiscard];
+                botCheckJokerExchange(player, discardTileValue);
+                
                 discardTile(player, tileToDiscard);
             }
         }
@@ -6227,6 +6246,21 @@
                 exposeBtn.onclick = confirmExposure;
                 buttonsContainer.appendChild(exposeBtn);
                 
+                // Declare Mahjong — same logic as the bottom bar button:
+                // disabled if the tile was our own discard or is a joker.
+                const isOwnDiscardInDialog = (gameState.currentTurn === humanPlayer);
+                const isJokerInDialog = (gameState.tileBeingCalled === 'J');
+                const dlgMjBtn = document.createElement('button');
+                dlgMjBtn.textContent = 'Declare Mahjong';
+                dlgMjBtn.style.background = '#4caf50';
+                dlgMjBtn.disabled = isOwnDiscardInDialog || isJokerInDialog;
+                if (isOwnDiscardInDialog || isJokerInDialog) {
+                    dlgMjBtn.style.opacity = '0.4';
+                    dlgMjBtn.style.cursor = 'not-allowed';
+                }
+                dlgMjBtn.onclick = handleCallForMahjong;
+                buttonsContainer.appendChild(dlgMjBtn);
+                
                 dialog.appendChild(buttonsContainer);
                 
                 overlay.appendChild(dialog);
@@ -7374,6 +7408,14 @@
         function launchGame(year) {
             // Load the requested card year (defaults to current if not specified)
             loadCard(year || null, function() {
+                // Derive the card label: if year was passed, build it; otherwise read from
+                // the registry so we always match the label shown in the card picker.
+                const cards = typeof getAvailableCards === 'function' ? getAvailableCards() : [];
+                const match = year ? cards.find(c => c.year === year) : cards[0];
+                activeCardLabel = match ? match.label : (year ? 'NMJL ' + year : 'NMJL 2025');
+                // Keep corner menu label in sync
+                const cardLabelEl = document.getElementById('cornerMenuCardLabel');
+                if (cardLabelEl) cardLabelEl.textContent = '🀄 ' + activeCardLabel;
                 document.getElementById('landingView').style.display = 'none';
                 document.getElementById('cardPickerView').style.display = 'none';
                 document.getElementById('gameView').style.display = 'flex';
