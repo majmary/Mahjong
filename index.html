@@ -4958,16 +4958,18 @@
             const display = getTileDisplay(tile);
             div.style.backgroundColor = display.color;
             
-            // Add tile type class for color styling
-            if (tile.endsWith('D') && tile.length === 2) div.classList.add('tile-D');
+            // Add tile type class for color styling.
+            // Named dragons must be checked BEFORE the generic endsWith('D') dot-suit check,
+            // because GD/RD/WD all end with 'D' and length === 2.
+            if (tile === 'GD') div.classList.add('tile-GD');
+            else if (tile === 'RD') div.classList.add('tile-RD');
+            else if (tile === 'WD') div.classList.add('tile-WD');
+            else if (tile.endsWith('D') && tile.length === 2) div.classList.add('tile-D');
             else if (tile.endsWith('B')) div.classList.add('tile-B');
             else if (tile.endsWith('C')) div.classList.add('tile-C');
             else if (tile === 'F') div.classList.add('tile-F');
             else if (tile === 'J') div.classList.add('tile-J');
             else if (['N', 'E', 'S', 'W'].includes(tile)) div.classList.add('tile-WIND');
-            else if (tile === 'GD') div.classList.add('tile-GD');
-            else if (tile === 'RD') div.classList.add('tile-RD');
-            else if (tile === 'WD') div.classList.add('tile-WD');
             
             // Add selection/new classes
             if (isSelected) div.classList.add('selected');
@@ -5954,7 +5956,10 @@
                             directionText += ' (Select 0-3 tiles)';
                         }
                     } else if (passDirection === 'left') {
-                        directionText = 'Pass Left (Select 0-3 tiles)';
+                        // First charleston left is flexible (0-3); second charleston left is a normal 3-tile pass
+                        directionText = gameState.charlestonPhase === 'left'
+                            ? 'Pass Left (Select 0-3 tiles)'
+                            : 'Pass Left';
                         directionEmoji = '←';
                     } else if (passDirection === 'across') {
                         directionText = 'Pass Across';
@@ -7408,11 +7413,14 @@
         function launchGame(year) {
             // Load the requested card year (defaults to current if not specified)
             loadCard(year || null, function() {
-                // Derive the card label: if year was passed, build it; otherwise read from
-                // the registry so we always match the label shown in the card picker.
-                const cards = typeof getAvailableCards === 'function' ? getAvailableCards() : [];
-                const match = year ? cards.find(c => c.year === year) : cards[0];
-                activeCardLabel = match ? match.label : (year ? 'NMJL ' + year : 'NMJL 2025');
+                // Derive the card label: if a specific year was requested, look it up in
+                // the registry. If no year was passed (default card), keep the initialized
+                // default — don't use cards[0] which may be an older year.
+                if (year) {
+                    const cards = typeof getAvailableCards === 'function' ? getAvailableCards() : [];
+                    const match = cards.find(c => c.year === year);
+                    activeCardLabel = match ? match.label : 'NMJL ' + year;
+                }
                 // Keep corner menu label in sync
                 const cardLabelEl = document.getElementById('cornerMenuCardLabel');
                 if (cardLabelEl) cardLabelEl.textContent = '🀄 ' + activeCardLabel;
