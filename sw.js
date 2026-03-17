@@ -1,66 +1,1245 @@
-// ─────────────────────────────────────────────
-// American Mahjong — Service Worker
-// Bump CACHE_VERSION whenever you deploy an update.
-// ─────────────────────────────────────────────
-const CACHE_VERSION = 'mahjong-v20';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pivot Challenge – Mary on Mahjong</title>
 
-const ASSETS = [
-  '/Mahjong/',
-  '/Mahjong/index.html',
-  '/Mahjong/manifest.json',
-  '/Mahjong/icon-192.png',
-  '/Mahjong/icon-512.png',
-  '/Mahjong/data/card-2025.js',
-  '/Mahjong/data/card-2024.js',
-  '/Mahjong/js/card-loader.js',
-  '/Mahjong/js/sound.js',
-  '/Mahjong/js/patterns.js',
-];
-// ── Install: cache all assets ──
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_VERSION).then(cache => {
-      // Cache what we can; don't let a missing icon break the whole install
-      return Promise.allSettled(
-        ASSETS.map(url => cache.add(url).catch(err => {
-          console.warn(`SW: failed to cache ${url}:`, err);
-        }))
-      );
-    }).then(() => self.skipWaiting())
-  );
-});
+    <!-- Shared card data and pattern engine -->
+    <script src="data/card-2025.js"></script>
+    <script src="js/card-loader.js"></script>
+    <script src="js/patterns.js"></script>
 
-// ── Activate: delete old caches ──
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(key => key !== CACHE_VERSION)
-            .map(key => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
-  );
-});
-
-// ── Fetch: cache-first, fall back to network ──
-self.addEventListener('fetch', event => {
-  // Only handle GET requests for our own origin
-  if (event.request.method !== 'GET') return;
-
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-
-      // Not in cache — fetch from network and cache the response
-      return fetch(event.request).then(response => {
-        // Only cache valid same-origin responses
-        if (!response || response.status !== 200 || response.type === 'opaque') {
-          return response;
+    <style>
+        /* ── Shared design tokens (mirror main game) ── */
+        :root {
+            --color-primary:       #2c5f2d;
+            --color-primary-dark:  #1f4420;
+            --color-primary-light: #f0f8f0;
+            --color-bg-page:       #fafafa;
+            --color-bg-subtle:     #f5f5f5;
+            --color-text-primary:  #333333;
+            --color-text-secondary:#666666;
+            --color-text-muted:    #999999;
+            --color-border:        #e0e0e0;
+            --color-success:       #2e7d32;
+            --color-success-light: #f1f8e9;
+            --color-warning:       #f57f17;
+            --color-error:         #d32f2f;
+            --color-error-light:   #ffebee;
+            --color-table:         #e8f0e8;
         }
-        const toCache = response.clone();
-        caches.open(CACHE_VERSION).then(cache => cache.put(event.request, toCache));
-        return response;
-      });
-    })
-  );
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: var(--color-bg-page);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+        }
+
+        /* ── Page chrome ── */
+        .page-header {
+            background: var(--color-primary);
+            color: white;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .page-header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .page-header .subtitle {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .back-link {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,0.35);
+            border-radius: 6px;
+            transition: background 0.15s;
+            white-space: nowrap;
+        }
+        .back-link:hover { background: rgba(255,255,255,0.12); }
+
+        /* ── Main layout ── */
+        .main {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 24px 16px 48px;
+        }
+
+        /* ── Card selector ── */
+        .card-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+        .card-selector select {
+            padding: 5px 8px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            font-size: 13px;
+            background: white;
+            color: var(--color-text-primary);
+        }
+
+        /* ── Puzzle tile area ── */
+        .puzzle-panel {
+            background: var(--color-table);
+            border: 1px solid #c5d9c5;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .puzzle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 14px;
+        }
+
+        .puzzle-header h2 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-primary-dark);
+        }
+
+        .puzzle-header .puzzle-meta {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            text-align: right;
+        }
+
+        .instructions {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+            background: rgba(255,255,255,0.6);
+            border-radius: 8px;
+            padding: 10px 14px;
+            border-left: 3px solid var(--color-primary);
+        }
+
+        .tile-rack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 80px;
+            align-items: center;
+        }
+
+        .tile-rack-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .tile-group-sep {
+            width: 2px;
+            height: 48px;
+            background: rgba(0,0,0,0.1);
+            margin: 0 4px;
+            flex-shrink: 0;
+        }
+
+        /* ── Tiles (mirrored from main game) ── */
+        .tile {
+            width: 44px;
+            height: 56px;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(0,0,0,0.15);
+            border-radius: 6px;
+            background: white;
+            font-weight: 600;
+            cursor: default;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6);
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        .tile::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .tile-number { font-size: 22px; font-weight: 700; line-height: 1; }
+        .tile-label  { font-size: 9px;  margin-top: 2px; }
+
+        .tile-D    { background: #E3F2FD; color: #01579B; }
+        .tile-B    { background: #E8F5E9; color: #1B5E20; }
+        .tile-C    { background: #FFEBEE; color: #B71C1C; }
+        .tile-F    { background: #F3E5F5; color: #6A1B9A; }
+        .tile-J    { background: #FFFDE7; color: #F57F17; }
+        .tile-WIND { background: #ECEFF1; color: #37474F; }
+        .tile-GD   { background: #C8E6C9; color: #1B5E20; }
+        .tile-RD   { background: #FFCDD2; color: #B71C1C; }
+        .tile-WD   { background: #BBDEFB; color: #01579B; }
+
+        /* ── New Puzzle button ── */
+        .new-puzzle-btn {
+            margin-top: 14px;
+            padding: 8px 18px;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .new-puzzle-btn:hover { background: var(--color-primary-dark); }
+        .new-puzzle-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ── Answer section ── */
+        .answer-panel {
+            background: white;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .answer-panel h3 {
+            margin: 0 0 14px;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-text-primary);
+        }
+
+        .selectors {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .selectors label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .selectors select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--color-border);
+            border-radius: 7px;
+            font-size: 14px;
+            background: white;
+            color: var(--color-text-primary);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 28px;
+        }
+        .selectors select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px var(--color-primary-light);
+        }
+
+        .selector-group { flex: 1; min-width: 160px; }
+
+        .check-btn {
+            padding: 10px 28px;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 7px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+            align-self: flex-end;
+        }
+        .check-btn:hover:not(:disabled) { background: var(--color-primary-dark); }
+        .check-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        /* ── Feedback ── */
+        .feedback {
+            padding: 10px 14px;
+            border-radius: 7px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 10px;
+            display: none;
+        }
+        .feedback.correct {
+            background: var(--color-success-light);
+            color: var(--color-success);
+            border: 1px solid #c8e6c9;
+            display: block;
+        }
+        .feedback.wrong {
+            background: var(--color-error-light);
+            color: var(--color-error);
+            border: 1px solid #ffcdd2;
+            display: block;
+        }
+        .feedback.duplicate {
+            background: #fff8e1;
+            color: #f57f17;
+            border: 1px solid #ffe082;
+            display: block;
+        }
+
+        /* ── Found hands ── */
+        .found-panel {
+            background: white;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .found-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .found-header h3 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .score-badge {
+            background: var(--color-primary);
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .found-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .found-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            background: var(--color-success-light);
+            border: 1px solid #c8e6c9;
+            border-radius: 7px;
+            font-size: 13px;
+            animation: slideIn 0.25s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .found-item .check-icon { color: var(--color-success); font-size: 15px; }
+        .found-item .hand-name { font-weight: 600; color: var(--color-text-primary); }
+        .found-item .hand-section { color: var(--color-text-muted); font-size: 12px; }
+
+        .empty-found {
+            color: var(--color-text-muted);
+            font-size: 13px;
+            text-align: center;
+            padding: 20px;
+            border: 2px dashed var(--color-border);
+            border-radius: 8px;
+        }
+
+        /* ── Reveal / total count ── */
+        .reveal-row {
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .total-hint {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+        .total-hint strong { color: var(--color-primary); }
+
+        .reveal-btn {
+            padding: 7px 16px;
+            background: none;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 7px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .reveal-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+        /* ── Missed hands (after reveal) ── */
+        .missed-list {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .missed-item {
+            padding: 8px 12px;
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 7px;
+            font-size: 13px;
+            color: var(--color-text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .missed-item .missed-icon { color: #f57f17; }
+
+        /* ── Loading / error states ── */
+        .status-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--color-text-muted);
+            font-size: 14px;
+        }
+
+        /* ── Placeholder notice ── */
+        .placeholder-notice {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: #795548;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<header class="page-header">
+    <div>
+        <h1>🀄 Pivot Challenge</h1>
+        <div class="subtitle">How many hands can your tiles fit?</div>
+    </div>
+    <a href="index.html" class="back-link">← Back to Game</a>
+</header>
+
+<main class="main">
+
+    <!-- Card selector -->
+    <div class="card-selector">
+        <span>Playing with:</span>
+        <select id="cardSelect" onchange="switchCard(this.value)"></select>
+    </div>
+
+    <!-- Puzzle panel -->
+    <div class="puzzle-panel">
+        <div class="puzzle-header">
+            <div>
+                <h2>Your 10 Tiles</h2>
+                <div style="font-size:12px; color:var(--color-text-secondary); margin-top:3px;">
+                    7 naturals · 3 jokers
+                </div>
+            </div>
+            <div class="puzzle-meta">
+                <div id="validHandCount" style="font-size:14px; font-weight:700; color:var(--color-primary);">— hands possible</div>
+                <div style="margin-top:2px;">using these tiles</div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            Using your physical card as a reference, find every hand where these 10 tiles
+            could be part of a 14-tile winning hand — with 4 more tiles to draw. Jokers
+            fill any jokerable slot (groups of 3+ identical tiles).
+        </div>
+
+        <div class="tile-rack-label">Your tiles</div>
+        <div class="tile-rack" id="tileRack">
+            <!-- tiles rendered by JS -->
+        </div>
+
+        <button class="new-puzzle-btn" id="newPuzzleBtn" onclick="newPuzzle()">
+            🎲 New Puzzle
+        </button>
+    </div>
+    <!-- Answer entry -->
+    <div class="answer-panel">
+        <h3>Submit a Hand</h3>
+
+        <div class="selectors">
+            <div class="selector-group">
+                <label for="sectionSelect">Section</label>
+                <select id="sectionSelect" onchange="populateHandSelect()">
+                    <option value="">— choose a section —</option>
+                </select>
+            </div>
+            <div class="selector-group">
+                <label for="handSelect">Hand</label>
+                <select id="handSelect" disabled>
+                    <option value="">— choose a hand —</option>
+                </select>
+            </div>
+            <button class="check-btn" id="checkBtn" onclick="checkAnswer()" disabled>
+                Check
+            </button>
+        </div>
+
+        <div class="feedback" id="feedback"></div>
+    </div>
+
+    <!-- Found hands -->
+    <div class="found-panel">
+        <div class="found-header">
+            <h3>Hands Found</h3>
+            <div class="score-badge" id="scoreBadge">0 / ?</div>
+        </div>
+
+        <ul class="found-list" id="foundList">
+            <li class="empty-found" id="emptyFoundMsg">
+                No hands found yet — pick a section and hand above to get started.
+            </li>
+        </ul>
+
+        <div class="reveal-row" id="revealRow" style="display:none;">
+            <div class="total-hint" id="totalHint"></div>
+            <button class="reveal-btn" id="revealBtn" onclick="revealMissed()">
+                Show remaining answers
+            </button>
+        </div>
+
+        <div class="missed-list" id="missedList" style="display:none;"></div>
+    </div>
+
+</main>
+
+<script>
+// ============================================================
+// PIVOT CHALLENGE — framework
+// Tile generation is a placeholder; evaluation engine is live.
+// ============================================================
+
+// ── State ──────────────────────────────────────────────────
+let currentTiles  = [];   // 10 tiles for this puzzle
+let validHands    = [];   // all hands from card that fit currentTiles
+let foundHandKeys = new Set();  // keys of hands user has found
+let revealedAlready = false;
+
+// ── Placeholder puzzle (will be replaced by generator) ─────
+// This set works well for testing the evaluation engine.
+// 3B×2, 5B×2, 7B×2, 3C + J×3
+// Fits several 13579 hands and others.
+function showNotification(msg, type = 'error') {
+    const el = document.createElement('div');
+    el.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+        background:${type === 'error' ? 'var(--color-error-light)' : 'var(--color-success-light)'};
+        color:${type === 'error' ? 'var(--color-error)' : 'var(--color-success)'};
+        border:2px solid ${type === 'error' ? 'var(--color-error)' : 'var(--color-success)'};
+        padding:20px 28px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);
+        z-index:10000;font-size:15px;max-width:360px;text-align:center;cursor:pointer;`;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    el.onclick = () => el.remove();
+    setTimeout(() => { if (el.parentNode) el.remove(); }, 3500);
+}
+
+
+// ── Card switching ──────────────────────────────────────────
+function populateCardSelect() {
+    const sel = document.getElementById('cardSelect');
+    sel.innerHTML = '';
+    const cards = typeof getAvailableCards === 'function' ? getAvailableCards() : [];
+    if (cards.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'NMJL 2025';
+        sel.appendChild(opt);
+    } else {
+        cards.forEach(card => {
+            const opt = document.createElement('option');
+            opt.value = card.year || '';
+            opt.textContent = card.label;
+            sel.appendChild(opt);
+        });
+        // Default to the most recent card (last in list) rather than the oldest
+        sel.value = cards[cards.length - 1].year || '';
+    }
+}
+
+function switchCard(year) {
+    if (typeof loadCard === 'function') {
+        loadCard(year || null, function() {
+            populateSectionSelect();
+            const result = generatePuzzle();
+            if (result) loadPuzzle(result.finalTiles);
+        });
+    }
+}
+
+// ── Tile rendering ──────────────────────────────────────────
+function getTileDisplay(tile) {
+    if (tile === 'WD') return { number: 'O', label: 'White',  color: '#BBDEFB', textColor: '#01579B' };
+    if (tile === 'GD') return { number: 'G', label: 'Green',  color: '#C8E6C9', textColor: '#1B5E20' };
+    if (tile === 'RD') return { number: 'R', label: 'Red',    color: '#FFCDD2', textColor: '#B71C1C' };
+    if (tile === 'N')  return { number: 'N', label: 'North',  color: '#ECEFF1', textColor: '#37474F' };
+    if (tile === 'E')  return { number: 'E', label: 'East',   color: '#ECEFF1', textColor: '#37474F' };
+    if (tile === 'W')  return { number: 'W', label: 'West',   color: '#ECEFF1', textColor: '#37474F' };
+    if (tile === 'S')  return { number: 'S', label: 'South',  color: '#ECEFF1', textColor: '#37474F' };
+    if (tile === 'F')  return { number: 'F', label: 'Flower', color: '#F3E5F5', textColor: '#6A1B9A' };
+    if (tile === 'J')  return { number: 'J', label: 'Joker',  color: '#FFFDE7', textColor: '#F57F17' };
+    if (tile.length === 2) {
+        const num = tile[0], suit = tile[1];
+        if (suit === 'B') return { number: num, label: 'Bam',   color: '#E8F5E9', textColor: '#1B5E20' };
+        if (suit === 'C') return { number: num, label: 'Crack', color: '#FFEBEE', textColor: '#B71C1C' };
+        if (suit === 'D') return { number: num, label: 'Dot',   color: '#E3F2FD', textColor: '#01579B' };
+    }
+    return { number: tile, label: '', color: '#f5f5f5', textColor: '#333' };
+}
+
+function makeTileEl(tile) {
+    const d = getTileDisplay(tile);
+    const div = document.createElement('div');
+    div.className = 'tile';
+    div.style.backgroundColor = d.color;
+
+    // Assign suit class (dragons first to avoid endsWith('D') collision)
+    if      (tile === 'GD') div.classList.add('tile-GD');
+    else if (tile === 'RD') div.classList.add('tile-RD');
+    else if (tile === 'WD') div.classList.add('tile-WD');
+    else if (tile === 'J')  div.classList.add('tile-J');
+    else if (tile === 'F')  div.classList.add('tile-F');
+    else if (['N','E','S','W'].includes(tile)) div.classList.add('tile-WIND');
+    else if (tile.length === 2 && tile[1] === 'B') div.classList.add('tile-B');
+    else if (tile.length === 2 && tile[1] === 'C') div.classList.add('tile-C');
+    else if (tile.length === 2 && tile[1] === 'D') div.classList.add('tile-D');
+
+    const numDiv = document.createElement('div');
+    numDiv.className = 'tile-number';
+    numDiv.style.color = d.textColor;
+    numDiv.textContent = d.number;
+
+    const lblDiv = document.createElement('div');
+    lblDiv.className = 'tile-label';
+    lblDiv.style.color = d.textColor;
+    lblDiv.textContent = d.label;
+
+    div.appendChild(numDiv);
+    div.appendChild(lblDiv);
+    return div;
+}
+
+function renderTileRack(tiles) {
+    const rack = document.getElementById('tileRack');
+    rack.innerHTML = '';
+
+    // Separate naturals and jokers for display
+    const naturals = tiles.filter(t => t !== 'J');
+    const jokers   = tiles.filter(t => t === 'J');
+
+    // Sort naturals: suit order then number
+    const suitOrder = { 'B': 1, 'C': 2, 'D': 3, 'F': 0 };
+    const honorOrder = { 'N':7,'E':8,'S':9,'W':10,'GD':4,'RD':5,'WD':6 };
+    naturals.sort((a, b) => {
+        const getSuit = t => {
+            if (honorOrder[t] !== undefined) return honorOrder[t];
+            return (suitOrder[t[1]] || 9) * 10 + (parseInt(t[0]) || 0);
+        };
+        return getSuit(a) - getSuit(b);
+    });
+
+    naturals.forEach(t => rack.appendChild(makeTileEl(t)));
+
+    if (jokers.length > 0) {
+        const sep = document.createElement('div');
+        sep.className = 'tile-group-sep';
+        rack.appendChild(sep);
+        jokers.forEach(t => rack.appendChild(makeTileEl(t)));
+    }
+}
+
+// ── Evaluation ─────────────────────────────────────────────
+/**
+ * Does this hand definition "fit" the current 10 tiles?
+ * A hand fits if:
+ *   - All 7 naturals are placed into the pattern (none left in pool)
+ *   - totalFilled === 10  (exactly 4 more tiles needed to complete)
+ */
+function handFitsTiles(tiles, handDef) {
+    try {
+        const fills = evaluatePattern(tiles, handDef.code);
+        if (!fills || fills.length === 0) return false;
+
+        const jokersInHand = tiles.filter(t => t === 'J').length;
+        let best = fills[0];
+        if (jokersInHand > 0) {
+            best = useJokersForScoring(best, jokersInHand);
+        }
+
+        // No naturals left in pool — all 7 naturals were placed
+        const naturalsLeftOver = (best.handPool || []).filter(t => t !== 'J').length;
+        if (naturalsLeftOver > 0) return false;
+
+        // Exactly 10 tiles accounted for in the fill (14 total − 4 to draw = 10)
+        return best.totalFilled === 10;
+    } catch(e) {
+        return false;
+    }
+}
+
+/**
+ * Compute all valid hands for the current tile set.
+ * Returns array of { key, section, handNum, handDef }.
+ */
+function computeValidHands(tiles) {
+    if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) return [];
+    const results = [];
+    ACTIVE_CARD.forEach(handDef => {
+        if (handFitsTiles(tiles, handDef)) {
+            results.push({
+                key:     `${handDef.Section}__${handDef['hand number']}`,
+                section: handDef.Section,
+                handNum: handDef['hand number'],
+                handDef: handDef
+            });
+        }
+    });
+    return results;
+}
+
+// ── Puzzle loading ──────────────────────────────────────────
+function loadPuzzle(tiles) {
+    currentTiles    = tiles;
+    foundHandKeys   = new Set();
+    revealedAlready = false;
+
+    renderTileRack(tiles);
+
+    // Pre-compute valid hands (used for scoring and validation)
+    validHands = computeValidHands(tiles);
+
+    // Show total count
+    const countEl = document.getElementById('validHandCount');
+    countEl.textContent = `${validHands.length} hand${validHands.length !== 1 ? 's' : ''} possible`;
+
+    updateFoundDisplay();
+    document.getElementById('emptyFoundMsg').style.display = '';
+    clearFeedback();
+    resetSelectors();
+
+    // Show/hide reveal row
+    document.getElementById('revealRow').style.display =
+        validHands.length > 0 ? 'flex' : 'none';
+    document.getElementById('missedList').style.display = 'none';
+    document.getElementById('revealBtn').style.display = '';
+}
+
+// ── Puzzle generator ────────────────────────────────────────
+/**
+ * generatePuzzle()
+ *
+ * Randomly picks an anchor from {2, 3, 6, card-year-digit}, then two
+ * random companion tiles, runs consensus expansion, and returns the
+ * resulting 10-tile set if at least 2 hands survive.
+ * Retries up to MAX_ATTEMPTS times before giving up.
+ *
+ * Returns { finalTiles, survivingHands } or null if no valid puzzle found.
+ */
+function generatePuzzle() {
+    const MAX_ATTEMPTS = 40;
+
+    const sel = document.getElementById('cardSelect');
+    const cardYear = sel ? (sel.value || '5').slice(-1) : '5';
+    const ANCHORS = ['2B','3B','6B',`${cardYear}B`].filter((v,i,a) => a.indexOf(v) === i);
+
+    // Full pool of companion tile types (all suited numbers + honors)
+    const COMPANION_POOL = [];
+    for (let n = 1; n <= 9; n++) ['B','C','D'].forEach(s => COMPANION_POOL.push(`${n}${s}`));
+    ['N','E','S','W','GD','RD','WD','F'].forEach(t => COMPANION_POOL.push(t));
+
+    function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        // Pick random anchor and 2 random companions (no duplicates in seed)
+        const anchor = ANCHORS[Math.floor(Math.random() * ANCHORS.length)];
+        const companions = shuffle(COMPANION_POOL.filter(t => t !== anchor)).slice(0, 2);
+        const seed = [anchor, ...companions];
+
+        const result = analyzeConsensusExpansion(seed);
+        if (result && result.survivingHands.length >= 2) {
+            return result;
+        }
+    }
+
+    return null; // failed to find a valid puzzle
+}
+
+function newPuzzle() {
+    const btn = document.getElementById('newPuzzleBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Generating…';
+
+    // Use setTimeout so the UI updates before the computation runs
+    setTimeout(() => {
+        const result = generatePuzzle();
+
+        if (result) {
+            loadPuzzle(result.finalTiles);
+        } else {
+            showNotification('Could not generate a valid puzzle — please try again.', 'error');
+        }
+
+        btn.disabled = false;
+        btn.textContent = '🎲 New Puzzle';
+    }, 30);
+}
+
+// ── Section / hand selectors ────────────────────────────────
+function populateSectionSelect() {
+    const sel = document.getElementById('sectionSelect');
+    sel.innerHTML = '<option value="">— choose a section —</option>';
+
+    if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) return;
+
+    const sections = [...new Set(ACTIVE_CARD.map(h => h.Section))];
+    sections.forEach(section => {
+        const opt = document.createElement('option');
+        opt.value = section;
+        opt.textContent = section;
+        sel.appendChild(opt);
+    });
+
+    // Reset hand select
+    const handSel = document.getElementById('handSelect');
+    handSel.innerHTML = '<option value="">— choose a hand —</option>';
+    handSel.disabled = true;
+    document.getElementById('checkBtn').disabled = true;
+}
+
+function populateHandSelect() {
+    const section = document.getElementById('sectionSelect').value;
+    const handSel = document.getElementById('handSelect');
+
+    handSel.innerHTML = '<option value="">— choose a hand —</option>';
+    handSel.disabled = !section;
+    document.getElementById('checkBtn').disabled = true;
+    clearFeedback();
+
+    if (!section) return;
+
+    const handsInSection = ACTIVE_CARD.filter(h => h.Section === section);
+    handsInSection.forEach(hand => {
+        const opt = document.createElement('option');
+        opt.value = hand['hand number'];
+        opt.textContent = `Hand ${hand['hand number']}`;
+        handSel.appendChild(opt);
+    });
+
+    handSel.onchange = () => {
+        document.getElementById('checkBtn').disabled = !handSel.value;
+        clearFeedback();
+    };
+}
+
+function resetSelectors() {
+    document.getElementById('sectionSelect').value = '';
+    const handSel = document.getElementById('handSelect');
+    handSel.innerHTML = '<option value="">— choose a hand —</option>';
+    handSel.disabled = true;
+    document.getElementById('checkBtn').disabled = true;
+}
+
+// ── Answer checking ─────────────────────────────────────────
+function checkAnswer() {
+    const section = document.getElementById('sectionSelect').value;
+    const handNum = document.getElementById('handSelect').value;
+    if (!section || !handNum) return;
+
+    const key = `${section}__${handNum}`;
+
+    // Already found?
+    if (foundHandKeys.has(key)) {
+        showFeedback('duplicate', `You already found ${section} Hand ${handNum}!`);
+        return;
+    }
+
+    // Is it a valid hand for these tiles?
+    const match = validHands.find(v => v.key === key);
+    if (match) {
+        foundHandKeys.add(key);
+        showFeedback('correct', `✓ Correct! ${section} Hand ${handNum} fits these tiles.`);
+        updateFoundDisplay();
+        checkComplete();
+    } else {
+        showFeedback('wrong', `✗ ${section} Hand ${handNum} doesn't work with these tiles.`);
+    }
+}
+
+function showFeedback(type, msg) {
+    const el = document.getElementById('feedback');
+    el.className = `feedback ${type}`;
+    el.textContent = msg;
+}
+function clearFeedback() {
+    const el = document.getElementById('feedback');
+    el.className = 'feedback';
+    el.textContent = '';
+}
+
+// ── Found display ───────────────────────────────────────────
+function updateFoundDisplay() {
+    const list = document.getElementById('foundList');
+    const empty = document.getElementById('emptyFoundMsg');
+    const badge = document.getElementById('scoreBadge');
+    const total = validHands.length;
+    const found = foundHandKeys.size;
+
+    badge.textContent = `${found} / ${total > 0 ? total : '?'}`;
+
+    // Remove all children except the empty message placeholder
+    Array.from(list.children).forEach(child => {
+        if (child !== empty) list.removeChild(child);
+    });
+
+    if (found === 0) {
+        if (!empty.parentNode) list.appendChild(empty);
+        return;
+    }
+
+    // Hide the empty placeholder
+    empty.style.display = 'none';
+
+    [...foundHandKeys].forEach(key => {
+        const [section, handNum] = key.split('__');
+        const li = document.createElement('li');
+        li.className = 'found-item';
+        li.innerHTML = `
+            <span class="check-icon">✔</span>
+            <div>
+                <span class="hand-name">Hand ${handNum}</span>
+                <span class="hand-section"> — ${section}</span>
+            </div>
+        `;
+        list.appendChild(li);
+    });
+
+    // Update total hint
+    const remaining = total - found;
+    const hintEl = document.getElementById('totalHint');
+    if (remaining > 0) {
+        hintEl.innerHTML = `<strong>${remaining}</strong> hand${remaining !== 1 ? 's' : ''} still to find`;
+    } else {
+        hintEl.innerHTML = `🎉 <strong>All hands found!</strong>`;
+        document.getElementById('revealBtn').style.display = 'none';
+    }
+}
+
+function checkComplete() {
+    if (foundHandKeys.size === validHands.length && validHands.length > 0) {
+        showFeedback('correct', `🎉 Outstanding! You found all ${validHands.length} valid hands!`);
+    }
+}
+
+// ── Reveal missed hands ─────────────────────────────────────
+function revealMissed() {
+    const missed = validHands.filter(v => !foundHandKeys.has(v.key));
+    const missedEl = document.getElementById('missedList');
+    const revealBtn = document.getElementById('revealBtn');
+
+    if (missed.length === 0) {
+        revealBtn.style.display = 'none';
+        return;
+    }
+
+    missedEl.innerHTML = '';
+    missed.forEach(v => {
+        const div = document.createElement('div');
+        div.className = 'missed-item';
+        div.innerHTML = `<span class="missed-icon">💡</span>
+            <span><strong>Hand ${v.handNum}</strong> — ${v.section}</span>`;
+        missedEl.appendChild(div);
+    });
+    missedEl.style.display = 'flex';
+    revealBtn.style.display = 'none';
+    revealedAlready = true;
+
+    // Add all missed to found so score reflects them (grayed or noted)
+    const hintEl = document.getElementById('totalHint');
+    hintEl.textContent = `Revealed ${missed.length} remaining answer${missed.length !== 1 ? 's' : ''}.`;
+}
+// ── Consensus expansion ─────────────────────────────────────
+/**
+ * analyzeConsensusExpansion(seedTiles)
+ *
+ * Given a 3-tile seed:
+ *  1. Find all card hands the seed fits (all seed tiles must land in matched slots)
+ *  2. Greedily pick 4 more natural tiles — each pick maximises how many of the
+ *     currently-surviving hands remain alive.  Crucially, duplicates ARE allowed:
+ *     if 2B is already in the seed, 2B can still be picked again (up to 4 copies).
+ *  3. Add 3 jokers and verify that each surviving hand reaches exactly totalFilled=10
+ *     (i.e. 4 more tiles to draw) with jokers used only in jokerable groups.
+ *
+ * Returns { seed, matchingHands, chosenTiles, survivingHands, finalTiles }
+ */
+function analyzeConsensusExpansion(seedTiles) {
+    if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) {
+        console.warn('ACTIVE_CARD not loaded.');
+        return null;
+    }
+
+    const SUITS = ['B','C','D'];
+
+    // All concrete tile types the expansion can draw from (no jokers —
+    // jokers are added at the end).  Duplicates up to 4 copies are handled
+    // by tracking counts rather than excluding already-present tiles.
+    const ALL_NATURALS = [];
+    for (let n = 1; n <= 9; n++) SUITS.forEach(s => ALL_NATURALS.push(`${n}${s}`));
+    ['N','E','S','W','GD','RD','WD','F'].forEach(t => ALL_NATURALS.push(t));
+
+    // How many copies of each tile are already in the seed
+    function tileCount(arr, tile) { return arr.filter(t => t === tile).length; }
+
+    // Does the hand fit this tile set? (all naturals placed, no leftovers)
+    function fits(handDef, tiles) {
+        try {
+            const fills = evaluatePattern(tiles, handDef.code);
+            if (!fills || fills.length === 0) return false;
+            const best = fills[0];
+            return (best.handPool || []).filter(t => t !== 'J').length === 0;
+        } catch(e) { return false; }
+    }
+
+    // ── Step 1: find all hands the 3-tile seed fits ───────────
+    // Exclude Singles & Pairs — those hands have no groups of 3+ identical tiles
+    // so jokers can never be used, meaning they can't reach totalFilled=10 with
+    // only 7 naturals.
+    const isJokerEligible = h =>
+        !(h.Section || '').toLowerCase().includes('singles');
+
+    let surviving = ACTIVE_CARD.filter(h => isJokerEligible(h) && fits(h, seedTiles));
+
+    if (surviving.length === 0) {
+        console.log(`  Seed [${seedTiles.join(', ')}] — no matching hands.`);
+        return null;
+    }
+
+    // ── Step 2: greedy expansion — pick 4 naturals ────────────
+    let currentTiles = [...seedTiles];
+    const chosenTiles = [];
+
+    for (let pick = 0; pick < 4; pick++) {
+        let bestTile = null, bestSections = 0, bestCount = 0;
+
+        // Always log what's surviving at the start of this pick
+        console.log(`  Pick ${pick+1} — surviving (${surviving.length}): ${surviving.map(h => `${h.Section} ${h['hand number']}`).join(' | ')}`);
+
+        const allScores = [];
+        ALL_NATURALS.forEach(tile => {
+            if (tileCount(currentTiles, tile) >= 4) return;
+            const testTiles = [...currentTiles, tile];
+            const stillAlive = surviving.filter(h => fits(h, testTiles));
+            const handCount = stillAlive.length;
+            if (handCount === 0) return;
+            const sectionCount = new Set(stillAlive.map(h => h.Section)).size;
+            allScores.push({ tile, handCount, sectionCount });
+        });
+
+        // Always log top candidates by hand count
+        allScores.sort((a,b) => b.handCount - a.handCount);
+        console.log(`  Top candidates: ${allScores.slice(0,6).map(d => `${d.tile}(${d.handCount}h,${d.sectionCount}s)`).join('  ')}`);
+
+        // Apply floor and diversity scoring
+        allScores.forEach(({ tile, handCount, sectionCount }) => {
+            if (handCount < 2) return;
+            if (sectionCount > bestSections ||
+               (sectionCount === bestSections && handCount > bestCount)) {
+                bestSections = sectionCount;
+                bestCount    = handCount;
+                bestTile     = tile;
+            }
+        });
+
+        if (!bestTile) {
+            // Relax floor — just keep most hands alive
+            allScores.forEach(({ tile, handCount }) => {
+                if (handCount > bestCount) { bestCount = handCount; bestTile = tile; }
+            });
+            console.log(`  → floor relaxed, chose: ${bestTile} (${bestCount} hands)`);
+        } else {
+            console.log(`  → chose: ${bestTile} (${bestCount} hands, ${bestSections} sections)`);
+        }
+
+        if (!bestTile || bestCount === 0) break;
+
+        chosenTiles.push(bestTile);
+        currentTiles = [...currentTiles, bestTile];
+        surviving = surviving.filter(h => fits(h, currentTiles));
+    }
+
+    // ── Step 3: add 3 jokers and do final verification ────────
+    const finalTiles = [...currentTiles, 'J', 'J', 'J'];
+    const survivingWithJokers = [];
+
+    surviving.forEach(handDef => {
+        try {
+            const fills = evaluatePattern(finalTiles, handDef.code);
+            if (!fills || fills.length === 0) return;
+            const best = useJokersForScoring(fills[0], 3);
+            // All naturals placed, exactly 10 tiles accounted for (4 still to draw)
+            const leftover = (best.handPool || []).filter(t => t !== 'J').length;
+            if (leftover === 0 && best.totalFilled === 10) {
+                survivingWithJokers.push(handDef);
+            }
+        } catch(e) {}
+    });
+
+    // ── Report ────────────────────────────────────────────────
+    const seedMatchCount = ACTIVE_CARD.filter(h => isJokerEligible(h) && fits(h, seedTiles)).length;
+    const sections = [...new Set(survivingWithJokers.map(h => h.Section))];
+    console.log(`  Seed:          [${seedTiles.join(', ')}]  →  ${seedMatchCount} matching hands`);
+    console.log(`  Chosen:        [${chosenTiles.join(', ')}]`);
+    console.log(`  Final 10:      [${finalTiles.join(', ')}]`);
+    console.log(`  Surviving:     ${survivingWithJokers.length} hands across ${sections.length} section(s): ${sections.join(', ')}`);
+    survivingWithJokers.forEach(h => console.log(`    ✔ ${h.Section} Hand ${h['hand number']}`)  );
+
+    return { seed: seedTiles, chosenTiles, survivingHands: survivingWithJokers, finalTiles };
+}
+
+/**
+ * testConsensusExpansion()
+ * For each anchor, finds the best 3-tile seed then runs consensus expansion.
+ */
+function testConsensusExpansion() {
+    if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) { console.warn('ACTIVE_CARD not loaded.'); return; }
+
+    const sel = document.getElementById('cardSelect');
+    const cardYear = sel ? (sel.value || '5').slice(-1) : '5';
+    const cardLabel = sel ? (sel.options[sel.selectedIndex] || {}).text || 'Unknown' : 'Unknown';
+    const ANCHORS = ['2B','3B','6B',`${cardYear}B`].filter((v,i,a) => a.indexOf(v) === i);
+
+    const OTHER_TYPES = [];
+    for (let n = 1; n <= 9; n++) ['B','C','D'].forEach(s => OTHER_TYPES.push(`${n}${s}`));
+    ['N','E','S','W','GD','RD','WD','F'].forEach(t => OTHER_TYPES.push(t));
+
+    function seedMatchCount(seed) {
+        let count = 0;
+        ACTIVE_CARD.forEach(handDef => {
+            try {
+                const fills = evaluatePattern(seed, handDef.code);
+                if (!fills || fills.length === 0) return;
+                const best = fills[0];
+                if ((best.handPool || []).filter(t => t !== 'J').length === 0) count++;
+            } catch(e) {}
+        });
+        return count;
+    }
+
+    console.log(`\n${'='.repeat(56)}`);
+    console.log(` CONSENSUS EXPANSION — Card: ${cardLabel}`);
+    console.log(`${'='.repeat(56)}`);
+
+    ANCHORS.forEach(anchor => {
+        // Find best 2-companion combo for this anchor
+        const pool = OTHER_TYPES.filter(t => t !== anchor);
+        let best = { matches: 0, combo: [] };
+        for (let i = 0; i < pool.length; i++) {
+            for (let j = i + 1; j < pool.length; j++) {
+                const seed = [anchor, pool[i], pool[j]];
+                const n = seedMatchCount(seed);
+                if (n > best.matches) best = { matches: n, combo: seed };
+            }
+        }
+        console.log(`\nAnchor ${anchor} — best seed: [${best.combo.join(', ')}] (${best.matches} hands)`);
+        analyzeConsensusExpansion(best.combo);
+    });
+
+    console.log(`\n${'='.repeat(56)}\n`);
+}
+
+
+window.addEventListener('load', () => {
+    populateCardSelect();
+
+    if (typeof loadCard === 'function') {
+        loadCard(null, function() {
+            populateSectionSelect();
+
+            // Generate first puzzle
+            const firstPuzzle = generatePuzzle();
+            if (firstPuzzle) {
+                loadPuzzle(firstPuzzle.finalTiles);
+            } else {
+                showNotification('Could not generate a starting puzzle — please click New Puzzle.', 'error');
+            }
+
+            // Analysis still available via console if needed
+            // setTimeout(testConsensusExpansion, 100);
+        });
+    } else {
+        document.querySelector('.main').innerHTML =
+            '<div class="status-message">⚠️ Could not load card data. ' +
+            'Make sure card-2025.js and card-loader.js are available.</div>';
+    }
 });
+</script>
+
+</body>
+</html>
