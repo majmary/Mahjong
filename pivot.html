@@ -596,7 +596,6 @@ function populateCardSelect() {
     sel.innerHTML = '';
     const cards = typeof getAvailableCards === 'function' ? getAvailableCards() : [];
     if (cards.length === 0) {
-        // fallback: just show 2025
         const opt = document.createElement('option');
         opt.value = '';
         opt.textContent = 'NMJL 2025';
@@ -608,6 +607,8 @@ function populateCardSelect() {
             opt.textContent = card.label;
             sel.appendChild(opt);
         });
+        // Default to the most recent card (last in list) rather than the oldest
+        sel.value = cards[cards.length - 1].year || '';
     }
 }
 
@@ -952,19 +953,138 @@ function revealMissed() {
     hintEl.textContent = `Revealed ${missed.length} remaining answer${missed.length !== 1 ? 's' : ''}.`;
 }
 
-// ── Init ────────────────────────────────────────────────────
+// ── Tile frequency analysis ─────────────────────────────────
+/**
+ * analyzeCardFrequency()
+ *
+ * For every hand on the card, expand each pattern token into the concrete
+ * numbers it could represent, then tally how many hands each number
+ * participates in.  Variable tokens are expanded as follows:
+ *
+ *   literal digit  → that digit only
+ *   X              → 1-9 (any)
+ *   V              → 2,4,6,8 (evens)
+ *   Y              → 1,3,5,7,9 (odds)
+ *   M              → 3,6,9
+ *   K (run of L)   → all numbers that could start an L-length run (1..10-L),
+ *                    expanded to every number in every such run
+ *   Q / R          → treated like X (post-K wildcard, broad)
+ *
+ * Returns an object with:
+ *   byNumber   — { '1': count, '2': count, … '9': count }
+ *   bySection  — { sectionName: { '1': count, … } }
+ *   totalHands — total hand count on card
+ *
+ * Also logs a formatted table to the console.
+ */
+function analyzeCardFrequency() {
+    if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) {
+        console.warn('ACTIVE_CARD not loaded yet.');
+        return null;
+    }
+
+    // Numbers each token type can represent
+    const TOKEN_NUMS = {
+        '1':['1'],'2':['2'],'3':['3'],'4':['4'],'5':['5'],
+        '6':['6'],'7':['7'],'8':['8'],'9':['9'],
+        'X':['1','2','3','4','5','6','7','8','9'],
+        'V':['2','4','6','8'],
+        'Y':['1','3','5','7','9'],
+        'M':['3','6','9'],
+        'Q':['1','2','3','4','5','6','7','8','9'], // post-K wildcard
+        'R':['1','2','3','4','5','6','7','8','9'], // random from K set
+    };
+
+    const byNumber  = {'1':0,'2':0,'3':0,'4':0,'5':0,'6':0,'7':0,'8':0,'9':0};
+    const bySection = {};
+
+    ACTIVE_CARD.forEach(handDef => {
+        const section = handDef.Section || 'Unknown';
+        if (!bySection[section]) {
+            bySection[section] = {'1':0,'2':0,'3':0,'4':0,'5':0,'6':0,'7':0,'8':0,'9':0};
+        }
+
+        let groups;
+        try { groups = parsePattern(handDef.code); }
+        catch(e) { return; }
+
+        // Collect contributing numbers for THIS hand (use a Set per number
+        // so a single hand counts once per number, not once per tile).
+        const handNums = new Set();
+
+        groups.forEach(group => {
+            group.tiles.forEach(token => {
+                const upper = token.toUpperCase();
+
+                if (TOKEN_NUMS[upper]) {
+                    TOKEN_NUMS[upper].forEach(n => handNums.add(n));
+                    return;
+                }
+
+                // K-sequence: token === 'K', group has a run of K's
+                if (upper === 'K') {
+                    const L = group.tiles.filter(t => t.toUpperCase() === 'K').length;
+                    // Every possible run start (1 … 10-L) contributes numbers start…start+L-1
+                    for (let start = 1; start <= 10 - L; start++) {
+                        for (let off = 0; off < L; off++) {
+                            handNums.add(String(start + off));
+                        }
+                    }
+                }
+                // Honor tiles (N E W S F D 0 J) don't contribute to number counts
+            });
+        });
+
+        handNums.forEach(n => {
+            byNumber[n]++;
+            bySection[section][n]++;
+        });
+    });
+
+    // ── Console output ──────────────────────────────────────
+    const total = ACTIVE_CARD.length;
+    console.log(`\n${'='.repeat(56)}`);
+    console.log(` NUMBER FREQUENCY ACROSS ALL ${total} HANDS (NMJL card)`);
+    console.log(`${'='.repeat(56)}`);
+    console.log(' Number │ Hands using it │ % of card');
+    console.log('────────┼────────────────┼──────────');
+    ['1','2','3','4','5','6','7','8','9'].forEach(n => {
+        const count = byNumber[n];
+        const pct   = ((count / total) * 100).toFixed(1);
+        const bar   = '█'.repeat(Math.round(count / total * 20));
+        console.log(` ${n}      │ ${String(count).padStart(14)} │ ${pct.padStart(5)}%  ${bar}`);
+    });
+
+    console.log(`\n${'─'.repeat(56)}`);
+    console.log(' BY SECTION:');
+    console.log(`${'─'.repeat(56)}`);
+    Object.entries(bySection).forEach(([sec, counts]) => {
+        const secTotal = ACTIVE_CARD.filter(h => h.Section === sec).length;
+        const nums = ['1','2','3','4','5','6','7','8','9']
+            .map(n => `${n}:${counts[n]}`)
+            .join('  ');
+        console.log(` ${sec.padEnd(18)} (${secTotal} hands)  ${nums}`);
+    });
+    console.log(`${'='.repeat(56)}\n`);
+
+    return { byNumber, bySection, totalHands: total };
+}
+
+// Run analysis automatically on load and store results for use by generator
+let cardFrequencyData = null;
+
 window.addEventListener('load', () => {
-    // Populate card switcher
     populateCardSelect();
 
-    // Activate default card (already loaded via <script> tags)
     if (typeof loadCard === 'function') {
         loadCard(null, function() {
             populateSectionSelect();
             loadPuzzle(PLACEHOLDER_TILES);
+
+            // Run frequency analysis and store for generator use
+            cardFrequencyData = analyzeCardFrequency();
         });
     } else {
-        // Fallback if card-loader is not available
         document.querySelector('.main').innerHTML =
             '<div class="status-message">⚠️ Could not load card data. ' +
             'Make sure card-2025.js and card-loader.js are available.</div>';
