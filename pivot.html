@@ -1001,7 +1001,13 @@ function analyzeConsensusExpansion(seedTiles) {
     }
 
     // ── Step 1: find all hands the 3-tile seed fits ───────────
-    let surviving = ACTIVE_CARD.filter(handDef => fits(handDef, seedTiles));
+    // Exclude Singles & Pairs — those hands have no groups of 3+ identical tiles
+    // so jokers can never be used, meaning they can't reach totalFilled=10 with
+    // only 7 naturals.
+    const isJokerEligible = h =>
+        !(h.Section || '').toLowerCase().includes('singles');
+
+    let surviving = ACTIVE_CARD.filter(h => isJokerEligible(h) && fits(h, seedTiles));
 
     if (surviving.length === 0) {
         console.log(`  Seed [${seedTiles.join(', ')}] — no matching hands.`);
@@ -1079,7 +1085,9 @@ function analyzeConsensusExpansion(seedTiles) {
     });
 
     // ── Report ────────────────────────────────────────────────
-    const seedMatchCount = ACTIVE_CARD.filter(h => fits(h, seedTiles)).length;
+    const isJokerEligible = h =>
+        !(h.Section || '').toLowerCase().includes('singles');
+    const seedMatchCount = ACTIVE_CARD.filter(h => isJokerEligible(h) && fits(h, seedTiles)).length;
     const sections = [...new Set(survivingWithJokers.map(h => h.Section))];
     console.log(`  Seed:          [${seedTiles.join(', ')}]  →  ${seedMatchCount} matching hands`);
     console.log(`  Chosen:        [${chosenTiles.join(', ')}]`);
