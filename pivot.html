@@ -1074,7 +1074,7 @@ function analyzeCardFrequency() {
 /**
  * testSeedFeasibility()
  *
- * For each anchor tile (5, 9, 2, 6), paired with every 2-tile combination
+ * For each anchor tile (5, 3, 2, 6), paired with every 2-tile combination
  * from the remaining tile types, tests how many card hands use ALL 3 tiles.
  * Uses Bam as the representative suit for number tiles.
  *
@@ -1090,7 +1090,7 @@ function testSeedFeasibility() {
         return;
     }
 
-    const ANCHORS = ['5B', '9B', '2B', '6B'];
+    const ANCHORS = ['5B', '3B', '2B', '6B'];
 
     // All tile types we can pair with the anchor.
     // Numbers use Bam as representative suit; honors are themselves.
