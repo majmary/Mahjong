@@ -7545,15 +7545,17 @@
         }
 
         // Initialize on load — activate default card and show landing page
-        window.addEventListener('load', () => {
-
-            // Activate the default card (2025 is already loaded via <script> tag)
-            loadCard(null);
-
-            // Set correct mute button label based on saved preference
-            const muteBtn = document.getElementById('muteBtn');
-            if (muteBtn) muteBtn.textContent = SoundEngine.muted ? '🔇 Unmute' : '🔊 Mute';
-
+window.addEventListener('load', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const cardYear = urlParams.get('year');
+    loadCard(cardYear || null, function() {
+        document.getElementById('landingView').style.display = 'none';
+        document.getElementById('gameView').style.display = 'flex';
+        startNewGame();
+    });
+    // Set correct mute button label based on saved preference
+    const muteBtn = document.getElementById('muteBtn');
+    if (muteBtn) muteBtn.textContent = SoundEngine.muted ? '🔇 Unmute' : '🔊 Mute';
             // Register service worker for PWA offline support
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('sw.js').then(reg => {
