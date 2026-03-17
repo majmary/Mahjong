@@ -506,28 +506,15 @@
             fill any jokerable slot (groups of 3+ identical tiles).
         </div>
 
-        <div class="placeholder-notice" id="placeholderNotice">
-            ⚙️ <span><strong>Placeholder puzzle</strong> — automatic tile generation coming soon.
-            This set is pre-selected for testing.
-            <button onclick="setTimeout(testConsensusExpansion, 50);"
-                style="margin-left:10px; padding:3px 10px; font-size:11px; cursor:pointer;
-                       border:1px solid #a1887f; border-radius:4px; background:#fff8e1;
-                       color:#5d4037; font-weight:600;">
-                Re-run analysis (current card)
-            </button></span>
-        </div>
-
         <div class="tile-rack-label">Your tiles</div>
         <div class="tile-rack" id="tileRack">
             <!-- tiles rendered by JS -->
         </div>
 
-        <button class="new-puzzle-btn" id="newPuzzleBtn" onclick="newPuzzle()" disabled
-                title="Automatic puzzle generation coming soon">
-            🎲 New Puzzle (coming soon)
+        <button class="new-puzzle-btn" id="newPuzzleBtn" onclick="newPuzzle()">
+            🎲 New Puzzle
         </button>
     </div>
-
     <!-- Answer entry -->
     <div class="answer-panel">
         <h3>Submit a Hand</h3>
@@ -594,7 +581,20 @@ let revealedAlready = false;
 // This set works well for testing the evaluation engine.
 // 3B×2, 5B×2, 7B×2, 3C + J×3
 // Fits several 13579 hands and others.
-const PLACEHOLDER_TILES = ['3B','3B','5B','5B','7B','7B','3C','J','J','J'];
+function showNotification(msg, type = 'error') {
+    const el = document.createElement('div');
+    el.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+        background:${type === 'error' ? 'var(--color-error-light)' : 'var(--color-success-light)'};
+        color:${type === 'error' ? 'var(--color-error)' : 'var(--color-success)'};
+        border:2px solid ${type === 'error' ? 'var(--color-error)' : 'var(--color-success)'};
+        padding:20px 28px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);
+        z-index:10000;font-size:15px;max-width:360px;text-align:center;cursor:pointer;`;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    el.onclick = () => el.remove();
+    setTimeout(() => { if (el.parentNode) el.remove(); }, 3500);
+}
+
 
 // ── Card switching ──────────────────────────────────────────
 function populateCardSelect() {
@@ -622,7 +622,8 @@ function switchCard(year) {
     if (typeof loadCard === 'function') {
         loadCard(year || null, function() {
             populateSectionSelect();
-            loadPuzzle(PLACEHOLDER_TILES);
+            const result = generatePuzzle();
+            if (result) loadPuzzle(result.finalTiles);
         });
     }
 }
@@ -783,10 +784,71 @@ function loadPuzzle(tiles) {
     document.getElementById('revealBtn').style.display = '';
 }
 
+// ── Puzzle generator ────────────────────────────────────────
+/**
+ * generatePuzzle()
+ *
+ * Randomly picks an anchor from {2, 3, 6, card-year-digit}, then two
+ * random companion tiles, runs consensus expansion, and returns the
+ * resulting 10-tile set if at least 2 hands survive.
+ * Retries up to MAX_ATTEMPTS times before giving up.
+ *
+ * Returns { finalTiles, survivingHands } or null if no valid puzzle found.
+ */
+function generatePuzzle() {
+    const MAX_ATTEMPTS = 40;
+
+    const sel = document.getElementById('cardSelect');
+    const cardYear = sel ? (sel.value || '5').slice(-1) : '5';
+    const ANCHORS = ['2B','3B','6B',`${cardYear}B`].filter((v,i,a) => a.indexOf(v) === i);
+
+    // Full pool of companion tile types (all suited numbers + honors)
+    const COMPANION_POOL = [];
+    for (let n = 1; n <= 9; n++) ['B','C','D'].forEach(s => COMPANION_POOL.push(`${n}${s}`));
+    ['N','E','S','W','GD','RD','WD','F'].forEach(t => COMPANION_POOL.push(t));
+
+    function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        // Pick random anchor and 2 random companions (no duplicates in seed)
+        const anchor = ANCHORS[Math.floor(Math.random() * ANCHORS.length)];
+        const companions = shuffle(COMPANION_POOL.filter(t => t !== anchor)).slice(0, 2);
+        const seed = [anchor, ...companions];
+
+        const result = analyzeConsensusExpansion(seed);
+        if (result && result.survivingHands.length >= 2) {
+            return result;
+        }
+    }
+
+    return null; // failed to find a valid puzzle
+}
+
 function newPuzzle() {
-    // Placeholder: generation not yet implemented
-    // Will call a tile generator here and pass result to loadPuzzle()
-    alert('Automatic puzzle generation is coming soon!');
+    const btn = document.getElementById('newPuzzleBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Generating…';
+
+    // Use setTimeout so the UI updates before the computation runs
+    setTimeout(() => {
+        const result = generatePuzzle();
+
+        if (result) {
+            loadPuzzle(result.finalTiles);
+        } else {
+            showNotification('Could not generate a valid puzzle — please try again.', 'error');
+        }
+
+        btn.disabled = false;
+        btn.textContent = '🎲 New Puzzle';
+    }, 30);
 }
 
 // ── Section / hand selectors ────────────────────────────────
@@ -1154,11 +1216,17 @@ window.addEventListener('load', () => {
     if (typeof loadCard === 'function') {
         loadCard(null, function() {
             populateSectionSelect();
-            loadPuzzle(PLACEHOLDER_TILES);
 
-            // Run consensus expansion analysis on load
-            console.log('Running consensus expansion analysis — this may take a moment...');
-            setTimeout(testConsensusExpansion, 100);
+            // Generate first puzzle
+            const firstPuzzle = generatePuzzle();
+            if (firstPuzzle) {
+                loadPuzzle(firstPuzzle.finalTiles);
+            } else {
+                showNotification('Could not generate a starting puzzle — please click New Puzzle.', 'error');
+            }
+
+            // Analysis still available via console if needed
+            // setTimeout(testConsensusExpansion, 100);
         });
     } else {
         document.querySelector('.main').innerHTML =
