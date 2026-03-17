@@ -774,6 +774,7 @@ function loadPuzzle(tiles) {
     countEl.textContent = `${validHands.length} hand${validHands.length !== 1 ? 's' : ''} possible`;
 
     updateFoundDisplay();
+    document.getElementById('emptyFoundMsg').style.display = '';
     clearFeedback();
     resetSelectors();
 
@@ -953,15 +954,19 @@ function updateFoundDisplay() {
 
     badge.textContent = `${found} / ${total > 0 ? total : '?'}`;
 
+    // Remove all children except the empty message placeholder
+    Array.from(list.children).forEach(child => {
+        if (child !== empty) list.removeChild(child);
+    });
+
     if (found === 0) {
         if (!empty.parentNode) list.appendChild(empty);
         return;
     }
 
-    // Remove placeholder
-    if (empty.parentNode) empty.parentNode.removeChild(empty);
+    // Hide the empty placeholder
+    empty.style.display = 'none';
 
-    list.innerHTML = '';
     [...foundHandKeys].forEach(key => {
         const [section, handNum] = key.split('__');
         const li = document.createElement('li');
