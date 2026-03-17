@@ -774,7 +774,6 @@ function loadPuzzle(tiles) {
     countEl.textContent = `${validHands.length} hand${validHands.length !== 1 ? 's' : ''} possible`;
 
     updateFoundDisplay();
-    document.getElementById('emptyFoundMsg').style.display = '';
     clearFeedback();
     resetSelectors();
 
@@ -946,49 +945,40 @@ function clearFeedback() {
 
 // ── Found display ───────────────────────────────────────────
 function updateFoundDisplay() {
-    const list = document.getElementById('foundList');
-    const empty = document.getElementById('emptyFoundMsg');
+    const list  = document.getElementById('foundList');
     const badge = document.getElementById('scoreBadge');
     const total = validHands.length;
     const found = foundHandKeys.size;
 
     badge.textContent = `${found} / ${total > 0 ? total : '?'}`;
 
-    // Remove all children except the empty message placeholder
-    Array.from(list.children).forEach(child => {
-        if (child !== empty) list.removeChild(child);
-    });
-
     if (found === 0) {
-        if (!empty.parentNode) list.appendChild(empty);
-        return;
+        list.innerHTML = '<li class="empty-found" id="emptyFoundMsg">No hands found yet — pick a section and hand above to get started.</li>';
+    } else {
+        list.innerHTML = [...foundHandKeys].map(key => {
+            const [section, handNum] = key.split('__');
+            return `<li class="found-item">
+                <span class="check-icon">✔</span>
+                <div>
+                    <span class="hand-name">Hand ${handNum}</span>
+                    <span class="hand-section"> — ${section}</span>
+                </div>
+            </li>`;
+        }).join('');
     }
 
-    // Hide the empty placeholder
-    empty.style.display = 'none';
-
-    [...foundHandKeys].forEach(key => {
-        const [section, handNum] = key.split('__');
-        const li = document.createElement('li');
-        li.className = 'found-item';
-        li.innerHTML = `
-            <span class="check-icon">✔</span>
-            <div>
-                <span class="hand-name">Hand ${handNum}</span>
-                <span class="hand-section"> — ${section}</span>
-            </div>
-        `;
-        list.appendChild(li);
-    });
-
     // Update total hint
-    const remaining = total - found;
     const hintEl = document.getElementById('totalHint');
-    if (remaining > 0) {
-        hintEl.innerHTML = `<strong>${remaining}</strong> hand${remaining !== 1 ? 's' : ''} still to find`;
+    if (!hintEl) return;
+    const remaining = total - found;
+    if (found === 0 || remaining > 0) {
+        hintEl.innerHTML = remaining > 0
+            ? `<strong>${remaining}</strong> hand${remaining !== 1 ? 's' : ''} still to find`
+            : '';
     } else {
         hintEl.innerHTML = `🎉 <strong>All hands found!</strong>`;
-        document.getElementById('revealBtn').style.display = 'none';
+        const revealBtn = document.getElementById('revealBtn');
+        if (revealBtn) revealBtn.style.display = 'none';
     }
 }
 
