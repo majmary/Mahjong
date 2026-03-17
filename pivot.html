@@ -1085,8 +1085,6 @@ function analyzeConsensusExpansion(seedTiles) {
     });
 
     // ── Report ────────────────────────────────────────────────
-    const isJokerEligible = h =>
-        !(h.Section || '').toLowerCase().includes('singles');
     const seedMatchCount = ACTIVE_CARD.filter(h => isJokerEligible(h) && fits(h, seedTiles)).length;
     const sections = [...new Set(survivingWithJokers.map(h => h.Section))];
     console.log(`  Seed:          [${seedTiles.join(', ')}]  →  ${seedMatchCount} matching hands`);
