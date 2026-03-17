@@ -1076,46 +1076,18 @@ function analyzeConsensusExpansion(seedTiles) {
     const chosenTiles = [];
 
     for (let pick = 0; pick < 4; pick++) {
-        let bestTile = null, bestSections = 0, bestCount = 0;
-
-        // Always log what's surviving at the start of this pick
-        console.log(`  Pick ${pick+1} — surviving (${surviving.length}): ${surviving.map(h => `${h.Section} ${h['hand number']}`).join(' | ')}`);
+        let bestTile = null, bestCount = 0;
 
         const allScores = [];
         ALL_NATURALS.forEach(tile => {
             if (tileCount(currentTiles, tile) >= 4) return;
             const testTiles = [...currentTiles, tile];
-            const stillAlive = surviving.filter(h => fits(h, testTiles));
-            const handCount = stillAlive.length;
-            if (handCount === 0) return;
-            const sectionCount = new Set(stillAlive.map(h => h.Section)).size;
-            allScores.push({ tile, handCount, sectionCount });
+            const count = surviving.filter(h => fits(h, testTiles)).length;
+            if (count > 0) allScores.push({ tile, count });
         });
 
-        // Always log top candidates by hand count
-        allScores.sort((a,b) => b.handCount - a.handCount);
-        console.log(`  Top candidates: ${allScores.slice(0,6).map(d => `${d.tile}(${d.handCount}h,${d.sectionCount}s)`).join('  ')}`);
-
-        // Apply floor and diversity scoring
-        allScores.forEach(({ tile, handCount, sectionCount }) => {
-            if (handCount < 2) return;
-            if (sectionCount > bestSections ||
-               (sectionCount === bestSections && handCount > bestCount)) {
-                bestSections = sectionCount;
-                bestCount    = handCount;
-                bestTile     = tile;
-            }
-        });
-
-        if (!bestTile) {
-            // Relax floor — just keep most hands alive
-            allScores.forEach(({ tile, handCount }) => {
-                if (handCount > bestCount) { bestCount = handCount; bestTile = tile; }
-            });
-            console.log(`  → floor relaxed, chose: ${bestTile} (${bestCount} hands)`);
-        } else {
-            console.log(`  → chose: ${bestTile} (${bestCount} hands, ${bestSections} sections)`);
-        }
+        allScores.sort((a,b) => b.count - a.count);
+        if (allScores.length > 0) { bestTile = allScores[0].tile; bestCount = allScores[0].count; }
 
         if (!bestTile || bestCount === 0) break;
 
