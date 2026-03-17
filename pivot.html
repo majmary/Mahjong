@@ -509,7 +509,7 @@
         <div class="placeholder-notice" id="placeholderNotice">
             ⚙️ <span><strong>Placeholder puzzle</strong> — automatic tile generation coming soon.
             This set is pre-selected for testing.
-            <button onclick="cardFrequencyData = analyzeCardFrequency(); testSeedFeasibility(); setTimeout(testDuplicationLevels, 200); setTimeout(testConsensusExpansion, 400);"
+            <button onclick="setTimeout(testConsensusExpansion, 50);"
                 style="margin-left:10px; padding:3px 10px; font-size:11px; cursor:pointer;
                        border:1px solid #a1887f; border-radius:4px; background:#fff8e1;
                        color:#5d4037; font-weight:600;">
@@ -958,346 +958,19 @@ function revealMissed() {
     const hintEl = document.getElementById('totalHint');
     hintEl.textContent = `Revealed ${missed.length} remaining answer${missed.length !== 1 ? 's' : ''}.`;
 }
-
-// ── Tile frequency analysis ─────────────────────────────────
-/**
- * analyzeCardFrequency()
- *
- * For every hand on the card, expand each pattern token into the concrete
- * numbers it could represent, then tally how many hands each number
- * participates in.  Variable tokens are expanded as follows:
- *
- *   literal digit  → that digit only
- *   X              → 1-9 (any)
- *   V              → 2,4,6,8 (evens)
- *   Y              → 1,3,5,7,9 (odds)
- *   M              → 3,6,9
- *   K (run of L)   → all numbers that could start an L-length run (1..10-L),
- *                    expanded to every number in every such run
- *   Q / R          → treated like X (post-K wildcard, broad)
- *
- * Returns an object with:
- *   byNumber   — { '1': count, '2': count, … '9': count }
- *   bySection  — { sectionName: { '1': count, … } }
- *   totalHands — total hand count on card
- *
- * Also logs a formatted table to the console.
- */
-function analyzeCardFrequency() {
-    if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) {
-        console.warn('ACTIVE_CARD not loaded yet.');
-        return null;
-    }
-
-    // Numbers each token type can represent
-    const TOKEN_NUMS = {
-        '1':['1'],'2':['2'],'3':['3'],'4':['4'],'5':['5'],
-        '6':['6'],'7':['7'],'8':['8'],'9':['9'],
-        'X':['1','2','3','4','5','6','7','8','9'],
-        'V':['2','4','6','8'],
-        'Y':['1','3','5','7','9'],
-        'M':['3','6','9'],
-        'Q':['1','2','3','4','5','6','7','8','9'], // post-K wildcard
-        'R':['1','2','3','4','5','6','7','8','9'], // random from K set
-    };
-
-    const byNumber  = {'1':0,'2':0,'3':0,'4':0,'5':0,'6':0,'7':0,'8':0,'9':0};
-    const bySection = {};
-
-    ACTIVE_CARD.forEach(handDef => {
-        const section = handDef.Section || 'Unknown';
-        if (!bySection[section]) {
-            bySection[section] = {'1':0,'2':0,'3':0,'4':0,'5':0,'6':0,'7':0,'8':0,'9':0};
-        }
-
-        let groups;
-        try { groups = parsePattern(handDef.code); }
-        catch(e) { return; }
-
-        // Collect contributing numbers for THIS hand (use a Set per number
-        // so a single hand counts once per number, not once per tile).
-        const handNums = new Set();
-
-        groups.forEach(group => {
-            group.tiles.forEach(token => {
-                const upper = token.toUpperCase();
-
-                if (TOKEN_NUMS[upper]) {
-                    TOKEN_NUMS[upper].forEach(n => handNums.add(n));
-                    return;
-                }
-
-                // K-sequence: token === 'K', group has a run of K's
-                if (upper === 'K') {
-                    const L = group.tiles.filter(t => t.toUpperCase() === 'K').length;
-                    // Every possible run start (1 … 10-L) contributes numbers start…start+L-1
-                    for (let start = 1; start <= 10 - L; start++) {
-                        for (let off = 0; off < L; off++) {
-                            handNums.add(String(start + off));
-                        }
-                    }
-                }
-                // Honor tiles (N E W S F D 0 J) don't contribute to number counts
-            });
-        });
-
-        handNums.forEach(n => {
-            byNumber[n]++;
-            bySection[section][n]++;
-        });
-    });
-
-    // ── Console output ──────────────────────────────────────
-    const total = ACTIVE_CARD.length;
-    console.log(`\n${'='.repeat(56)}`);
-    console.log(` NUMBER FREQUENCY ACROSS ALL ${total} HANDS (NMJL card)`);
-    console.log(`${'='.repeat(56)}`);
-    console.log(' Number │ Hands using it │ % of card');
-    console.log('────────┼────────────────┼──────────');
-    ['1','2','3','4','5','6','7','8','9'].forEach(n => {
-        const count = byNumber[n];
-        const pct   = ((count / total) * 100).toFixed(1);
-        const bar   = '█'.repeat(Math.round(count / total * 20));
-        console.log(` ${n}      │ ${String(count).padStart(14)} │ ${pct.padStart(5)}%  ${bar}`);
-    });
-
-    console.log(`\n${'─'.repeat(56)}`);
-    console.log(' BY SECTION:');
-    console.log(`${'─'.repeat(56)}`);
-    Object.entries(bySection).forEach(([sec, counts]) => {
-        const secTotal = ACTIVE_CARD.filter(h => h.Section === sec).length;
-        const nums = ['1','2','3','4','5','6','7','8','9']
-            .map(n => `${n}:${counts[n]}`)
-            .join('  ');
-        console.log(` ${sec.padEnd(18)} (${secTotal} hands)  ${nums}`);
-    });
-    console.log(`${'='.repeat(56)}\n`);
-
-    return { byNumber, bySection, totalHands: total };
-}
-
-// ── Seed feasibility test ───────────────────────────────────
-/**
- * testSeedFeasibility()
- *
- * For each anchor tile (5, 9, 2, 6), paired with every 2-tile combination
- * from the remaining tile types, tests how many card hands use ALL 3 tiles.
- * Uses Bam as the representative suit for number tiles.
- *
- * Reports to console:
- *   - Overall hit rate (% of combos with 2+ matching hands)
- *   - Distribution: how many combos yield 0, 1, 2, 3, 4, 5+ matches
- *   - Best combos (most matches) per anchor
- *   - Verdict: is this a viable generation strategy?
- */
-function testSeedFeasibility() {
-    if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) {
-        console.warn('ACTIVE_CARD not loaded.');
-        return;
-    }
-
-    // Anchors: stable cross-card set (2, 3, 6) + last digit of active card year
-    const cardYear = (() => {
-        const sel = document.getElementById('cardSelect');
-        if (!sel) return '5';
-        const year = sel.value || '';
-        return year ? year.slice(-1) : '5'; // default to 5 (2025)
-    })();
-    const ANCHORS = ['2B', '3B', '6B', `${cardYear}B`].filter((v, i, a) => a.indexOf(v) === i); // dedupe in case year digit is 2,3, or 6
-
-    // All tile types we can pair with the anchor.
-    // Numbers use Bam as representative suit; honors are themselves.
-    const OTHER_TYPES = [
-        '1B','2B','3B','4B','5B','6B','7B','8B','9B',
-        '1C','2C','3C','4C','5C','6C','7C','8C','9C',
-        '1D','2D','3D','4D','5D','6D','7D','8D','9D',
-        'N','E','S','W','GD','RD','WD','F'
-    ];
-
-    // Check how many hands use all tiles in the seed (all must land in matched slots)
-    function matchCount(seedTiles) {
-        let count = 0;
-        ACTIVE_CARD.forEach(handDef => {
-            try {
-                const fills = evaluatePattern(seedTiles, handDef.code);
-                if (!fills || fills.length === 0) return;
-                // Best fill: no naturals left in pool means all seed tiles were placed
-                const best = fills[0];
-                const leftover = (best.handPool || []).filter(t => t !== 'J').length;
-                if (leftover === 0) count++;
-            } catch(e) {}
-        });
-        return count;
-    }
-
-    // Distribution buckets
-    const dist = {total:0, '0':0, '1':0, '2':0, '3':0, '4':0, '5+':0};
-    const perAnchor = {};
-    const bestPerAnchor = {};
-
-    ANCHORS.forEach(anchor => {
-        perAnchor[anchor]     = {total:0, '0':0, '1':0, '2':0, '3':0, '4':0, '5+':0};
-        bestPerAnchor[anchor] = { matches: 0, combo: [] };
-
-        const pool = OTHER_TYPES.filter(t => t !== anchor);
-        for (let i = 0; i < pool.length; i++) {
-            for (let j = i + 1; j < pool.length; j++) {
-                const combo = [anchor, pool[i], pool[j]];
-                const n = matchCount(combo);
-
-                dist.total++;
-                const key = n >= 5 ? '5+' : String(n);
-                dist[key]++;
-                perAnchor[anchor].total++;
-                perAnchor[anchor][key]++;
-
-                if (n > bestPerAnchor[anchor].matches) {
-                    bestPerAnchor[anchor] = { matches: n, combo };
-                }
-            }
-        }
-    });
-
-    // ── Report ──────────────────────────────────────────────
-    const cardLabel = document.getElementById('cardSelect')
-        ? (document.getElementById('cardSelect').options[document.getElementById('cardSelect').selectedIndex] || {}).text || 'Unknown card'
-        : 'Unknown card';
-
-    console.log(`\n${'='.repeat(60)}`);
-    console.log(` SEED FEASIBILITY TEST — anchors: 2, 3, 6, ${cardYear} (card year digit)`);
-    console.log(` Card: ${cardLabel}`);
-    console.log(`${'='.repeat(60)}`);
-    console.log(` Total combos tested: ${dist.total}`);
-
-    const viableCombos = dist['2'] + dist['3'] + dist['4'] + dist['5+'];
-    const hitRate = ((viableCombos / dist.total) * 100).toFixed(1);
-    console.log(` Combos with 2+ matching hands: ${viableCombos} (${hitRate}%)`);
-    console.log(` Combos with 3+ matching hands: ${dist['3'] + dist['4'] + dist['5+']} (${((dist['3']+dist['4']+dist['5+'])/dist.total*100).toFixed(1)}%)`);
-
-    console.log(`\n Distribution of match counts:`);
-    console.log(` ${'Matches'.padEnd(10)} ${'Combos'.padEnd(10)} % of total`);
-    console.log(` ${'─'.repeat(35)}`);
-    ['0','1','2','3','4','5+'].forEach(k => {
-        const n   = dist[k];
-        const pct = ((n / dist.total) * 100).toFixed(1);
-        const bar = '▪'.repeat(Math.min(Math.round(n / dist.total * 30), 30));
-        console.log(` ${k.padEnd(10)} ${String(n).padEnd(10)} ${pct.padStart(5)}%  ${bar}`);
-    });
-
-    console.log(`\n Per anchor:`);
-    ANCHORS.forEach(anchor => {
-        const d = perAnchor[anchor];
-        const v = d['2'] + d['3'] + d['4'] + d['5+'];
-        const r = ((v / d.total) * 100).toFixed(1);
-        const best = bestPerAnchor[anchor];
-        console.log(`\n  Anchor ${anchor}:`);
-        console.log(`    Viable combos (2+): ${v} / ${d.total} (${r}%)`);
-        console.log(`    Best combo: [${best.combo.join(', ')}] → ${best.matches} hands`);
-        console.log(`    Distribution: ${['0','1','2','3','4','5+'].map(k => `${k}:${d[k]}`).join('  ')}`);
-    });
-
-    const verdict = hitRate >= 30
-        ? `✅ VIABLE — ${hitRate}% hit rate is strong enough to generate puzzles by sampling combos and discarding misses.`
-        : hitRate >= 15
-        ? `⚠️  MARGINAL — ${hitRate}% hit rate means we'd need to filter/retry, but could work.`
-        : `❌ WEAK — ${hitRate}% hit rate. Seed approach needs rethinking.`;
-    console.log(`\n VERDICT: ${verdict}`);
-    console.log(`${'='.repeat(60)}\n`);
-}
-
-// ── Duplication level test ──────────────────────────────────
-/**
- * testDuplicationLevels()
- *
- * For each anchor (2, 3, 6, year-digit), tests hit rates when the anchor
- * appears 1×, 2×, or 3× in the seed — paired with every 2-tile combo
- * from OTHER_TYPES (single copies). Reports how duplication level affects
- * the number of matching hands.
- */
-function testDuplicationLevels() {
-    if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) {
-        console.warn('ACTIVE_CARD not loaded.');
-        return;
-    }
-
-    const sel = document.getElementById('cardSelect');
-    const cardYear = sel ? (sel.value || '5').slice(-1) : '5';
-    const cardLabel = sel ? (sel.options[sel.selectedIndex] || {}).text || 'Unknown' : 'Unknown';
-
-    const ANCHORS = ['2B','3B','6B',`${cardYear}B`].filter((v,i,a) => a.indexOf(v) === i);
-    const COUNTS  = [1, 2, 3];
-
-    const OTHER_TYPES = [
-        '1B','2B','3B','4B','5B','6B','7B','8B','9B',
-        '1C','2C','3C','4C','5C','6C','7C','8C','9C',
-        '1D','2D','3D','4D','5D','6D','7D','8D','9D',
-        'N','E','S','W','GD','RD','WD','F'
-    ];
-
-    function matchCount(seedTiles) {
-        let count = 0;
-        ACTIVE_CARD.forEach(handDef => {
-            try {
-                const fills = evaluatePattern(seedTiles, handDef.code);
-                if (!fills || fills.length === 0) return;
-                const best = fills[0];
-                const leftover = (best.handPool || []).filter(t => t !== 'J').length;
-                if (leftover === 0) count++;
-            } catch(e) {}
-        });
-        return count;
-    }
-
-    console.log(`\n${'='.repeat(60)}`);
-    console.log(` DUPLICATION LEVEL TEST`);
-    console.log(` Card: ${cardLabel}   Anchors: ${ANCHORS.join(', ')}`);
-    console.log(`${'='.repeat(60)}`);
-
-    ANCHORS.forEach(anchor => {
-        console.log(`\n  Anchor: ${anchor}`);
-        console.log(`  ${'Copies'.padEnd(8)} ${'Viable(2+)'.padEnd(12)} ${'Hit Rate'.padEnd(10)} ${'Avg matches'.padEnd(12)} Best combo`);
-        console.log(`  ${'─'.repeat(62)}`);
-
-        COUNTS.forEach(copies => {
-            const pool = OTHER_TYPES.filter(t => t !== anchor);
-            let total = 0, viable = 0, totalMatches = 0;
-            let best = { matches: 0, combo: [] };
-
-            for (let i = 0; i < pool.length; i++) {
-                for (let j = i + 1; j < pool.length; j++) {
-                    const seed = [...Array(copies).fill(anchor), pool[i], pool[j]];
-                    const n = matchCount(seed);
-                    total++;
-                    totalMatches += n;
-                    if (n >= 2) viable++;
-                    if (n > best.matches) best = { matches: n, combo: seed };
-                }
-            }
-
-            const hitRate = ((viable / total) * 100).toFixed(1);
-            const avgMatch = (totalMatches / total).toFixed(2);
-            console.log(`  ${String(copies).padEnd(8)} ${String(viable).padEnd(12)} ${(hitRate+'%').padEnd(10)} ${avgMatch.padEnd(12)} [${best.combo.join(', ')}] → ${best.matches}`);
-        });
-    });
-
-    console.log(`\n${'='.repeat(60)}\n`);
-}
-
-// ── Consensus expansion analysis ───────────────────────────
+// ── Consensus expansion ─────────────────────────────────────
 /**
  * analyzeConsensusExpansion(seedTiles)
  *
  * Given a 3-tile seed:
- *  1. Find all card hands the seed fits
- *  2. For each matching hand, look at what natural tiles appear in its
- *     best fill (both matched and missing slots) — these are the tiles
- *     the hand "wants"
- *  3. Rank all candidate tiles by how many matching hands want them
- *  4. Greedily pick the top 4 naturals, then verify how many hands
- *     survive the full 7-natural + 3-joker set
+ *  1. Find all card hands the seed fits (all seed tiles must land in matched slots)
+ *  2. Greedily pick 4 more natural tiles — each pick maximises how many of the
+ *     currently-surviving hands remain alive.  Crucially, duplicates ARE allowed:
+ *     if 2B is already in the seed, 2B can still be picked again (up to 4 copies).
+ *  3. Add 3 jokers and verify that each surviving hand reaches exactly totalFilled=10
+ *     (i.e. 4 more tiles to draw) with jokers used only in jokerable groups.
  *
  * Returns { seed, matchingHands, chosenTiles, survivingHands, finalTiles }
- * and logs a readable report.
  */
 function analyzeConsensusExpansion(seedTiles) {
     if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) {
@@ -1305,205 +978,132 @@ function analyzeConsensusExpansion(seedTiles) {
         return null;
     }
 
-    // ── Step 1: find all hands the seed fits ──────────────────
-    const matchingHands = [];
-    ACTIVE_CARD.forEach(handDef => {
-        try {
-            const fills = evaluatePattern(seedTiles, handDef.code);
-            if (!fills || fills.length === 0) return;
-            const best = fills[0];
-            const leftover = (best.handPool || []).filter(t => t !== 'J').length;
-            if (leftover === 0) matchingHands.push({ handDef, fill: best });
-        } catch(e) {}
-    });
+    const SUITS = ['B','C','D'];
 
-    if (matchingHands.length === 0) {
-        console.log(`Seed [${seedTiles.join(', ')}] — no matching hands.`);
+    // All concrete tile types the expansion can draw from (no jokers —
+    // jokers are added at the end).  Duplicates up to 4 copies are handled
+    // by tracking counts rather than excluding already-present tiles.
+    const ALL_NATURALS = [];
+    for (let n = 1; n <= 9; n++) SUITS.forEach(s => ALL_NATURALS.push(`${n}${s}`));
+    ['N','E','S','W','GD','RD','WD','F'].forEach(t => ALL_NATURALS.push(t));
+
+    // How many copies of each tile are already in the seed
+    function tileCount(arr, tile) { return arr.filter(t => t === tile).length; }
+
+    // Does the hand fit this tile set? (all naturals placed, no leftovers)
+    function fits(handDef, tiles) {
+        try {
+            const fills = evaluatePattern(tiles, handDef.code);
+            if (!fills || fills.length === 0) return false;
+            const best = fills[0];
+            return (best.handPool || []).filter(t => t !== 'J').length === 0;
+        } catch(e) { return false; }
+    }
+
+    // ── Step 1: find all hands the 3-tile seed fits ───────────
+    let surviving = ACTIVE_CARD.filter(handDef => fits(handDef, seedTiles));
+
+    if (surviving.length === 0) {
+        console.log(`  Seed [${seedTiles.join(', ')}] — no matching hands.`);
         return null;
     }
 
-    // ── Step 2: for each matching hand, collect the natural tiles
-    //    it still needs (missing slots) and those it already has filled.
-    //    We want tiles that appear across the most hands' fills.
-    const tileWantCount = new Map(); // tile → how many matching hands want it
-
-    matchingHands.forEach(({ fill }) => {
-        // Tiles already placed (excluding seed tiles and jokers)
-        // Plus tiles in missing slots — we need to know what could fill them.
-        // For missing slots, look at what concrete tile the pattern expects.
-        // We use the fill's groups to find both placed naturals and missing slots.
-        const wantedByThisHand = new Set();
-
-        fill.groups.forEach(group => {
-            group.matchedTiles.forEach((matched, i) => {
-                if (matched !== '?' && matched !== 'J') {
-                    // Already placed natural — if not in seed, it's a candidate addition
-                    if (!seedTiles.includes(matched)) {
-                        wantedByThisHand.add(matched);
-                    }
-                }
-                // Missing slots ('?') — the hand needs something here but we
-                // don't know exactly what without re-running with candidate tiles.
-                // We'll handle this implicitly: when we test adding a tile,
-                // if it fills a '?' it will show up in the surviving hands check.
-            });
-        });
-
-        wantedByThisHand.forEach(tile => {
-            tileWantCount.set(tile, (tileWantCount.get(tile) || 0) + 1);
-        });
-    });
-
-    // ── Step 3: rank candidate tiles by want-count ────────────
-    // Also score tiles that appear in missing slots by testing each candidate
-    // tile against the matching hands.
-    const allCandidates = [];
-    const SUITS = ['B','C','D'];
-    const candidatePool = [];
-    for (let n = 1; n <= 9; n++) {
-        SUITS.forEach(s => candidatePool.push(`${n}${s}`));
-    }
-    ['N','E','S','W','GD','RD','WD','F'].forEach(t => candidatePool.push(t));
-
-    candidatePool.forEach(tile => {
-        if (seedTiles.includes(tile)) return; // already in seed
-        // Count how many matching hands still fit when we add this tile
-        const testSeed = [...seedTiles, tile];
-        let survivesCount = 0;
-        matchingHands.forEach(({ handDef }) => {
-            try {
-                const fills = evaluatePattern(testSeed, handDef.code);
-                if (!fills || fills.length === 0) return;
-                const best = fills[0];
-                const leftover = (best.handPool || []).filter(t => t !== 'J').length;
-                if (leftover === 0) survivesCount++;
-            } catch(e) {}
-        });
-        if (survivesCount > 0) {
-            allCandidates.push({ tile, survivesCount });
-        }
-    });
-
-    // Sort by how many matching hands survive with this tile added
-    allCandidates.sort((a, b) => b.survivesCount - a.survivesCount);
-
-    // ── Step 4: greedily pick 4 naturals ─────────────────────
-    // After each pick, re-score remaining candidates against the surviving set
-    let currentSeed = [...seedTiles];
-    let currentMatching = matchingHands.map(h => h.handDef);
+    // ── Step 2: greedy expansion — pick 4 naturals ────────────
+    let currentTiles = [...seedTiles];
     const chosenTiles = [];
 
     for (let pick = 0; pick < 4; pick++) {
-        // Re-score all remaining candidates against current survivors
-        const scored = [];
-        candidatePool.forEach(tile => {
-            if (currentSeed.includes(tile) || chosenTiles.includes(tile)) return;
-            const testSeed = [...currentSeed, tile];
-            let count = 0;
-            currentMatching.forEach(handDef => {
-                try {
-                    const fills = evaluatePattern(testSeed, handDef.code);
-                    if (!fills || fills.length === 0) return;
-                    const best = fills[0];
-                    const leftover = (best.handPool || []).filter(t => t !== 'J').length;
-                    if (leftover === 0) count++;
-                } catch(e) {}
-            });
-            if (count > 0) scored.push({ tile, count });
+        let bestTile = null, bestCount = 0;
+
+        ALL_NATURALS.forEach(tile => {
+            // Respect 4-copy limit (8 for flowers/jokers but flowers max 1 in practice)
+            if (tileCount(currentTiles, tile) >= 4) return;
+
+            const testTiles = [...currentTiles, tile];
+            const count = surviving.filter(h => fits(h, testTiles)).length;
+            if (count > bestCount || (count === bestCount && bestTile === null)) {
+                bestCount = count;
+                bestTile = tile;
+            }
         });
 
-        scored.sort((a, b) => b.count - a.count);
-        if (scored.length === 0) break;
+        if (!bestTile || bestCount === 0) break; // no tile keeps any hands alive
 
-        const best = scored[0];
-        chosenTiles.push(best.tile);
-        currentSeed = [...currentSeed, best.tile];
-
-        // Update surviving hands
-        currentMatching = currentMatching.filter(handDef => {
-            try {
-                const fills = evaluatePattern(currentSeed, handDef.code);
-                if (!fills || fills.length === 0) return false;
-                const best = fills[0];
-                return (best.handPool || []).filter(t => t !== 'J').length === 0;
-            } catch(e) { return false; }
-        });
+        chosenTiles.push(bestTile);
+        currentTiles = [...currentTiles, bestTile];
+        // Update surviving to only those still alive with this tile added
+        surviving = surviving.filter(h => fits(h, currentTiles));
     }
 
-    // ── Step 5: add 3 jokers and verify final count ───────────
-    const finalTiles = [...currentSeed, 'J', 'J', 'J'];
-    const survivingHands = [];
-    matchingHands.forEach(({ handDef }) => {
+    // ── Step 3: add 3 jokers and do final verification ────────
+    const finalTiles = [...currentTiles, 'J', 'J', 'J'];
+    const survivingWithJokers = [];
+
+    surviving.forEach(handDef => {
         try {
             const fills = evaluatePattern(finalTiles, handDef.code);
             if (!fills || fills.length === 0) return;
-            const jokersInHand = 3;
-            const best = useJokersForScoring(fills[0], jokersInHand);
+            const best = useJokersForScoring(fills[0], 3);
+            // All naturals placed, exactly 10 tiles accounted for (4 still to draw)
             const leftover = (best.handPool || []).filter(t => t !== 'J').length;
             if (leftover === 0 && best.totalFilled === 10) {
-                survivingHands.push(handDef);
+                survivingWithJokers.push(handDef);
             }
         } catch(e) {}
     });
 
     // ── Report ────────────────────────────────────────────────
-    console.log(`\n${'─'.repeat(56)}`);
-    console.log(` Seed: [${seedTiles.join(', ')}]  →  ${matchingHands.length} matching hands`);
-    console.log(` Chosen naturals: [${chosenTiles.join(', ')}]`);
-    console.log(` Final 10 tiles:  [${finalTiles.join(', ')}]`);
-    console.log(` Surviving hands: ${survivingHands.length} of ${matchingHands.length}`);
-    survivingHands.forEach(h => {
-        console.log(`   ✔ ${h.Section} Hand ${h['hand number']}`);
-    });
+    console.log(`  Seed:          [${seedTiles.join(', ')}]  →  ${ACTIVE_CARD.filter(h => fits(h, seedTiles)).length} matching hands`);
+    console.log(`  Chosen:        [${chosenTiles.join(', ')}]`);
+    console.log(`  Final 10:      [${finalTiles.join(', ')}]`);
+    console.log(`  Surviving:     ${survivingWithJokers.length}`);
+    survivingWithJokers.forEach(h => console.log(`    ✔ ${h.Section} Hand ${h['hand number']}`));
 
-    return { seed: seedTiles, matchingHands: matchingHands.length, chosenTiles, survivingHands, finalTiles };
+    return { seed: seedTiles, chosenTiles, survivingHands: survivingWithJokers, finalTiles };
 }
 
 /**
  * testConsensusExpansion()
- *
- * Runs analyzeConsensusExpansion on the best-performing seed combo
- * for each anchor, using the top result from the seed feasibility test.
+ * For each anchor, finds the best 3-tile seed then runs consensus expansion.
  */
 function testConsensusExpansion() {
-    if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) {
-        console.warn('ACTIVE_CARD not loaded.');
-        return;
-    }
+    if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) { console.warn('ACTIVE_CARD not loaded.'); return; }
 
     const sel = document.getElementById('cardSelect');
     const cardYear = sel ? (sel.value || '5').slice(-1) : '5';
     const cardLabel = sel ? (sel.options[sel.selectedIndex] || {}).text || 'Unknown' : 'Unknown';
     const ANCHORS = ['2B','3B','6B',`${cardYear}B`].filter((v,i,a) => a.indexOf(v) === i);
 
-    const OTHER_TYPES = [
-        '1B','2B','3B','4B','5B','6B','7B','8B','9B',
-        '1C','2C','3C','4C','5C','6C','7C','8C','9C',
-        '1D','2D','3D','4D','5D','6D','7D','8D','9D',
-        'N','E','S','W','GD','RD','WD','F'
-    ];
+    const OTHER_TYPES = [];
+    for (let n = 1; n <= 9; n++) ['B','C','D'].forEach(s => OTHER_TYPES.push(`${n}${s}`));
+    ['N','E','S','W','GD','RD','WD','F'].forEach(t => OTHER_TYPES.push(t));
+
+    function seedMatchCount(seed) {
+        let count = 0;
+        ACTIVE_CARD.forEach(handDef => {
+            try {
+                const fills = evaluatePattern(seed, handDef.code);
+                if (!fills || fills.length === 0) return;
+                const best = fills[0];
+                if ((best.handPool || []).filter(t => t !== 'J').length === 0) count++;
+            } catch(e) {}
+        });
+        return count;
+    }
 
     console.log(`\n${'='.repeat(56)}`);
-    console.log(` CONSENSUS EXPANSION TEST — Card: ${cardLabel}`);
+    console.log(` CONSENSUS EXPANSION — Card: ${cardLabel}`);
     console.log(`${'='.repeat(56)}`);
 
     ANCHORS.forEach(anchor => {
-        // Find the best 2-companion combo for this anchor
+        // Find best 2-companion combo for this anchor
         const pool = OTHER_TYPES.filter(t => t !== anchor);
         let best = { matches: 0, combo: [] };
         for (let i = 0; i < pool.length; i++) {
             for (let j = i + 1; j < pool.length; j++) {
                 const seed = [anchor, pool[i], pool[j]];
-                let count = 0;
-                ACTIVE_CARD.forEach(handDef => {
-                    try {
-                        const fills = evaluatePattern(seed, handDef.code);
-                        if (!fills || fills.length === 0) return;
-                        const b = fills[0];
-                        if ((b.handPool || []).filter(t => t !== 'J').length === 0) count++;
-                    } catch(e) {}
-                });
-                if (count > best.matches) best = { matches: count, combo: seed };
+                const n = seedMatchCount(seed);
+                if (n > best.matches) best = { matches: n, combo: seed };
             }
         }
         console.log(`\nAnchor ${anchor} — best seed: [${best.combo.join(', ')}] (${best.matches} hands)`);
@@ -1514,7 +1114,6 @@ function testConsensusExpansion() {
 }
 
 
-window.addEventListener('load', () => {
     populateCardSelect();
 
     if (typeof loadCard === 'function') {
@@ -1522,16 +1121,9 @@ window.addEventListener('load', () => {
             populateSectionSelect();
             loadPuzzle(PLACEHOLDER_TILES);
 
-            // Run frequency analysis and store for generator use
-            cardFrequencyData = analyzeCardFrequency();
-
-            // Run seed feasibility test then duplication level test
-            console.log('Running analysis tests — this may take a moment...');
-            setTimeout(() => {
-                testSeedFeasibility();
-                setTimeout(testDuplicationLevels, 200);
-                setTimeout(testConsensusExpansion, 400);
-            }, 100);
+            // Run consensus expansion analysis on load
+            console.log('Running consensus expansion analysis — this may take a moment...');
+            setTimeout(testConsensusExpansion, 100);
         });
     } else {
         document.querySelector('.main').innerHTML =
