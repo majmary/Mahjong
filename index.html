@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Mary on Mahjong</title>
+    <style>
+        :root {
+            --color-primary:       #2c5f2d;
+            --color-primary-dark:  #1f4420;
+            --color-primary-light: #f0f8f0;
+            --color-bg-page:       #fafafa;
+            --color-text-primary:  #333333;
+            --color-text-secondary:#666666;
+            --color-text-muted:    #999999;
+            --color-border:        #e0e0e0;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: var(--color-bg-page);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 24px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: var(--color-primary);
+            margin: 0 0 8px;
+        }
+
+        .tagline {
+            color: var(--color-text-secondary);
+            font-size: 15px;
+            margin: 0 0 32px;
+            line-height: 1.5;
+        }
+
+        .section {
+            width: 100%;
+            max-width: 320px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section + .section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+            margin-bottom: 2px;
+            align-self: flex-start;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            padding: 16px 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(44,95,45,0.3);
+            transition: background 0.2s, transform 0.1s;
+            text-decoration: none;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .btn:hover  { background: var(--color-primary-dark); transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+
+        .btn .sub {
+            display: block;
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.85;
+            margin-top: 3px;
+        }
+
+        /* New badge */
+        .btn-wrap {
+            position: relative;
+            width: 100%;
+        }
+        .new-badge {
+            position: absolute;
+            top: -9px;
+            right: 10px;
+            background: #e53935;
+            color: white;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            padding: 2px 8px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 6px rgba(229,57,53,0.4);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🀄 Mary on Mahjong</h1>
+    <p class="tagline">Smart Bot AI · American Mahjong</p>
+
+    <!-- Play -->
+    <div class="section">
+        <a href="game.html" class="btn">
+            Play American Mahjong
+            <span class="sub">with the current NMJL card</span>
+        </a>
+        <a href="game.html?picker=1" class="btn" style="font-size:16px; padding:13px 24px;">
+            Play with a different card
+        </a>
+    </div>
+
+    <!-- Exercises -->
+    <div class="section">
+        <div class="section-label">Exercises</div>
+        <div class="btn-wrap">
+            <span class="new-badge">New!</span>
+            <a href="pivot.html" class="btn" style="font-size:16px; padding:13px 24px;">
+                Pivot Challenge
+            </a>
+        </div>
+    </div>
+
+</body>
+</html>
