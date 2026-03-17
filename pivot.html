@@ -1096,7 +1096,7 @@ function testSeedFeasibility() {
         return;
     }
 
-    const ANCHORS = ['5B', '3B', '2B', '6B'];
+    const ANCHORS = ['1B','2B','3B','4B','5B','6B','7B','8B','9B'];
 
     // All tile types we can pair with the anchor.
     // Numbers use Bam as representative suit; honors are themselves.
@@ -1157,7 +1157,7 @@ function testSeedFeasibility() {
         : 'Unknown card';
 
     console.log(`\n${'='.repeat(60)}`);
-    console.log(` SEED FEASIBILITY TEST — anchors: 5, 3, 2, 6`);
+    console.log(` SEED FEASIBILITY TEST — anchors: 1 through 9`);
     console.log(` Card: ${cardLabel}`);
     console.log(`${'='.repeat(60)}`);
     console.log(` Total combos tested: ${dist.total}`);
