@@ -1070,6 +1070,123 @@ function analyzeCardFrequency() {
     return { byNumber, bySection, totalHands: total };
 }
 
+// ── Seed feasibility test ───────────────────────────────────
+/**
+ * testSeedFeasibility()
+ *
+ * For each anchor tile (5, 9, 2, 6), paired with every 2-tile combination
+ * from the remaining tile types, tests how many card hands use ALL 3 tiles.
+ * Uses Bam as the representative suit for number tiles.
+ *
+ * Reports to console:
+ *   - Overall hit rate (% of combos with 2+ matching hands)
+ *   - Distribution: how many combos yield 0, 1, 2, 3, 4, 5+ matches
+ *   - Best combos (most matches) per anchor
+ *   - Verdict: is this a viable generation strategy?
+ */
+function testSeedFeasibility() {
+    if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) {
+        console.warn('ACTIVE_CARD not loaded.');
+        return;
+    }
+
+    const ANCHORS = ['5B', '9B', '2B', '6B'];
+
+    // All tile types we can pair with the anchor.
+    // Numbers use Bam as representative suit; honors are themselves.
+    const OTHER_TYPES = [
+        '1B','2B','3B','4B','5B','6B','7B','8B','9B',
+        '1C','2C','3C','4C','5C','6C','7C','8C','9C',
+        '1D','2D','3D','4D','5D','6D','7D','8D','9D',
+        'N','E','S','W','GD','RD','WD','F'
+    ];
+
+    // Check how many hands use all tiles in the seed (all must land in matched slots)
+    function matchCount(seedTiles) {
+        let count = 0;
+        ACTIVE_CARD.forEach(handDef => {
+            try {
+                const fills = evaluatePattern(seedTiles, handDef.code);
+                if (!fills || fills.length === 0) return;
+                // Best fill: no naturals left in pool means all seed tiles were placed
+                const best = fills[0];
+                const leftover = (best.handPool || []).filter(t => t !== 'J').length;
+                if (leftover === 0) count++;
+            } catch(e) {}
+        });
+        return count;
+    }
+
+    // Distribution buckets
+    const dist = {total:0, '0':0, '1':0, '2':0, '3':0, '4':0, '5+':0};
+    const perAnchor = {};
+    const bestPerAnchor = {};
+
+    ANCHORS.forEach(anchor => {
+        perAnchor[anchor]     = {total:0, '0':0, '1':0, '2':0, '3':0, '4':0, '5+':0};
+        bestPerAnchor[anchor] = { matches: 0, combo: [] };
+
+        const pool = OTHER_TYPES.filter(t => t !== anchor);
+        for (let i = 0; i < pool.length; i++) {
+            for (let j = i + 1; j < pool.length; j++) {
+                const combo = [anchor, pool[i], pool[j]];
+                const n = matchCount(combo);
+
+                dist.total++;
+                const key = n >= 5 ? '5+' : String(n);
+                dist[key]++;
+                perAnchor[anchor].total++;
+                perAnchor[anchor][key]++;
+
+                if (n > bestPerAnchor[anchor].matches) {
+                    bestPerAnchor[anchor] = { matches: n, combo };
+                }
+            }
+        }
+    });
+
+    // ── Report ──────────────────────────────────────────────
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(' SEED FEASIBILITY TEST — anchors: 5, 9, 2, 6');
+    console.log(`${'='.repeat(60)}`);
+    console.log(` Total combos tested: ${dist.total}`);
+
+    const viableCombos = dist['2'] + dist['3'] + dist['4'] + dist['5+'];
+    const hitRate = ((viableCombos / dist.total) * 100).toFixed(1);
+    console.log(` Combos with 2+ matching hands: ${viableCombos} (${hitRate}%)`);
+    console.log(` Combos with 3+ matching hands: ${dist['3'] + dist['4'] + dist['5+']} (${((dist['3']+dist['4']+dist['5+'])/dist.total*100).toFixed(1)}%)`);
+
+    console.log(`\n Distribution of match counts:`);
+    console.log(` ${'Matches'.padEnd(10)} ${'Combos'.padEnd(10)} % of total`);
+    console.log(` ${'─'.repeat(35)}`);
+    ['0','1','2','3','4','5+'].forEach(k => {
+        const n   = dist[k];
+        const pct = ((n / dist.total) * 100).toFixed(1);
+        const bar = '▪'.repeat(Math.min(Math.round(n / dist.total * 30), 30));
+        console.log(` ${k.padEnd(10)} ${String(n).padEnd(10)} ${pct.padStart(5)}%  ${bar}`);
+    });
+
+    console.log(`\n Per anchor:`);
+    ANCHORS.forEach(anchor => {
+        const d = perAnchor[anchor];
+        const v = d['2'] + d['3'] + d['4'] + d['5+'];
+        const r = ((v / d.total) * 100).toFixed(1);
+        const best = bestPerAnchor[anchor];
+        console.log(`\n  Anchor ${anchor}:`);
+        console.log(`    Viable combos (2+): ${v} / ${d.total} (${r}%)`);
+        console.log(`    Best combo: [${best.combo.join(', ')}] → ${best.matches} hands`);
+        console.log(`    Distribution: ${['0','1','2','3','4','5+'].map(k => `${k}:${d[k]}`).join('  ')}`);
+    });
+
+    const verdict = hitRate >= 30
+        ? `✅ VIABLE — ${hitRate}% hit rate is strong enough to generate puzzles by sampling combos and discarding misses.`
+        : hitRate >= 15
+        ? `⚠️  MARGINAL — ${hitRate}% hit rate means we'd need to filter/retry, but could work.`
+        : `❌ WEAK — ${hitRate}% hit rate. Seed approach needs rethinking.`;
+    console.log(`\n VERDICT: ${verdict}`);
+    console.log(`${'='.repeat(60)}\n`);
+}
+
 // Run analysis automatically on load and store results for use by generator
 let cardFrequencyData = null;
 
@@ -1083,6 +1200,10 @@ window.addEventListener('load', () => {
 
             // Run frequency analysis and store for generator use
             cardFrequencyData = analyzeCardFrequency();
+
+            // Run seed feasibility test
+            console.log('Running seed feasibility test — this may take a moment...');
+            setTimeout(testSeedFeasibility, 100); // slight delay so page renders first
         });
     } else {
         document.querySelector('.main').innerHTML =
