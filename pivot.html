@@ -735,21 +735,29 @@ function handFitsTiles(tiles, handDef) {
     }
 }
 
+// Strip trailing letter suffix from hand numbers: "1a" → "1", "2b" → "2", "10" → "10"
+function baseHandNum(num) {
+    return String(num).replace(/[a-zA-Z]+$/, '');
+}
+
 /**
  * Compute all valid hands for the current tile set.
+ * Hands with the same section + base number (e.g. 1a/1b/1c) are collapsed
+ * into a single entry — finding any suit variation counts as finding the hand.
  * Returns array of { key, section, handNum, handDef }.
  */
 function computeValidHands(tiles) {
     if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) return [];
+    const seen = new Set();
     const results = [];
     ACTIVE_CARD.forEach(handDef => {
         if (handFitsTiles(tiles, handDef)) {
-            results.push({
-                key:     `${handDef.Section}__${handDef['hand number']}`,
-                section: handDef.Section,
-                handNum: handDef['hand number'],
-                handDef: handDef
-            });
+            const base = baseHandNum(handDef['hand number']);
+            const key  = `${handDef.Section}__${base}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                results.push({ key, section: handDef.Section, handNum: base, handDef });
+            }
         }
     });
     return results;
@@ -882,10 +890,14 @@ function populateHandSelect() {
     if (!section) return;
 
     const handsInSection = ACTIVE_CARD.filter(h => h.Section === section);
+    const seenBase = new Set();
     handsInSection.forEach(hand => {
+        const base = baseHandNum(hand['hand number']);
+        if (seenBase.has(base)) return;
+        seenBase.add(base);
         const opt = document.createElement('option');
-        opt.value = hand['hand number'];
-        opt.textContent = `Hand ${hand['hand number']}`;
+        opt.value = base;
+        opt.textContent = `Hand ${base}`;
         handSel.appendChild(opt);
     });
 
@@ -906,7 +918,7 @@ function resetSelectors() {
 // ── Answer checking ─────────────────────────────────────────
 function checkAnswer() {
     const section = document.getElementById('sectionSelect').value;
-    const handNum = document.getElementById('handSelect').value;
+    const handNum = document.getElementById('handSelect').value; // already base number
     if (!section || !handNum) return;
 
     const key = `${section}__${handNum}`;
@@ -917,7 +929,7 @@ function checkAnswer() {
         return;
     }
 
-    // Is it a valid hand for these tiles?
+    // Is it a valid hand for these tiles? Match on base number
     const match = validHands.find(v => v.key === key);
     if (match) {
         foundHandKeys.add(key);
@@ -1100,7 +1112,7 @@ function analyzeConsensusExpansion(seedTiles) {
     console.log(`  Chosen:    [${chosenTiles.join(', ')}]  (${naturals} naturals, ${jokersInFinal} jokers)`);
     console.log(`  Final 10:  [${finalTiles.join(', ')}]`);
     console.log(`  Surviving: ${survivingHands.length} hands across ${sections.length} section(s): ${sections.join(', ')}`);
-    survivingHands.forEach(h => console.log(`    ✔ ${h.Section} Hand ${h['hand number']}`));
+    survivingHands.forEach(h => console.log(`    ✔ ${h.Section} Hand ${baseHandNum(h['hand number'])}`));
 
     return { seed: seedTiles, chosenTiles, survivingHands, finalTiles };
 }
