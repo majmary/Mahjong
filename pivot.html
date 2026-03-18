@@ -498,8 +498,8 @@
         </div>
 
         <div class="instructions">
-            Using your physical card as a reference, find every hand where these 10 tiles
-            could be part of a 14-tile winning hand — with 4 more tiles to draw. Jokers
+            Using your physical card as a reference, find every hand where 9 of these 10 tiles
+            could be part of a 14-tile winning hand — with 5 more tiles to draw. Jokers
             fill any jokerable slot (groups of 3+ identical tiles).
         </div>
 
@@ -709,30 +709,31 @@ function renderTileRack(tiles) {
 // ── Evaluation ─────────────────────────────────────────────
 /**
  * Does this hand definition "fit" the current 10 tiles?
- * A hand fits if:
- *   - All 7 naturals are placed into the pattern (none left in pool)
- *   - totalFilled === 10  (exactly 4 more tiles needed to complete)
+ * A hand fits if any 9 of the 10 tiles can be placed into the pattern:
+ *   - All naturals in the 9-tile subset are placed (none left in pool)
+ *   - totalFilled === 9  (exactly 5 more tiles needed to complete)
+ * Each tile is tried as the "spare" in turn; true if any subset works.
  */
 function handFitsTiles(tiles, handDef) {
-    try {
-        const fills = evaluatePattern(tiles, handDef.code);
-        if (!fills || fills.length === 0) return false;
+    for (let skip = 0; skip < tiles.length; skip++) {
+        const nine = tiles.filter((_, i) => i !== skip);
+        try {
+            const fills = evaluatePattern(nine, handDef.code);
+            if (!fills || fills.length === 0) continue;
 
-        const jokersInHand = tiles.filter(t => t === 'J').length;
-        let best = fills[0];
-        if (jokersInHand > 0) {
-            best = useJokersForScoring(best, jokersInHand);
-        }
+            const jokersInHand = nine.filter(t => t === 'J').length;
+            let best = fills[0];
+            if (jokersInHand > 0) best = useJokersForScoring(best, jokersInHand);
 
-        // No naturals left in pool — all naturals were placed
-        const naturalsLeftOver = (best.handPool || []).filter(t => t !== 'J').length;
-        if (naturalsLeftOver > 0) return false;
+            // All naturals in the subset must be placed
+            const naturalsLeftOver = (best.handPool || []).filter(t => t !== 'J').length;
+            if (naturalsLeftOver > 0) continue;
 
-        // Exactly 10 tiles accounted for in the fill (14 total − 4 to draw = 10)
-        return best.totalFilled === 10;
-    } catch(e) {
-        return false;
+            // Exactly 9 tiles placed (14 total − 5 to draw = 9)
+            if (best.totalFilled === 9) return true;
+        } catch(e) {}
     }
+    return false;
 }
 
 // Strip trailing letter suffix from hand numbers: "1a" → "1", "2b" → "2", "10" → "10"
@@ -803,9 +804,9 @@ function loadPuzzle(tiles) {
 function generatePuzzle() {
     const MAX_ATTEMPTS = 40;
 
-    const sel = document.getElementById('cardSelect');
-    const cardYear = sel ? (sel.value || '5').slice(-1) : '5';
-    const ANCHORS = ['2B','3B','6B',`${cardYear}B`].filter((v,i,a) => a.indexOf(v) === i);
+    // Full pool of number tiles (1–9 in each suit) — any one may be the seed tile
+    const NUMBER_POOL = [];
+    for (let n = 1; n <= 9; n++) ['B','C','D'].forEach(s => NUMBER_POOL.push(`${n}${s}`));
 
     // Full pool of companion tile types (all suited numbers + honors)
     const COMPANION_POOL = [];
@@ -822,13 +823,13 @@ function generatePuzzle() {
     }
 
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-        // Pick random anchor and 2 random companions (no duplicates in seed)
-        const anchor = ANCHORS[Math.floor(Math.random() * ANCHORS.length)];
+        // Pick one random number tile as seed, then 2 random companions (no duplicates in seed)
+        const anchor = NUMBER_POOL[Math.floor(Math.random() * NUMBER_POOL.length)];
         const companions = shuffle(COMPANION_POOL.filter(t => t !== anchor)).slice(0, 2);
         const seed = [anchor, ...companions];
 
         const result = analyzeConsensusExpansion(seed);
-        if (result && result.survivingHands.length >= 2) {
+        if (result && result.survivingHands.length >= 3) {
             return result;
         }
     }
@@ -1088,20 +1089,26 @@ function analyzeConsensusExpansion(seedTiles) {
         surviving = surviving.filter(h => fits(h, currentTiles));
     }
 
-    // ── Step 3: final verification ────────────────────────────
+    // ── Step 3: final verification (9-of-10 rule) ────────────
     const finalTiles = currentTiles;
-    const jokersInFinal = finalTiles.filter(t => t === 'J').length;
     const survivingHands = [];
 
     ACTIVE_CARD.forEach(handDef => {
-        try {
-            const fills = evaluatePattern(finalTiles, handDef.code);
-            if (!fills || fills.length === 0) return;
-            let best = fills[0];
-            if (jokersInFinal > 0) best = useJokersForScoring(best, jokersInFinal);
-            const leftover = (best.handPool || []).filter(t => t !== 'J').length;
-            if (leftover === 0 && best.totalFilled === 10) survivingHands.push(handDef);
-        } catch(e) {}
+        for (let skip = 0; skip < finalTiles.length; skip++) {
+            const nine = finalTiles.filter((_, i) => i !== skip);
+            try {
+                const fills = evaluatePattern(nine, handDef.code);
+                if (!fills || fills.length === 0) continue;
+                const jokersInNine = nine.filter(t => t === 'J').length;
+                let best = fills[0];
+                if (jokersInNine > 0) best = useJokersForScoring(best, jokersInNine);
+                const leftover = (best.handPool || []).filter(t => t !== 'J').length;
+                if (leftover === 0 && best.totalFilled === 9) {
+                    survivingHands.push(handDef);
+                    return; // no need to try other skips for this hand
+                }
+            } catch(e) {}
+        }
     });
 
     // ── Report ────────────────────────────────────────────────
