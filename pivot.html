@@ -1116,6 +1116,7 @@ function analyzeConsensusExpansion(seedTiles) {
     const sections = [...new Set(survivingHands.map(h => h.Section))];
     const naturals = finalTiles.filter(t => t !== 'J').length;
     console.log(`  Seed:      [${seedTiles.join(', ')}]  →  ${seedMatchCount} matching hands`);
+    const jokersInFinal = finalTiles.filter(t => t === 'J').length;
     console.log(`  Chosen:    [${chosenTiles.join(', ')}]  (${naturals} naturals, ${jokersInFinal} jokers)`);
     console.log(`  Final 10:  [${finalTiles.join(', ')}]`);
     console.log(`  Surviving: ${survivingHands.length} hands across ${sections.length} section(s): ${sections.join(', ')}`);
