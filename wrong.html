@@ -1000,6 +1000,33 @@ function checkAnswers() {
         feedback.appendChild(icon);
         feedback.appendChild(msgSpan);
         feedback.classList.add(callCorrect ? 'correct' : 'wrong');
+
+        // Reveal hand identity
+        const handDef = item.instance.handDef;
+        const handIdEl = document.createElement('div');
+        handIdEl.style.cssText = 'margin-top:8px; padding-top:8px; border-top:1px solid rgba(0,0,0,0.1); width:100%;';
+
+        const handName = document.createElement('div');
+        handName.style.cssText = 'font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-text-muted); margin-bottom:4px;';
+        handName.textContent = `${handDef.Section} · Hand ${handDef['hand number']}`;
+        handIdEl.appendChild(handName);
+
+        if (handDef.description && handDef.description.length) {
+            const descEl = document.createElement('div');
+            descEl.style.cssText = 'font-size:13px; line-height:1.6;';
+            // Color name → CSS color mapping matching the card's palette
+            const colorMap = { navy: '#01579B', green: '#1B5E20', red: '#B71C1C', black: '#333333' };
+            handDef.description.forEach(seg => {
+                const span = document.createElement('span');
+                span.textContent = seg.text;
+                span.style.color = colorMap[seg.color] || '#333333';
+                if (seg.bold) span.style.fontWeight = '700';
+                descEl.appendChild(span);
+            });
+            handIdEl.appendChild(descEl);
+        }
+
+        feedback.appendChild(handIdEl);
     });
 
     document.getElementById('submitBtn').disabled = true;
