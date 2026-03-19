@@ -3204,6 +3204,9 @@
                         // Must be 3+ tiles
                         if (groupSize < 3) continue;
 
+                        // K groups are consecutive runs — calling into them is never valid
+                        if (groupTiles.includes('K')) continue;
+
                         // Must be all identical tiles (pung/kong/quint only, no sequences)
                         const VARIABLE_TOKENS = new Set(['Q', 'R', 'X', 'Y', 'V', 'M']);
                         const isIdenticalGroup = groupTiles.every(t => VARIABLE_TOKENS.has(t) || t === groupTiles[0]);
@@ -4431,9 +4434,12 @@
                 
                 // Determine discard BEFORE joker exchange check, so the exchange logic
                 // knows which tile is being thrown away and can grab a joker instead of discarding.
-                const tileToDiscard = botSelectDiscard(player);
+                // If an exchange actually happened, the hand changed (splice+push), so re-select
+                // to avoid discarding a stale index that may now point at the newly-received joker.
+                let tileToDiscard = botSelectDiscard(player);
                 const discardTileValue = player.tiles[tileToDiscard];
-                botCheckJokerExchange(player, discardTileValue);
+                const exchangeHappened = botCheckJokerExchange(player, discardTileValue);
+                if (exchangeHappened) tileToDiscard = botSelectDiscard(player);
                 
                 discardTile(player, tileToDiscard);
             } else {
@@ -4447,9 +4453,12 @@
                 }
                 
                 // Determine discard BEFORE joker exchange check (same reason as above).
-                const tileToDiscard = botSelectDiscard(player);
+                // If an exchange actually happened, the hand changed (splice+push), so re-select
+                // to avoid discarding a stale index that may now point at the newly-received joker.
+                let tileToDiscard = botSelectDiscard(player);
                 const discardTileValue = player.tiles[tileToDiscard];
-                botCheckJokerExchange(player, discardTileValue);
+                const exchangeHappened = botCheckJokerExchange(player, discardTileValue);
+                if (exchangeHappened) tileToDiscard = botSelectDiscard(player);
                 
                 discardTile(player, tileToDiscard);
             }
