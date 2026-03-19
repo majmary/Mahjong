@@ -9,7 +9,7 @@
     <script src="data/card-2025.js"></script>
     <script src="js/card-loader.js"></script>
     <script src="js/patterns.js"></script>
-    <script src="js/pivot-eval.js"></script>
+
 
     <style>
         /* ── Shared design tokens (mirror main game) ── */
@@ -774,7 +774,7 @@ function loadPuzzle(tiles) {
     renderTileRack(tiles);
 
     // Pre-compute valid hands (used for scoring and validation)
-    validHands = pivotComputeValidHands(tiles);
+    validHands = computeValidHands(tiles);
 
     // Show total count
     const countEl = document.getElementById('validHandCount');
