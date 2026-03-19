@@ -224,140 +224,226 @@
         .tile-WD { background: #BBDEFB; color: #01579B; }
 
         /* ── Verdict UI ── */
-        .verdict-row {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: flex-start;
-            gap: 10px;
-            margin-top: 6px;
-            padding-top: 12px;
+        .verdict-section {
+            margin-top: 16px;
+            padding-top: 16px;
             border-top: 1px solid var(--color-border);
         }
 
-        .verdict-check-label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 8px;
-            border: 1.5px solid var(--color-border);
-            background: #fafafa;
-            transition: all 0.15s;
-            user-select: none;
+        .verdict-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+            margin-bottom: 10px;
         }
 
-        .verdict-check-label:hover { background: #f0f0f0; }
-        .verdict-check-label input { margin: 0; cursor: pointer; }
-
-        .error-options {
-            display: none;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 8px;
+        .validity-toggle {
+            display: flex;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid var(--color-border);
             width: 100%;
+            margin-bottom: 16px;
         }
 
-        .error-options.visible { display: flex; }
-
-        .error-option-label {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 13px;
+        .validity-btn {
+            flex: 1;
+            padding: 14px 0;
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            background: #f5f5f5;
+            color: var(--color-text-muted);
             cursor: pointer;
-            padding: 4px 10px;
-            border-radius: 6px;
-            border: 1.5px solid #ddd;
-            background: white;
-            transition: all 0.15s;
-            user-select: none;
+            transition: background 0.15s, color 0.15s;
         }
 
-        .error-option-label:hover { background: #f5f5f5; }
-        .error-option-label input { margin: 0; cursor: pointer; }
+        .validity-btn + .validity-btn {
+            border-left: 2px solid var(--color-border);
+        }
 
-        /* ── Result feedback ── */
-        .feedback-row {
-            display: none;
-            align-items: flex-start;
+        .validity-btn.active-valid {
+            background: var(--color-correct);
+            color: white;
+        }
+
+        .validity-btn.active-invalid {
+            background: var(--color-error);
+            color: white;
+        }
+
+        .reasons-section { display: none; }
+        .reasons-section.visible { display: block; }
+
+        .reasons-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+            margin-bottom: 8px;
+        }
+
+        .reasons-grid {
+            display: flex;
+            flex-direction: column;
             gap: 8px;
-            margin-top: 10px;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-            line-height: 1.5;
         }
 
-        .feedback-row.correct {
+        .reason-btn {
+            width: 100%;
+            padding: 13px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: left;
+            border: 2px solid var(--color-border);
+            border-radius: 10px;
+            background: white;
+            color: var(--color-text-primary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .reason-btn.selected {
+            border-color: #c62828;
+            background: #fff5f5;
+            color: #c62828;
+            font-weight: 700;
+        }
+
+        /* ── Nav button ── */
+        .nav-row {
+            margin-top: 20px;
             display: flex;
-            background: #e8f5e9;
-            color: #1b5e20;
-            border: 1px solid #a5d6a7;
+            justify-content: flex-end;
         }
 
-        .feedback-row.wrong {
-            display: flex;
-            background: #ffebee;
-            color: #b71c1c;
-            border: 1px solid #ef9a9a;
-        }
-
-        .feedback-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
-
-        /* ── Submit / New ── */
-        .action-row {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin-top: 8px;
-            flex-wrap: wrap;
-        }
-
-        .btn-submit {
+        .btn-nav {
             background: var(--color-primary);
             color: white;
             border: none;
             border-radius: 10px;
-            padding: 12px 32px;
+            padding: 14px 28px;
             font-size: 16px;
             font-weight: 700;
             cursor: pointer;
             box-shadow: 0 3px 12px rgba(44,95,45,0.3);
             transition: background 0.15s, transform 0.1s;
+            min-width: 140px;
+        }
+        .btn-nav:hover  { background: var(--color-primary-dark); transform: translateY(-1px); }
+        .btn-nav:active { transform: translateY(0); }
+
+        /* ── Results page ── */
+        .results-area {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px 16px 48px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
-        .btn-submit:hover { background: var(--color-primary-dark); transform: translateY(-1px); }
-        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-        /* ── Score summary ── */
-        .score-summary {
-            display: none;
+        .result-card {
             background: white;
-            border: 2px solid var(--color-primary);
+            border: 2px solid var(--color-border);
             border-radius: 14px;
-            padding: 20px;
+            padding: 16px;
+        }
+
+        .result-card.res-correct { border-color: var(--color-correct); background: #f1f8f1; }
+        .result-card.res-wrong   { border-color: var(--color-error);   background: #fff5f5; }
+
+        .result-hand-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+            margin-bottom: 10px;
+        }
+
+        .result-groups-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .result-verdict-line {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .result-detail {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .result-pts {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--color-text-muted);
+            margin-bottom: 10px;
+        }
+
+        .result-hand-id {
+            padding-top: 10px;
+            border-top: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .result-hand-name {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+            margin-bottom: 3px;
+        }
+
+        .result-hand-desc { font-size: 13px; line-height: 1.6; }
+
+        .score-banner {
+            background: var(--color-primary);
+            color: white;
+            border-radius: 14px;
+            padding: 28px 20px;
             text-align: center;
         }
 
-        .score-summary.visible { display: block; }
-
-        .score-number {
-            font-size: 42px;
+        .score-big {
+            font-size: 56px;
             font-weight: 700;
-            color: var(--color-primary);
             line-height: 1;
         }
 
-        .score-label {
-            font-size: 14px;
-            color: var(--color-text-secondary);
-            margin-top: 4px;
+        .score-sub {
+            font-size: 15px;
+            opacity: 0.85;
+            margin-top: 6px;
         }
 
-        /* ── Loading / empty states ── */
+        .btn-again {
+            margin-top: 18px;
+            background: white;
+            color: var(--color-primary);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 32px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn-again:hover { opacity: 0.85; }
+
+        /* ── Loading ── */
         .loading-msg {
             text-align: center;
             padding: 40px;
@@ -369,6 +455,7 @@
             .tile { width: 32px; height: 44px; }
             .tile-number { font-size: 17px; }
             .tile-label { font-size: 8px; }
+            .btn-nav { width: 100%; }
         }
     </style>
 </head>
@@ -387,8 +474,8 @@
     </div>
 </div>
 
-<div class="puzzle-area" id="puzzleArea">
-    <div class="loading-msg" id="loadingMsg">Loading card…</div>
+<div id="mainArea">
+    <div class="loading-msg">Loading card…</div>
 </div>
 
 <script>
@@ -820,245 +907,294 @@ function buildPuzzle() {
     });
 }
 
-// ── Rendering ──────────────────────────────────────────────────────────────────
+// ── Rendering helpers ───────────────────────────────────────────────────────
 
-function renderPuzzle(puzzle) {
-    const area = document.getElementById('puzzleArea');
-    area.innerHTML = '';
+const REASON_DEFS = [
+    { value: 'wrong_suit',       label: 'Wrong suit mix' },
+    { value: 'wrong_number',     label: 'Wrong value of tiles' },
+    { value: 'wrong_size',       label: 'Wrong number of tiles in group' },
+    { value: 'illegal_joker',    label: 'Illegal joker use' },
+    { value: 'illegal_exposure', label: 'Illegal exposure' },
+];
 
-    // Instructions
-    const instr = document.createElement('div');
-    instr.className = 'instructions';
-    instr.innerHTML = `Each hand below may or may not be a valid mahjong hand. 
-        <strong>Check any hand you think is invalid</strong>, then select the reasons why. 
-        Score: <strong>+1</strong> correct call, <strong>+1</strong> each correct reason, <strong>−1</strong> each wrong reason (floored at 0 per hand).`;
-    area.appendChild(instr);
-
-    puzzle.forEach((item, idx) => {
-        const card = document.createElement('div');
-        card.className = 'hand-card';
-        card.id = `hand-card-${idx}`;
-
-        // Label
-        const label = document.createElement('div');
-        label.className = 'hand-number';
-        label.textContent = `Hand ${idx + 1}`;
-        card.appendChild(label);
-
-        // Groups row
-        const groupsRow = document.createElement('div');
-        groupsRow.className = 'groups-row';
-
-        item.instance.groups.forEach((group, gIdx) => {
-            if (gIdx > 0) {
-                const gap = document.createElement('div');
-                gap.className = 'group-gap';
-                groupsRow.appendChild(gap);
-            }
-            const groupEl = document.createElement('div');
-            groupEl.className = 'tile-group' + (group.isExposure ? ' is-exposure' : '');
-            group.tiles.forEach(tile => groupEl.appendChild(makeTileEl(tile)));
-            groupsRow.appendChild(groupEl);
-        });
-
-        card.appendChild(groupsRow);
-
-        // Verdict UI
-        const verdictRow = document.createElement('div');
-        verdictRow.className = 'verdict-row';
-
-        const wrongLabel = document.createElement('label');
-        wrongLabel.className = 'verdict-check-label';
-        const wrongCheck = document.createElement('input');
-        wrongCheck.type = 'checkbox';
-        wrongCheck.id = `wrong-${idx}`;
-        wrongLabel.appendChild(wrongCheck);
-        wrongLabel.appendChild(document.createTextNode(' This hand is invalid'));
-        verdictRow.appendChild(wrongLabel);
-
-        // Error options (hidden until checked)
-        const errorOpts = document.createElement('div');
-        errorOpts.className = 'error-options';
-        errorOpts.id = `errors-${idx}`;
-
-        const errorTypes = [
-            { value: 'wrong_suit',       label: 'Wrong suit' },
-            { value: 'wrong_number',     label: 'Wrong number' },
-            { value: 'wrong_size',       label: 'Wrong number of tiles in a group' },
-            { value: 'illegal_joker',    label: 'Illegal joker use' },
-            { value: 'illegal_exposure', label: 'Illegal exposure' },
-        ];
-
-        errorTypes.forEach(et => {
-            const lbl = document.createElement('label');
-            lbl.className = 'error-option-label';
-            const cb = document.createElement('input');
-            cb.type = 'checkbox';
-            cb.value = et.value;
-            cb.name = `error-${idx}`;
-            lbl.appendChild(cb);
-            lbl.appendChild(document.createTextNode(' ' + et.label));
-            errorOpts.appendChild(lbl);
-        });
-
-        verdictRow.appendChild(errorOpts);
-
-        // Feedback placeholder
-        const feedback = document.createElement('div');
-        feedback.className = 'feedback-row';
-        feedback.id = `feedback-${idx}`;
-        verdictRow.appendChild(feedback);
-
-        card.appendChild(verdictRow);
-        area.appendChild(card);
-
-        // Toggle error options visibility
-        wrongCheck.addEventListener('change', () => {
-            errorOpts.classList.toggle('visible', wrongCheck.checked);
-        });
-    });
-
-    // Submit button
-    const actionRow = document.createElement('div');
-    actionRow.className = 'action-row';
-    const submitBtn = document.createElement('button');
-    submitBtn.className = 'btn-submit';
-    submitBtn.textContent = 'Check Answers';
-    submitBtn.id = 'submitBtn';
-    submitBtn.onclick = checkAnswers;
-    actionRow.appendChild(submitBtn);
-    area.appendChild(actionRow);
-
-    // Score summary placeholder
-    const summary = document.createElement('div');
-    summary.className = 'score-summary';
-    summary.id = 'scoreSummary';
-    area.appendChild(summary);
+function corruptionLabel(type) {
+    const d = REASON_DEFS.find(r => r.value === type);
+    return d ? d.label.toLowerCase() : type;
 }
 
-function checkAnswers() {
-    const puzzle = currentPuzzle;
+function buildGroupsRow(groups, cssClass) {
+    const row = document.createElement('div');
+    row.className = cssClass;
+    groups.forEach((group, gIdx) => {
+        if (gIdx > 0) {
+            const gap = document.createElement('div');
+            gap.className = 'group-gap';
+            row.appendChild(gap);
+        }
+        const groupEl = document.createElement('div');
+        groupEl.className = 'tile-group' + (group.isExposure ? ' is-exposure' : '');
+        group.tiles.forEach(tile => groupEl.appendChild(makeTileEl(tile)));
+        row.appendChild(groupEl);
+    });
+    return row;
+}
+
+function buildHandIdEl(handDef) {
+    const wrap = document.createElement('div');
+    wrap.className = 'result-hand-id';
+
+    const name = document.createElement('div');
+    name.className = 'result-hand-name';
+    name.textContent = handDef.Section + ' · Hand ' + handDef['hand number'];
+    wrap.appendChild(name);
+
+    if (handDef.description && handDef.description.length) {
+        const desc = document.createElement('div');
+        desc.className = 'result-hand-desc';
+        const colorMap = { navy: '#01579B', green: '#1B5E20', red: '#B71C1C', black: '#333333' };
+        handDef.description.forEach(seg => {
+            const span = document.createElement('span');
+            span.textContent = seg.text;
+            span.style.color = colorMap[seg.color] || '#333333';
+            if (seg.bold) span.style.fontWeight = '700';
+            desc.appendChild(span);
+        });
+        wrap.appendChild(desc);
+    }
+    return wrap;
+}
+
+// ── Play phase ────────────────────────────────────────────────────────────────
+
+let currentPuzzle  = null;
+let currentHandIdx = 0;
+let userAnswers    = []; // [{ saysInvalid: bool, selectedReasons: string[] }, ...]
+
+function showHand(idx) {
+    const item = currentPuzzle[idx];
+    const total = currentPuzzle.length;
+    const isLast = idx === total - 1;
+
+    const area = document.getElementById('mainArea');
+    area.innerHTML = '';
+
+    // ── Outer container ──
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'max-width:600px; margin:0 auto; padding:20px 16px 40px; display:flex; flex-direction:column; gap:0;';
+
+    // Progress
+    const prog = document.createElement('div');
+    prog.style.cssText = 'font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--color-text-muted); margin-bottom:12px;';
+    prog.textContent = 'Hand ' + (idx + 1) + ' of ' + total;
+    wrap.appendChild(prog);
+
+    // Card
+    const card = document.createElement('div');
+    card.className = 'hand-card';
+
+    // Tiles
+    card.appendChild(buildGroupsRow(item.instance.groups, 'groups-row'));
+
+    // Verdict section
+    const verdictSec = document.createElement('div');
+    verdictSec.className = 'verdict-section';
+
+    const vLabel = document.createElement('div');
+    vLabel.className = 'verdict-label';
+    vLabel.textContent = 'Is this hand valid?';
+    verdictSec.appendChild(vLabel);
+
+    // Toggle
+    const toggle = document.createElement('div');
+    toggle.className = 'validity-toggle';
+
+    const btnValid = document.createElement('button');
+    btnValid.className = 'validity-btn';
+    btnValid.textContent = '✓ Valid';
+
+    const btnInvalid = document.createElement('button');
+    btnInvalid.className = 'validity-btn';
+    btnInvalid.textContent = '✗ Invalid';
+
+    // Reasons section
+    const reasonsSec = document.createElement('div');
+    reasonsSec.className = 'reasons-section';
+
+    const rLabel = document.createElement('div');
+    rLabel.className = 'reasons-label';
+    rLabel.textContent = 'What's wrong with it?';
+    reasonsSec.appendChild(rLabel);
+
+    const reasonsGrid = document.createElement('div');
+    reasonsGrid.className = 'reasons-grid';
+
+    const selectedReasons = new Set();
+
+    REASON_DEFS.forEach(rd => {
+        const btn = document.createElement('button');
+        btn.className = 'reason-btn';
+        btn.textContent = rd.label;
+        btn.dataset.value = rd.value;
+        btn.addEventListener('click', () => {
+            btn.classList.toggle('selected');
+            if (selectedReasons.has(rd.value)) selectedReasons.delete(rd.value);
+            else selectedReasons.add(rd.value);
+        });
+        reasonsGrid.appendChild(btn);
+    });
+
+    reasonsSec.appendChild(reasonsGrid);
+    verdictSec.appendChild(reasonsSec);
+
+    // Track current selection
+    let saysInvalid = false;
+
+    function setValidity(invalid) {
+        saysInvalid = invalid;
+        btnValid.className   = 'validity-btn' + (!invalid ? ' active-valid'   : '');
+        btnInvalid.className = 'validity-btn' + ( invalid ? ' active-invalid' : '');
+        reasonsSec.classList.toggle('visible', invalid);
+    }
+
+    btnValid.addEventListener('click',   () => setValidity(false));
+    btnInvalid.addEventListener('click', () => setValidity(true));
+
+    toggle.appendChild(btnValid);
+    toggle.appendChild(btnInvalid);
+    verdictSec.insertBefore(toggle, reasonsSec);
+    card.appendChild(verdictSec);
+    wrap.appendChild(card);
+
+    // Nav button
+    const navRow = document.createElement('div');
+    navRow.className = 'nav-row';
+    const navBtn = document.createElement('button');
+    navBtn.className = 'btn-nav';
+    navBtn.textContent = isLast ? 'See Results →' : 'Next Hand →';
+    navBtn.addEventListener('click', () => {
+        userAnswers[idx] = { saysInvalid, selectedReasons: [...selectedReasons] };
+        if (isLast) {
+            showResults();
+        } else {
+            currentHandIdx++;
+            showHand(currentHandIdx);
+        }
+    });
+    navRow.appendChild(navBtn);
+    wrap.appendChild(navRow);
+
+    area.appendChild(wrap);
+}
+
+// ── Results phase ─────────────────────────────────────────────────────────────
+
+function showResults() {
+    const area = document.getElementById('mainArea');
+    area.innerHTML = '';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'results-area';
+
     let totalPoints = 0;
     let maxPoints = 0;
 
-    puzzle.forEach((item, idx) => {
-        const userSaysWrong = document.getElementById(`wrong-${idx}`).checked;
-        const card = document.getElementById(`hand-card-${idx}`);
-        const feedback = document.getElementById(`feedback-${idx}`);
-        feedback.className = 'feedback-row';
-        feedback.innerHTML = '';
-
+    currentPuzzle.forEach((item, idx) => {
+        const answer = userAnswers[idx] || { saysInvalid: false, selectedReasons: [] };
         const { isCorrupted, activeReasons } = item;
-        let handPoints = 0;
+        const { saysInvalid, selectedReasons } = answer;
 
-        // +1 for correct valid/invalid call
-        const callCorrect = userSaysWrong === isCorrupted;
-        if (callCorrect) handPoints++;
-
-        // Max for this hand: 1 (call) + number of active reasons
         const handMax = 1 + activeReasons.length;
         maxPoints += handMax;
 
-        // Reason scoring — only evaluated if user said invalid
-        const selectedErrors = userSaysWrong
-            ? [...document.querySelectorAll(`input[name="error-${idx}"]:checked`)].map(cb => cb.value)
-            : [];
+        const callCorrect = saysInvalid === isCorrupted;
+        let handPoints = callCorrect ? 1 : 0;
 
-        const allPossibleReasons = ['wrong_suit','wrong_number','wrong_size','illegal_joker','illegal_exposure'];
-        allPossibleReasons.forEach(r => {
-            const applies = activeReasons.includes(r);
-            const selected = selectedErrors.includes(r);
+        const allReasonValues = REASON_DEFS.map(r => r.value);
+        allReasonValues.forEach(r => {
+            const applies   = activeReasons.includes(r);
+            const selected  = selectedReasons.includes(r);
             if (selected && applies)  handPoints++;
             if (selected && !applies) handPoints--;
         });
-
         handPoints = Math.max(0, handPoints);
         totalPoints += handPoints;
 
-        // Visual feedback
-        card.classList.add(callCorrect ? 'revealed-correct' : 'revealed-wrong');
-        const icon = document.createElement('span');
-        icon.className = 'feedback-icon';
+        // Build result card
+        const card = document.createElement('div');
+        card.className = 'result-card ' + (callCorrect ? 'res-correct' : 'res-wrong');
 
-        let msg = '';
+        const handLabel = document.createElement('div');
+        handLabel.className = 'result-hand-label';
+        handLabel.textContent = 'Hand ' + (idx + 1);
+        card.appendChild(handLabel);
+
+        // Tiles (compact)
+        card.appendChild(buildGroupsRow(item.instance.groups, 'result-groups-row'));
+
+        // Verdict line
+        const verdictLine = document.createElement('div');
+        verdictLine.className = 'result-verdict-line';
         if (!isCorrupted) {
-            icon.textContent = callCorrect ? '✓' : '✗';
-            msg = callCorrect ? 'Correct — this hand is valid.' : 'This hand was actually valid.';
+            verdictLine.textContent = callCorrect ? '✓ Correct — this hand is valid.' : '✗ You said invalid — this hand is actually valid.';
         } else {
-            const reasonLabels = activeReasons.map(r => corruptionLabel(r)).join(', ');
+            const reasonStr = activeReasons.map(r => corruptionLabel(r)).join(', ');
             if (callCorrect) {
-                icon.textContent = '✓';
-                msg = `Correct — invalid because: ${reasonLabels}.`;
+                verdictLine.textContent = '✓ Correct — this hand is invalid.';
             } else {
-                icon.textContent = '✗';
-                msg = `This hand was actually invalid: ${reasonLabels}.`;
+                verdictLine.textContent = '✗ You said valid — this hand is actually invalid.';
+            }
+            if (isCorrupted) {
+                const detail = document.createElement('div');
+                detail.className = 'result-detail';
+                detail.textContent = 'Reason' + (activeReasons.length > 1 ? 's' : '') + ': ' + reasonStr + '.';
+                card.appendChild(verdictLine);
+                card.appendChild(detail);
+
+                // Points
+                const pts = document.createElement('div');
+                pts.className = 'result-pts';
+                pts.textContent = handPoints + ' / ' + handMax + ' pts';
+                card.appendChild(pts);
+                card.appendChild(buildHandIdEl(item.instance.handDef));
+                wrap.appendChild(card);
+                return;
             }
         }
 
-        const msgSpan = document.createElement('span');
-        msgSpan.textContent = msg + ` (${handPoints}/${handMax} pts)`;
-        feedback.appendChild(icon);
-        feedback.appendChild(msgSpan);
-        feedback.classList.add(callCorrect ? 'correct' : 'wrong');
+        card.appendChild(verdictLine);
 
-        // Reveal hand identity
-        const handDef = item.instance.handDef;
-        const handIdEl = document.createElement('div');
-        handIdEl.style.cssText = 'margin-top:8px; padding-top:8px; border-top:1px solid rgba(0,0,0,0.1); width:100%;';
+        const pts = document.createElement('div');
+        pts.className = 'result-pts';
+        pts.textContent = handPoints + ' / ' + handMax + ' pts';
+        card.appendChild(pts);
 
-        const handName = document.createElement('div');
-        handName.style.cssText = 'font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-text-muted); margin-bottom:4px;';
-        handName.textContent = `${handDef.Section} · Hand ${handDef['hand number']}`;
-        handIdEl.appendChild(handName);
-
-        if (handDef.description && handDef.description.length) {
-            const descEl = document.createElement('div');
-            descEl.style.cssText = 'font-size:13px; line-height:1.6;';
-            // Color name → CSS color mapping matching the card's palette
-            const colorMap = { navy: '#01579B', green: '#1B5E20', red: '#B71C1C', black: '#333333' };
-            handDef.description.forEach(seg => {
-                const span = document.createElement('span');
-                span.textContent = seg.text;
-                span.style.color = colorMap[seg.color] || '#333333';
-                if (seg.bold) span.style.fontWeight = '700';
-                descEl.appendChild(span);
-            });
-            handIdEl.appendChild(descEl);
-        }
-
-        feedback.appendChild(handIdEl);
+        card.appendChild(buildHandIdEl(item.instance.handDef));
+        wrap.appendChild(card);
     });
 
-    document.getElementById('submitBtn').disabled = true;
+    // Score banner
+    const banner = document.createElement('div');
+    banner.className = 'score-banner';
+    banner.innerHTML = '<div class="score-big">' + totalPoints + '<span style="font-size:32px;opacity:0.7"> / ' + maxPoints + '</span></div>' +
+        '<div class="score-sub">points earned</div>' +
+        '<button class="btn-again" onclick="newPuzzle()">Try Another Puzzle</button>';
+    wrap.appendChild(banner);
 
-    const summary = document.getElementById('scoreSummary');
-    summary.className = 'score-summary visible';
-    summary.innerHTML = `
-        <div class="score-number">${totalPoints} / ${maxPoints}</div>
-        <div class="score-label">points earned</div>
-        <button class="btn-new" style="margin-top:16px; background:var(--color-primary); color:white; border:none; border-radius:10px; padding:10px 24px; font-size:15px; font-weight:700; cursor:pointer;" onclick="newPuzzle()">Try Another</button>
-    `;
+    area.appendChild(wrap);
 }
 
-function corruptionLabel(type) {
-    switch(type) {
-        case 'wrong_suit':       return 'wrong suit';
-        case 'wrong_number':     return 'wrong number';
-        case 'wrong_size':       return 'wrong number of tiles in a group';
-        case 'illegal_joker':    return 'illegal joker use';
-        case 'illegal_exposure': return 'illegal exposure';
-        default: return type;
-    }
-}
+// ── Puzzle lifecycle ──────────────────────────────────────────────────────────
 
 function newPuzzle() {
-    currentPuzzle = buildPuzzle();
+    currentPuzzle  = buildPuzzle();
+    currentHandIdx = 0;
+    userAnswers    = [];
     if (!currentPuzzle) {
-        document.getElementById('puzzleArea').innerHTML =
+        document.getElementById('mainArea').innerHTML =
             '<div class="loading-msg">Could not generate puzzle — please try again.</div>';
         return;
     }
-    renderPuzzle(currentPuzzle);
+    showHand(0);
 }
 
 function onCardChange() {
@@ -1069,7 +1205,6 @@ function onCardChange() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 window.addEventListener('load', () => {
-    // Populate card selector from CARD_LIBRARY if available
     if (window.CARD_LIBRARY) {
         const sel = document.getElementById('cardSelector');
         sel.innerHTML = '';
