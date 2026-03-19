@@ -858,8 +858,6 @@ function makeTileEl(tile) {
 
 // ── Puzzle state ──────────────────────────────────────────────────────────────
 
-let currentPuzzle = null; // array of { instance, fillCorruption, exposureCorrupted, activeReasons, isCorrupted }
-
 function buildPuzzle() {
     if (!window.ACTIVE_CARD || window.ACTIVE_CARD.length === 0) return null;
 
