@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Mahjong Gone Wrong</title>
+    <script src="data/card-2025.js"></script>
+    <script src="js/card-loader.js"></script>
+    <style>
+        :root {
+            --color-primary:       #2c5f2d;
+            --color-primary-dark:  #1f4420;
+            --color-primary-light: #f0f8f0;
+            --color-bg-page:       #fafafa;
+            --color-text-primary:  #333333;
+            --color-text-secondary:#666666;
+            --color-text-muted:    #999999;
+            --color-border:        #e0e0e0;
+            --color-error:         #c62828;
+            --color-correct:       #2e7d32;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: var(--color-bg-page);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+        }
+
+        /* ── Header ── */
+        .page-header {
+            background: var(--color-primary);
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .page-header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .page-header .subtitle {
+            font-size: 13px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .card-selector {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .card-selector option { color: #333; background: white; }
+
+        .btn-new {
+            background: white;
+            color: var(--color-primary);
+            border: none;
+            border-radius: 8px;
+            padding: 7px 16px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn-new:hover { opacity: 0.85; }
+
+        /* ── Main layout ── */
+        .puzzle-area {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .instructions {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 14px;
+            color: #5d4037;
+            line-height: 1.5;
+        }
+
+        /* ── Hand card ── */
+        .hand-card {
+            background: white;
+            border: 2px solid var(--color-border);
+            border-radius: 14px;
+            padding: 18px 18px 14px;
+            transition: border-color 0.2s;
+        }
+
+        .hand-card.revealed-correct {
+            border-color: var(--color-correct);
+            background: #f1f8f1;
+        }
+
+        .hand-card.revealed-wrong {
+            border-color: var(--color-error);
+            background: #fff5f5;
+        }
+
+        .hand-number {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+            margin-bottom: 10px;
+        }
+
+        /* ── Tile groups ── */
+        .groups-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .tile-group {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 1px;
+        }
+
+        .tile-group.is-exposure {
+            background: rgba(44,95,45,0.07);
+            border: 1.5px solid var(--color-primary);
+            border-radius: 8px;
+            padding: 3px 5px;
+            position: relative;
+        }
+
+        .tile-group.is-exposure::after {
+            content: 'Exposed';
+            position: absolute;
+            bottom: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--color-primary);
+            white-space: nowrap;
+        }
+
+        .group-gap { width: 6px; }
+
+        /* ── Tile styles (mirrors game.html) ── */
+        .tile {
+            width: 38px;
+            height: 50px;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(0,0,0,0.15);
+            border-radius: 6px;
+            background: white;
+            font-weight: 600;
+            cursor: default;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6);
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .tile::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 50%);
+            pointer-events: none;
+        }
+
+        .tile-number {
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .tile-label {
+            font-size: 9px;
+            margin-top: 1px;
+        }
+
+        .tile-D  { background: #E3F2FD; color: #01579B; }
+        .tile-B  { background: #E8F5E9; color: #1B5E20; }
+        .tile-C  { background: #FFEBEE; color: #B71C1C; }
+        .tile-F  { background: #F3E5F5; color: #6A1B9A; }
+        .tile-J  { background: #FFFDE7; color: #F57F17; }
+        .tile-WIND { background: #ECEFF1; color: #37474F; }
+        .tile-GD { background: #C8E6C9; color: #1B5E20; }
+        .tile-RD { background: #FFCDD2; color: #B71C1C; }
+        .tile-WD { background: #BBDEFB; color: #01579B; }
+
+        /* ── Verdict UI ── */
+        .verdict-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 10px;
+            margin-top: 6px;
+            padding-top: 12px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .verdict-check-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 1.5px solid var(--color-border);
+            background: #fafafa;
+            transition: all 0.15s;
+            user-select: none;
+        }
+
+        .verdict-check-label:hover { background: #f0f0f0; }
+        .verdict-check-label input { margin: 0; cursor: pointer; }
+
+        .error-options {
+            display: none;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+            width: 100%;
+        }
+
+        .error-options.visible { display: flex; }
+
+        .error-option-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1.5px solid #ddd;
+            background: white;
+            transition: all 0.15s;
+            user-select: none;
+        }
+
+        .error-option-label:hover { background: #f5f5f5; }
+        .error-option-label input { margin: 0; cursor: pointer; }
+
+        /* ── Result feedback ── */
+        .feedback-row {
+            display: none;
+            align-items: flex-start;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .feedback-row.correct {
+            display: flex;
+            background: #e8f5e9;
+            color: #1b5e20;
+            border: 1px solid #a5d6a7;
+        }
+
+        .feedback-row.wrong {
+            display: flex;
+            background: #ffebee;
+            color: #b71c1c;
+            border: 1px solid #ef9a9a;
+        }
+
+        .feedback-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+        /* ── Submit / New ── */
+        .action-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-submit {
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 32px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 3px 12px rgba(44,95,45,0.3);
+            transition: background 0.15s, transform 0.1s;
+        }
+
+        .btn-submit:hover { background: var(--color-primary-dark); transform: translateY(-1px); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* ── Score summary ── */
+        .score-summary {
+            display: none;
+            background: white;
+            border: 2px solid var(--color-primary);
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .score-summary.visible { display: block; }
+
+        .score-number {
+            font-size: 42px;
+            font-weight: 700;
+            color: var(--color-primary);
+            line-height: 1;
+        }
+
+        .score-label {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+        }
+
+        /* ── Loading / empty states ── */
+        .loading-msg {
+            text-align: center;
+            padding: 40px;
+            color: var(--color-text-muted);
+            font-size: 15px;
+        }
+
+        @media (max-width: 480px) {
+            .tile { width: 32px; height: 44px; }
+            .tile-number { font-size: 17px; }
+            .tile-label { font-size: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-header">
+    <div>
+        <div class="page-header h1" style="font-size:22px;font-weight:700;">🀄 Mahjong Gone Wrong</div>
+        <div class="subtitle">Spot the invalid hands</div>
+    </div>
+    <div class="header-controls">
+        <select class="card-selector" id="cardSelector" onchange="onCardChange()">
+            <option value="2025">2025 Card</option>
+        </select>
+        <button class="btn-new" onclick="newPuzzle()">New Puzzle</button>
+    </div>
+</div>
+
+<div class="puzzle-area" id="puzzleArea">
+    <div class="loading-msg" id="loadingMsg">Loading card…</div>
+</div>
+
+<script>
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+const SUITS = ['B', 'C', 'D'];
+const DRAGON_MAP = { B: 'GD', C: 'RD', D: 'WD' };
+const VARIABLE_TILES = new Set(['X', 'V', 'Y', 'M', 'Q', 'R', 'K']);
+const EVEN_NUMS  = [2, 4, 6, 8];
+const ODD_NUMS   = [1, 3, 5, 7, 9];
+const MULT3_NUMS = [3, 6, 9];
+
+// Parse a pattern string into group descriptors (simplified — no K/R/Q support needed for resolution)
+function parseGroups(code) {
+    const tokens = code.trim().split(/\s+/).filter(Boolean);
+    return tokens.map(token => {
+        const m = token.match(/^(?:\[(\w+)\])?([xvymqr0-9NEWSFDJkK]+)(?:-([0-9]+)?([a-z])?)?(?:\(\+?(-?\d+)\))?$/i);
+        if (!m) return null;
+        const kName  = m[1] || null;
+        const tiles  = m[2].toUpperCase().split('');
+        const numVar = m[3] || null;
+        const suitVar = m[4] ? m[4].toLowerCase() : null;
+        const offset = m[5] ? parseInt(m[5], 10) : 0;
+        return { raw: token, tiles, numVar, suitVar, offset, kName };
+    }).filter(Boolean);
+}
+
+// Determine valid base numbers for a numVar across all groups that share it,
+// respecting tile type constraints (V=even, Y=odd, M=mult3, X=any) and offsets.
+function validBasesForNumVar(groups, numVar) {
+    const relevant = groups.filter(g => g.numVar === numVar);
+    // Determine the most restrictive number set across all groups using this numVar
+    // (If a numVar is used with X in one group and V in another, V wins for even constraint)
+    let allowed = new Set([1,2,3,4,5,6,7,8,9]);
+    for (const g of relevant) {
+        const firstTile = g.tiles[0];
+        if (firstTile === 'V') allowed = new Set(EVEN_NUMS.filter(n => allowed.has(n)));
+        else if (firstTile === 'Y') allowed = new Set(ODD_NUMS.filter(n => allowed.has(n)));
+        else if (firstTile === 'M') allowed = new Set(MULT3_NUMS.filter(n => allowed.has(n)));
+    }
+    // Filter so that base + all offsets stay in 1-9
+    const offsets = relevant.map(g => g.offset || 0);
+    const minOff = Math.min(...offsets);
+    const maxOff = Math.max(...offsets);
+    return [...allowed].filter(n => (n + minOff) >= 1 && (n + maxOff) <= 9);
+}
+
+// Determine valid starts for a K sequence
+function validKStarts(groups, kName) {
+    const kGroup = groups.find(g => g.kName === kName && g.tiles.includes('K'));
+    if (!kGroup) return [];
+    const L = kGroup.tiles.filter(t => t === 'K').length;
+    // Offsets from Q groups referencing this K
+    const qOffsets = groups
+        .filter(g => g.kName === kName && !g.tiles.includes('K'))
+        .map(g => g.offset || 0);
+    const maxOff = qOffsets.length ? Math.max(...qOffsets) : 0;
+    // start+L-1 <= 9 and start+L-1+maxOff <= 9
+    const maxStart = 9 - (L - 1) - maxOff;
+    const result = [];
+    for (let s = 1; s <= maxStart; s++) result.push(s);
+    return result;
+}
+
+// Resolve a single tile character to a concrete tile string given maps
+function resolveTileChar(char, suitMap, numMap, kStartMap, kName, offset) {
+    if (char === 'F') return 'F';
+    if (char === 'J') return 'J';
+    if (char === 'N') return 'N';
+    if (char === 'E') return 'E';
+    if (char === 'W') return 'W';
+    if (char === 'S') return 'S';
+    if (char === '0') return 'WD';
+    if (char === 'D') {
+        // Dragon — needs suitVar
+        return null; // handled at group level
+    }
+    if (/[0-9]/.test(char)) return char + (suitMap['_literal'] || 'B'); // shouldn't normally hit
+    return null;
+}
+
+// Resolve an entire group to an array of tile strings.
+// Returns null if resolution is impossible.
+function resolveGroup(group, suitMap, numMap, kStartMap) {
+    const tiles = [];
+    const suit = group.suitVar ? suitMap[group.suitVar] : null;
+
+    // For groups with D tiles but no suitVar, pick a dragon suit up-front
+    let unboundDragonSuit = null;
+    if (!group.suitVar && group.tiles.includes('D')) {
+        unboundDragonSuit = pick(SUITS);
+    }
+
+    // For wildcard tiles (X/V/Y/M) with no numVar, pick a base number up-front
+    let unboundNum = null;
+    if (!group.numVar && group.tiles.some(t => ['X','V','Y','M'].includes(t))) {
+        const firstWild = group.tiles.find(t => ['X','V','Y','M'].includes(t));
+        let candidates = [1,2,3,4,5,6,7,8,9];
+        if (firstWild === 'V') candidates = EVEN_NUMS;
+        else if (firstWild === 'Y') candidates = ODD_NUMS;
+        else if (firstWild === 'M') candidates = MULT3_NUMS;
+        const offset = group.offset || 0;
+        candidates = candidates.filter(n => (n + offset) >= 1 && (n + offset) <= 9);
+        if (candidates.length === 0) return null;
+        unboundNum = pick(candidates);
+    }
+
+    if (group.tiles.includes('K')) {
+        // K sequence
+        const start = kStartMap[group.kName];
+        if (start === undefined) return null;
+        const L = group.tiles.filter(t => t === 'K').length;
+        for (let i = 0; i < L; i++) {
+            const num = start + i;
+            if (num < 1 || num > 9) return null;
+            tiles.push(num + suit);
+        }
+        return tiles;
+    }
+
+    for (const char of group.tiles) {
+        if (char === 'F') { tiles.push('F'); continue; }
+        if (char === 'J') { tiles.push('J'); continue; }
+        if (['N','E','W','S'].includes(char)) { tiles.push(char); continue; }
+        if (char === '0') { tiles.push('WD'); continue; }
+
+        if (char === 'D') {
+            const dragonSuit = suit || unboundDragonSuit;
+            if (!dragonSuit) return null;
+            tiles.push(DRAGON_MAP[dragonSuit]);
+            continue;
+        }
+
+        if (/[0-9]/.test(char)) {
+            const num = parseInt(char) + (group.offset || 0);
+            if (num < 1 || num > 9) return null;
+            tiles.push(num + (suit || 'B'));
+            continue;
+        }
+
+        // Wildcard tile (X, V, Y, M)
+        if (['X','V','Y','M'].includes(char)) {
+            const base = group.numVar ? numMap[group.numVar] : unboundNum;
+            if (base === undefined || base === null) return null;
+            const num = base + (group.offset || 0);
+            if (num < 1 || num > 9) return null;
+            tiles.push(num + (suit || 'B'));
+            continue;
+        }
+
+        // Q tile (references K end value)
+        if (char === 'Q') {
+            const start = kStartMap[group.kName];
+            if (start === undefined) return null;
+            const num = start + (group.offset || 0);
+            if (num < 1 || num > 9) return null;
+            tiles.push(num + (suit || 'B'));
+            continue;
+        }
+
+        return null; // unhandled (e.g. R tile — skip hands with R)
+    }
+
+    return tiles;
+}
+
+// Instantiate a hand from a card entry.
+// Returns { groups: [{tiles: string[], isExposure: false, groupSpec}], suitMap, numMap, kStartMap }
+// or null if instantiation fails.
+function instantiateHand(handDef) {
+    const groups = parseGroups(handDef.code);
+    if (!groups || groups.length === 0) return null;
+
+    // Collect distinct suitVars and numVars
+    const suitVarNames = [...new Set(groups.filter(g => g.suitVar).map(g => g.suitVar))];
+    const numVarNames  = [...new Set(groups.filter(g => g.numVar  && !g.tiles.includes('K')).map(g => g.numVar))];
+    const kNames       = [...new Set(groups.filter(g => g.kName).map(g => g.kName))];
+
+    // Assign suits — shuffle and assign in order so distinct vars get distinct suits
+    const suitPool = shuffle([...SUITS]);
+    const suitMap = {};
+    for (let i = 0; i < suitVarNames.length; i++) {
+        if (i >= suitPool.length) return null; // more than 3 suit vars — shouldn't happen
+        suitMap[suitVarNames[i]] = suitPool[i];
+    }
+
+    // Assign numVars
+    const numMap = {};
+    for (const nv of numVarNames) {
+        const valids = validBasesForNumVar(groups, nv);
+        if (valids.length === 0) return null;
+        numMap[nv] = pick(valids);
+    }
+
+    // Assign K sequence starts
+    const kStartMap = {};
+    for (const kn of kNames) {
+        const starts = validKStarts(groups, kn);
+        if (starts.length === 0) return null;
+        kStartMap[kn] = pick(starts);
+    }
+
+    // Resolve all groups
+    const resolvedGroups = groups.map(g => {
+        const tiles = resolveGroup(g, suitMap, numMap, kStartMap);
+        if (!tiles) return null;
+        return { tiles, isExposure: false, groupSpec: g };
+    });
+
+    if (resolvedGroups.some(g => g === null)) return null;
+
+    // Verify total tile count is 14
+    const total = resolvedGroups.reduce((s, g) => s + g.tiles.length, 0);
+    if (total !== 14) return null;
+
+    return { groups: resolvedGroups, suitMap, numMap, kStartMap, handDef };
+}
+
+// ── Corruption ───────────────────────────────────────────────────────────────
+
+const CORRUPTION_TYPES = {
+    WRONG_SUIT:       'wrong_suit',
+    WRONG_NUMBER:     'wrong_number',
+    WRONG_SIZE:       'wrong_size',
+    ILLEGAL_JOKER:    'illegal_joker',
+    ILLEGAL_EXPOSURE: 'illegal_exposure',
+};
+
+// A group is legally exposable if: open hand, 3+ tiles, all naturals identical.
+function isExposureLegal(group, handDef) {
+    if (handDef.status === 'closed') return false;
+    if (group.tiles.length < 3) return false;
+    const naturals = group.tiles.filter(t => t !== 'J');
+    return naturals.length > 0 && new Set(naturals).size === 1;
+}
+
+// A group can legally hold a joker if it has 3+ identical tiles.
+function groupCanUseJoker(group) {
+    if (group.tiles.length < 3) return false;
+    const naturals = group.tiles.filter(t => t !== 'J');
+    return naturals.length > 0 && new Set(naturals).size === 1;
+}
+
+// Apply fill corruption. Returns corruption type string or null.
+function corruptHand(instance) {
+    const { groups, suitMap, numMap, kStartMap } = instance;
+    const possible = [];
+
+    const suitVarNames = [...new Set(groups.map(g => g.groupSpec.suitVar).filter(Boolean))];
+    const numVarNames  = [...new Set(groups.map(g => g.groupSpec.numVar).filter(Boolean))];
+
+    if (suitVarNames.length > 0) possible.push(CORRUPTION_TYPES.WRONG_SUIT);
+
+    for (const nv of numVarNames) {
+        if (validBasesForNumVar(groups, nv).filter(v => v !== numMap[nv]).length > 0) {
+            possible.push(CORRUPTION_TYPES.WRONG_NUMBER);
+            break;
+        }
+    }
+
+    const sizableGroups = groups.filter(g => {
+        if (g.tiles.length < 2) return false;
+        const suited = g.tiles.filter(t => t.length === 2 && SUITS.includes(t[1]));
+        return suited.length >= 2 && new Set(suited).size === 1;
+    });
+    if (sizableGroups.length > 0) possible.push(CORRUPTION_TYPES.WRONG_SIZE);
+
+    const jokerTargetGroups = groups.filter(g => !groupCanUseJoker(g) && g.tiles.some(t => t !== 'J'));
+    if (jokerTargetGroups.length > 0) possible.push(CORRUPTION_TYPES.ILLEGAL_JOKER);
+
+    if (possible.length === 0) return null;
+    const type = pick(possible);
+
+    if (type === CORRUPTION_TYPES.WRONG_SUIT) {
+        const sv = pick(suitVarNames);
+        suitMap[sv] = pick(SUITS.filter(s => s !== suitMap[sv]));
+        groups.forEach(g => {
+            if (g.groupSpec.suitVar === sv) {
+                const t = resolveGroup(g.groupSpec, suitMap, numMap, kStartMap);
+                if (t) g.tiles = t;
+            }
+        });
+        return type;
+    }
+
+    if (type === CORRUPTION_TYPES.WRONG_NUMBER) {
+        for (const nv of numVarNames) {
+            const others = validBasesForNumVar(groups, nv).filter(v => v !== numMap[nv]);
+            if (others.length === 0) continue;
+            numMap[nv] = pick(others);
+            groups.forEach(g => {
+                if (g.groupSpec.numVar === nv) {
+                    const t = resolveGroup(g.groupSpec, suitMap, numMap, kStartMap);
+                    if (t) g.tiles = t;
+                }
+            });
+            return type;
+        }
+        return null;
+    }
+
+    if (type === CORRUPTION_TYPES.WRONG_SIZE) {
+        const g = pick(sizableGroups);
+        g.tiles = (Math.random() < 0.5 && g.tiles.length > 2)
+            ? g.tiles.slice(0, -1)
+            : [...g.tiles, g.tiles[0]];
+        return type;
+    }
+
+    if (type === CORRUPTION_TYPES.ILLEGAL_JOKER) {
+        const g = pick(jokerTargetGroups);
+        const replaceable = g.tiles.map((t, i) => t !== 'J' ? i : -1).filter(i => i >= 0);
+        const idx = pick(replaceable);
+        g.tiles = [...g.tiles];
+        g.tiles[idx] = 'J';
+        return type;
+    }
+
+    return null;
+}
+
+// Apply per-group exposure layer (independent of fill corruption).
+// Each group has a 5% chance of being marked as exposed.
+// Returns true if any resulting exposure is illegal.
+function applyExposures(instance) {
+    const { groups, handDef } = instance;
+    let hasIllegal = false;
+    groups.forEach(group => {
+        if (Math.random() < 0.05) {
+            group.isExposure = true;
+            if (!isExposureLegal(group, handDef)) hasIllegal = true;
+        }
+    });
+    return hasIllegal;
+}
+
+// ── Tile rendering ────────────────────────────────────────────────────────────
+
+function getTileDisplay(tile) {
+    if (tile === 'WD') return { number: 'O', label: 'White', colorClass: 'tile-WD' };
+    if (tile === 'GD') return { number: 'G', label: 'Green', colorClass: 'tile-GD' };
+    if (tile === 'RD') return { number: 'R', label: 'Red',   colorClass: 'tile-RD' };
+    if (tile === 'N')  return { number: 'N', label: 'North', colorClass: 'tile-WIND' };
+    if (tile === 'E')  return { number: 'E', label: 'East',  colorClass: 'tile-WIND' };
+    if (tile === 'W')  return { number: 'W', label: 'West',  colorClass: 'tile-WIND' };
+    if (tile === 'S')  return { number: 'S', label: 'South', colorClass: 'tile-WIND' };
+    if (tile === 'F')  return { number: 'F', label: 'Flower',colorClass: 'tile-F' };
+    if (tile === 'J')  return { number: 'J', label: 'Joker', colorClass: 'tile-J' };
+    if (tile.length === 2 && tile[1] === 'B') return { number: tile[0], label: 'Bam',   colorClass: 'tile-B' };
+    if (tile.length === 2 && tile[1] === 'D') return { number: tile[0], label: 'Dot',   colorClass: 'tile-D' };
+    if (tile.length === 2 && tile[1] === 'C') return { number: tile[0], label: 'Crack', colorClass: 'tile-C' };
+    return { number: tile, label: '', colorClass: '' };
+}
+
+function makeTileEl(tile) {
+    const d = getTileDisplay(tile);
+    const div = document.createElement('div');
+    div.className = 'tile ' + d.colorClass;
+    const numDiv = document.createElement('div');
+    numDiv.className = 'tile-number';
+    numDiv.textContent = d.number;
+    const lblDiv = document.createElement('div');
+    lblDiv.className = 'tile-label';
+    lblDiv.textContent = d.label;
+    div.appendChild(numDiv);
+    div.appendChild(lblDiv);
+    return div;
+}
+
+// ── Puzzle state ──────────────────────────────────────────────────────────────
+
+let currentPuzzle = null; // array of { instance, fillCorruption, exposureCorrupted, activeReasons, isCorrupted }
+
+function buildPuzzle() {
+    if (!window.ACTIVE_CARD || window.ACTIVE_CARD.length === 0) return null;
+
+    const shuffledCard = shuffle([...window.ACTIVE_CARD]);
+    const chosen = [];
+    const usedCodes = new Set();
+
+    for (const handDef of shuffledCard) {
+        if (chosen.length >= 3) break;
+        if (usedCodes.has(handDef.code)) continue;
+        // Skip hands with R tiles (Consecutive run 7 — out of scope for resolution)
+        if (/\br\b/i.test(handDef.code) && handDef.code.includes('[')) continue;
+
+        let instance = null;
+        for (let attempt = 0; attempt < 5; attempt++) {
+            instance = instantiateHand(handDef);
+            if (instance) break;
+        }
+        if (!instance) continue;
+
+        usedCodes.add(handDef.code);
+        chosen.push(instance);
+    }
+
+    if (chosen.length < 3) return null;
+
+    return chosen.map(instance => {
+        // Layer 1: fill corruption (50%)
+        let fillCorruption = null;
+        if (Math.random() < 0.5) {
+            fillCorruption = corruptHand(instance); // may return null if no corruption possible
+        }
+
+        // Layer 2: per-group exposures (5% per group, independent)
+        const exposureCorrupted = applyExposures(instance);
+
+        // Collect all reasons that actually apply
+        const activeReasons = [];
+        if (fillCorruption) activeReasons.push(fillCorruption);
+        if (exposureCorrupted) activeReasons.push(CORRUPTION_TYPES.ILLEGAL_EXPOSURE);
+
+        const isCorrupted = activeReasons.length > 0;
+
+        return { instance, fillCorruption, exposureCorrupted, activeReasons, isCorrupted };
+    });
+}
+
+// ── Rendering ──────────────────────────────────────────────────────────────────
+
+function renderPuzzle(puzzle) {
+    const area = document.getElementById('puzzleArea');
+    area.innerHTML = '';
+
+    // Instructions
+    const instr = document.createElement('div');
+    instr.className = 'instructions';
+    instr.innerHTML = `Each hand below may or may not be a valid mahjong hand. 
+        <strong>Check any hand you think is invalid</strong>, then select the reasons why. 
+        Score: <strong>+1</strong> correct call, <strong>+1</strong> each correct reason, <strong>−1</strong> each wrong reason (floored at 0 per hand).`;
+    area.appendChild(instr);
+
+    puzzle.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'hand-card';
+        card.id = `hand-card-${idx}`;
+
+        // Label
+        const label = document.createElement('div');
+        label.className = 'hand-number';
+        label.textContent = `Hand ${idx + 1}`;
+        card.appendChild(label);
+
+        // Groups row
+        const groupsRow = document.createElement('div');
+        groupsRow.className = 'groups-row';
+
+        item.instance.groups.forEach((group, gIdx) => {
+            if (gIdx > 0) {
+                const gap = document.createElement('div');
+                gap.className = 'group-gap';
+                groupsRow.appendChild(gap);
+            }
+            const groupEl = document.createElement('div');
+            groupEl.className = 'tile-group' + (group.isExposure ? ' is-exposure' : '');
+            group.tiles.forEach(tile => groupEl.appendChild(makeTileEl(tile)));
+            groupsRow.appendChild(groupEl);
+        });
+
+        card.appendChild(groupsRow);
+
+        // Verdict UI
+        const verdictRow = document.createElement('div');
+        verdictRow.className = 'verdict-row';
+
+        const wrongLabel = document.createElement('label');
+        wrongLabel.className = 'verdict-check-label';
+        const wrongCheck = document.createElement('input');
+        wrongCheck.type = 'checkbox';
+        wrongCheck.id = `wrong-${idx}`;
+        wrongLabel.appendChild(wrongCheck);
+        wrongLabel.appendChild(document.createTextNode(' This hand is invalid'));
+        verdictRow.appendChild(wrongLabel);
+
+        // Error options (hidden until checked)
+        const errorOpts = document.createElement('div');
+        errorOpts.className = 'error-options';
+        errorOpts.id = `errors-${idx}`;
+
+        const errorTypes = [
+            { value: 'wrong_suit',       label: 'Wrong suit' },
+            { value: 'wrong_number',     label: 'Wrong number' },
+            { value: 'wrong_size',       label: 'Wrong number of tiles in a group' },
+            { value: 'illegal_joker',    label: 'Illegal joker use' },
+            { value: 'illegal_exposure', label: 'Illegal exposure' },
+        ];
+
+        errorTypes.forEach(et => {
+            const lbl = document.createElement('label');
+            lbl.className = 'error-option-label';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = et.value;
+            cb.name = `error-${idx}`;
+            lbl.appendChild(cb);
+            lbl.appendChild(document.createTextNode(' ' + et.label));
+            errorOpts.appendChild(lbl);
+        });
+
+        verdictRow.appendChild(errorOpts);
+
+        // Feedback placeholder
+        const feedback = document.createElement('div');
+        feedback.className = 'feedback-row';
+        feedback.id = `feedback-${idx}`;
+        verdictRow.appendChild(feedback);
+
+        card.appendChild(verdictRow);
+        area.appendChild(card);
+
+        // Toggle error options visibility
+        wrongCheck.addEventListener('change', () => {
+            errorOpts.classList.toggle('visible', wrongCheck.checked);
+        });
+    });
+
+    // Submit button
+    const actionRow = document.createElement('div');
+    actionRow.className = 'action-row';
+    const submitBtn = document.createElement('button');
+    submitBtn.className = 'btn-submit';
+    submitBtn.textContent = 'Check Answers';
+    submitBtn.id = 'submitBtn';
+    submitBtn.onclick = checkAnswers;
+    actionRow.appendChild(submitBtn);
+    area.appendChild(actionRow);
+
+    // Score summary placeholder
+    const summary = document.createElement('div');
+    summary.className = 'score-summary';
+    summary.id = 'scoreSummary';
+    area.appendChild(summary);
+}
+
+function checkAnswers() {
+    const puzzle = currentPuzzle;
+    let totalPoints = 0;
+    let maxPoints = 0;
+
+    puzzle.forEach((item, idx) => {
+        const userSaysWrong = document.getElementById(`wrong-${idx}`).checked;
+        const card = document.getElementById(`hand-card-${idx}`);
+        const feedback = document.getElementById(`feedback-${idx}`);
+        feedback.className = 'feedback-row';
+        feedback.innerHTML = '';
+
+        const { isCorrupted, activeReasons } = item;
+        let handPoints = 0;
+
+        // +1 for correct valid/invalid call
+        const callCorrect = userSaysWrong === isCorrupted;
+        if (callCorrect) handPoints++;
+
+        // Max for this hand: 1 (call) + number of active reasons
+        const handMax = 1 + activeReasons.length;
+        maxPoints += handMax;
+
+        // Reason scoring — only evaluated if user said invalid
+        const selectedErrors = userSaysWrong
+            ? [...document.querySelectorAll(`input[name="error-${idx}"]:checked`)].map(cb => cb.value)
+            : [];
+
+        const allPossibleReasons = ['wrong_suit','wrong_number','wrong_size','illegal_joker','illegal_exposure'];
+        allPossibleReasons.forEach(r => {
+            const applies = activeReasons.includes(r);
+            const selected = selectedErrors.includes(r);
+            if (selected && applies)  handPoints++;
+            if (selected && !applies) handPoints--;
+        });
+
+        handPoints = Math.max(0, handPoints);
+        totalPoints += handPoints;
+
+        // Visual feedback
+        card.classList.add(callCorrect ? 'revealed-correct' : 'revealed-wrong');
+        const icon = document.createElement('span');
+        icon.className = 'feedback-icon';
+
+        let msg = '';
+        if (!isCorrupted) {
+            icon.textContent = callCorrect ? '✓' : '✗';
+            msg = callCorrect ? 'Correct — this hand is valid.' : 'This hand was actually valid.';
+        } else {
+            const reasonLabels = activeReasons.map(r => corruptionLabel(r)).join(', ');
+            if (callCorrect) {
+                icon.textContent = '✓';
+                msg = `Correct — invalid because: ${reasonLabels}.`;
+            } else {
+                icon.textContent = '✗';
+                msg = `This hand was actually invalid: ${reasonLabels}.`;
+            }
+        }
+
+        const msgSpan = document.createElement('span');
+        msgSpan.textContent = msg + ` (${handPoints}/${handMax} pts)`;
+        feedback.appendChild(icon);
+        feedback.appendChild(msgSpan);
+        feedback.classList.add(callCorrect ? 'correct' : 'wrong');
+    });
+
+    document.getElementById('submitBtn').disabled = true;
+
+    const summary = document.getElementById('scoreSummary');
+    summary.className = 'score-summary visible';
+    summary.innerHTML = `
+        <div class="score-number">${totalPoints} / ${maxPoints}</div>
+        <div class="score-label">points earned</div>
+        <button class="btn-new" style="margin-top:16px; background:var(--color-primary); color:white; border:none; border-radius:10px; padding:10px 24px; font-size:15px; font-weight:700; cursor:pointer;" onclick="newPuzzle()">Try Another</button>
+    `;
+}
+
+function corruptionLabel(type) {
+    switch(type) {
+        case 'wrong_suit':       return 'wrong suit';
+        case 'wrong_number':     return 'wrong number';
+        case 'wrong_size':       return 'wrong number of tiles in a group';
+        case 'illegal_joker':    return 'illegal joker use';
+        case 'illegal_exposure': return 'illegal exposure';
+        default: return type;
+    }
+}
+
+function newPuzzle() {
+    currentPuzzle = buildPuzzle();
+    if (!currentPuzzle) {
+        document.getElementById('puzzleArea').innerHTML =
+            '<div class="loading-msg">Could not generate puzzle — please try again.</div>';
+        return;
+    }
+    renderPuzzle(currentPuzzle);
+}
+
+function onCardChange() {
+    const year = document.getElementById('cardSelector').value;
+    loadCard(year, () => newPuzzle());
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+window.addEventListener('load', () => {
+    // Populate card selector from CARD_LIBRARY if available
+    if (window.CARD_LIBRARY) {
+        const sel = document.getElementById('cardSelector');
+        sel.innerHTML = '';
+        Object.keys(window.CARD_LIBRARY).sort().reverse().forEach(year => {
+            const opt = document.createElement('option');
+            opt.value = year;
+            opt.textContent = year + ' Card';
+            sel.appendChild(opt);
+        });
+    }
+
+    const cardYear = new URLSearchParams(window.location.search).get('year') || null;
+    loadCard(cardYear, () => newPuzzle());
+});
+</script>
+</body>
+</html>
