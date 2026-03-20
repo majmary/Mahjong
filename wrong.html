@@ -123,9 +123,8 @@
             display: flex;
             flex-wrap: nowrap;
             align-items: flex-start;
-            gap: 4px;
+            gap: 0;
             margin-bottom: 14px;
-            overflow-x: auto;
         }
 
         .tile-group {
@@ -157,7 +156,7 @@
             white-space: nowrap;
         }
 
-        .group-gap { width: 3px; flex-shrink: 0; }
+        .group-gap { width: 4px; flex-shrink: 0; }
 
         /* ── Tile styles (mirrors game.html) ── */
         .tile {
@@ -367,9 +366,8 @@
             display: flex;
             flex-wrap: nowrap;
             align-items: flex-start;
-            gap: 4px;
+            gap: 0;
             margin-bottom: 12px;
-            overflow-x: auto;
         }
 
         .result-verdict-line {
@@ -911,12 +909,7 @@ function corruptionLabel(type) {
 function buildGroupsRow(groups, cssClass) {
     const row = document.createElement('div');
     row.className = cssClass;
-    groups.forEach((group, gIdx) => {
-        if (gIdx > 0) {
-            const gap = document.createElement('div');
-            gap.className = 'group-gap';
-            row.appendChild(gap);
-        }
+    groups.forEach(group => {
         const groupEl = document.createElement('div');
         groupEl.className = 'tile-group' + (group.isExposure ? ' is-exposure' : '');
         group.tiles.forEach(tile => groupEl.appendChild(makeTileEl(tile)));
