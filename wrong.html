@@ -32,61 +32,43 @@
             min-height: 100vh;
         }
 
-        /* ── Header ── */
         .page-header {
             background: var(--color-primary);
             color: white;
-            padding: 16px 20px;
+            padding: 14px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
         .page-header h1 {
             margin: 0;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 700;
+            letter-spacing: 0.02em;
         }
 
         .page-header .subtitle {
-            font-size: 13px;
+            font-size: 12px;
             opacity: 0.8;
             margin-top: 2px;
         }
 
-        .header-controls {
+        .back-link {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            font-size: 13px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
+            gap: 5px;
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,0.35);
+            border-radius: 6px;
+            transition: background 0.15s;
+            white-space: nowrap;
         }
-
-        .card-selector {
-            background: rgba(255,255,255,0.15);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            border-radius: 8px;
-            padding: 6px 10px;
-            font-size: 13px;
-            cursor: pointer;
-        }
-
-        .card-selector option { color: #333; background: white; }
-
-        .btn-new {
-            background: white;
-            color: var(--color-primary);
-            border: none;
-            border-radius: 8px;
-            padding: 7px 16px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: opacity 0.15s;
-        }
-        .btn-new:hover { opacity: 0.85; }
+        .back-link:hover { background: rgba(255,255,255,0.12); }
 
         /* ── Main layout ── */
         .puzzle-area {
@@ -461,18 +443,13 @@
 </head>
 <body>
 
-<div class="page-header">
+<header class="page-header">
     <div>
-        <div class="page-header h1" style="font-size:22px;font-weight:700;">🀄 Mahjong Gone Wrong</div>
+        <h1>🀄 Mahjong Gone Wrong</h1>
         <div class="subtitle">Spot the invalid hands</div>
     </div>
-    <div class="header-controls">
-        <select class="card-selector" id="cardSelector" onchange="onCardChange()">
-            <option value="2025">2025 Card</option>
-        </select>
-        <button class="btn-new" onclick="newPuzzle()">New Puzzle</button>
-    </div>
-</div>
+    <a href="index.html" class="back-link">← Back to Home</a>
+</header>
 
 <div id="mainArea">
     <div class="loading-msg">Loading card…</div>
@@ -1205,13 +1182,15 @@ function onCardChange() {
 window.addEventListener('load', () => {
     if (window.CARD_LIBRARY) {
         const sel = document.getElementById('cardSelector');
-        sel.innerHTML = '';
-        Object.keys(window.CARD_LIBRARY).sort().reverse().forEach(year => {
-            const opt = document.createElement('option');
-            opt.value = year;
-            opt.textContent = year + ' Card';
-            sel.appendChild(opt);
-        });
+        if (sel) {
+            sel.innerHTML = '';
+            Object.keys(window.CARD_LIBRARY).sort().reverse().forEach(year => {
+                const opt = document.createElement('option');
+                opt.value = year;
+                opt.textContent = year + ' Card';
+                sel.appendChild(opt);
+            });
+        }
     }
 
     const cardYear = new URLSearchParams(window.location.search).get('year') || null;
