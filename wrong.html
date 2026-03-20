@@ -44,7 +44,7 @@
 
         .page-header h1 {
             margin: 0;
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 700;
             letter-spacing: 0.02em;
         }
@@ -121,33 +121,35 @@
         /* ── Tile groups ── */
         .groups-row {
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             align-items: flex-start;
-            gap: 8px;
+            gap: 4px;
             margin-bottom: 14px;
+            overflow-x: auto;
         }
 
         .tile-group {
             display: flex;
             flex-wrap: nowrap;
             gap: 1px;
+            flex-shrink: 0;
         }
 
         .tile-group.is-exposure {
             background: rgba(44,95,45,0.07);
             border: 1.5px solid var(--color-primary);
-            border-radius: 8px;
-            padding: 3px 5px;
+            border-radius: 6px;
+            padding: 2px 3px;
             position: relative;
         }
 
         .tile-group.is-exposure::after {
             content: 'Exposed';
             position: absolute;
-            bottom: -16px;
+            bottom: -14px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 700;
             letter-spacing: 0.06em;
             text-transform: uppercase;
@@ -155,25 +157,26 @@
             white-space: nowrap;
         }
 
-        .group-gap { width: 6px; }
+        .group-gap { width: 3px; flex-shrink: 0; }
 
         /* ── Tile styles (mirrors game.html) ── */
         .tile {
-            width: 38px;
-            height: 50px;
+            width: 24px;
+            height: 34px;
             display: inline-flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             border: 1px solid rgba(0,0,0,0.15);
-            border-radius: 6px;
+            border-radius: 4px;
             background: white;
             font-weight: 600;
             cursor: default;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6);
             position: relative;
             overflow: hidden;
             user-select: none;
+            flex-shrink: 0;
         }
 
         .tile::before {
@@ -185,13 +188,13 @@
         }
 
         .tile-number {
-            font-size: 20px;
+            font-size: 13px;
             font-weight: 700;
             line-height: 1;
         }
 
         .tile-label {
-            font-size: 9px;
+            font-size: 6px;
             margin-top: 1px;
         }
 
@@ -349,10 +352,11 @@
 
         .result-groups-row {
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             align-items: flex-start;
-            gap: 6px;
+            gap: 4px;
             margin-bottom: 12px;
+            overflow-x: auto;
         }
 
         .result-verdict-line {
@@ -434,9 +438,6 @@
         }
 
         @media (max-width: 480px) {
-            .tile { width: 32px; height: 44px; }
-            .tile-number { font-size: 17px; }
-            .tile-label { font-size: 8px; }
             .btn-nav { width: 100%; }
         }
     </style>
