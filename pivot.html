@@ -85,7 +85,7 @@
         .main {
             max-width: 720px;
             margin: 0 auto;
-            padding: 24px 16px 48px;
+            padding: 12px 12px 32px;
         }
 
         /* ── Card selector ── */
@@ -93,7 +93,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             font-size: 13px;
             color: var(--color-text-secondary);
         }
@@ -111,15 +111,15 @@
             background: var(--color-table);
             border: 1px solid #c5d9c5;
             border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 24px;
+            padding: 12px;
+            margin-bottom: 10px;
         }
 
         .puzzle-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 14px;
+            margin-bottom: 8px;
         }
 
         .puzzle-header h2 {
@@ -136,13 +136,13 @@
         }
 
         .instructions {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--color-text-secondary);
-            margin-bottom: 16px;
-            line-height: 1.5;
+            margin-bottom: 8px;
+            line-height: 1.4;
             background: rgba(255,255,255,0.6);
             border-radius: 8px;
-            padding: 10px 14px;
+            padding: 7px 10px;
             border-left: 3px solid var(--color-primary);
         }
 
@@ -152,7 +152,7 @@
             gap: 3px;
             background: rgba(255,255,255,0.5);
             border-radius: 8px;
-            padding: 8px;
+            padding: 5px 6px;
             align-items: center;
             overflow-x: auto;
         }
@@ -216,8 +216,8 @@
 
         /* ── New Puzzle button ── */
         .new-puzzle-btn {
-            margin-top: 14px;
-            padding: 8px 18px;
+            margin-top: 0;
+            padding: 8px 24px;
             background: var(--color-primary);
             color: white;
             border: none;
@@ -238,13 +238,13 @@
             background: white;
             border: 1px solid var(--color-border);
             border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 24px;
+            padding: 12px;
+            margin-bottom: 10px;
         }
 
         .answer-panel h3 {
-            margin: 0 0 14px;
-            font-size: 15px;
+            margin: 0 0 8px;
+            font-size: 14px;
             font-weight: 700;
             color: var(--color-text-primary);
         }
@@ -337,19 +337,19 @@
             background: white;
             border: 1px solid var(--color-border);
             border-radius: 12px;
-            padding: 20px;
+            padding: 12px;
         }
 
         .found-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 14px;
+            margin-bottom: 8px;
         }
 
         .found-header h3 {
             margin: 0;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
         }
 
@@ -497,7 +497,6 @@
             </div>
             <div class="puzzle-meta">
                 <div id="validHandCount" style="font-size:14px; font-weight:700; color:var(--color-primary);">— hands possible</div>
-                <div style="margin-top:2px;">using these tiles</div>
             </div>
         </div>
 
@@ -505,14 +504,10 @@
             Use your NMJL card to find every hand where at least 9 of these 10 tiles could be used to reach Mahjong.
         </div>
 
-        <div class="tile-rack-label">Your tiles</div>
         <div class="tile-rack" id="tileRack">
             <!-- tiles rendered by JS -->
         </div>
 
-        <button class="new-puzzle-btn" id="newPuzzleBtn" onclick="newPuzzle()">
-            🎲 New Puzzle
-        </button>
     </div>
     <!-- Answer entry -->
     <div class="answer-panel">
@@ -560,6 +555,12 @@
         </div>
 
         <div class="missed-list" id="missedList" style="display:none;"></div>
+    </div>
+
+    <div style="display:flex; justify-content:center; margin-top:12px;">
+        <button class="new-puzzle-btn" id="newPuzzleBtn" onclick="newPuzzle()">
+            🎲 New Puzzle
+        </button>
     </div>
 
 </main>
