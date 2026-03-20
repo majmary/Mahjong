@@ -692,29 +692,32 @@ function renderTileRack(tiles) {
     const rack = document.getElementById('tileRack');
     rack.innerHTML = '';
 
-    // Separate naturals and jokers for display
-    const naturals = tiles.filter(t => t !== 'J');
-    const jokers   = tiles.filter(t => t === 'J');
+    // Sort order: flowers, bams, cracks, dots, dragons (GD/RD/WD), winds, jokers
+    function tileOrder(t) {
+        if (t === 'F')  return [0, 0, 0];
+        if (t.length === 2 && t[1] === 'B') return [1, parseInt(t[0])];
+        if (t.length === 2 && t[1] === 'C') return [2, parseInt(t[0])];
+        if (t.length === 2 && t[1] === 'D') return [3, parseInt(t[0])];
+        if (t === 'GD') return [4, 0];
+        if (t === 'RD') return [4, 1];
+        if (t === 'WD') return [4, 2];
+        if (t === 'N')  return [5, 0];
+        if (t === 'E')  return [5, 1];
+        if (t === 'W')  return [5, 2];
+        if (t === 'S')  return [5, 3];
+        if (t === 'J')  return [6, 0];
+        return [9, 0];
+    }
 
-    // Sort naturals: suit order then number
-    const suitOrder = { 'B': 1, 'C': 2, 'D': 3, 'F': 0 };
-    const honorOrder = { 'N':7,'E':8,'S':9,'W':10,'GD':4,'RD':5,'WD':6 };
-    naturals.sort((a, b) => {
-        const getSuit = t => {
-            if (honorOrder[t] !== undefined) return honorOrder[t];
-            return (suitOrder[t[1]] || 9) * 10 + (parseInt(t[0]) || 0);
-        };
-        return getSuit(a) - getSuit(b);
+    const sorted = [...tiles].sort((a, b) => {
+        const oa = tileOrder(a), ob = tileOrder(b);
+        for (let i = 0; i < Math.max(oa.length, ob.length); i++) {
+            if ((oa[i] || 0) !== (ob[i] || 0)) return (oa[i] || 0) - (ob[i] || 0);
+        }
+        return 0;
     });
 
-    naturals.forEach(t => rack.appendChild(makeTileEl(t)));
-
-    if (jokers.length > 0) {
-        const sep = document.createElement('div');
-        sep.className = 'tile-group-sep';
-        rack.appendChild(sep);
-        jokers.forEach(t => rack.appendChild(makeTileEl(t)));
-    }
+    sorted.forEach(t => rack.appendChild(makeTileEl(t)));
 }
 
 // ── Evaluation ─────────────────────────────────────────────
