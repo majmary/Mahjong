@@ -694,13 +694,13 @@ function renderTileRack(tiles) {
 
     // Sort order: flowers, bams, cracks, dots, dragons (GD/RD/WD), winds, jokers
     function tileOrder(t) {
-        if (t === 'F')  return [0, 0, 0];
-        if (t.length === 2 && t[1] === 'B') return [1, parseInt(t[0])];
-        if (t.length === 2 && t[1] === 'C') return [2, parseInt(t[0])];
-        if (t.length === 2 && t[1] === 'D') return [3, parseInt(t[0])];
+        if (t === 'F')  return [0, 0];
         if (t === 'GD') return [4, 0];
         if (t === 'RD') return [4, 1];
         if (t === 'WD') return [4, 2];
+        if (t.length === 2 && t[1] === 'B') return [1, parseInt(t[0])];
+        if (t.length === 2 && t[1] === 'C') return [2, parseInt(t[0])];
+        if (t.length === 2 && t[1] === 'D') return [3, parseInt(t[0])];
         if (t === 'N')  return [5, 0];
         if (t === 'E')  return [5, 1];
         if (t === 'W')  return [5, 2];
@@ -1087,13 +1087,25 @@ function analyzeConsensusExpansion(seedTiles) {
 
     for (let pick = 0; pick < 7; pick++) {
         let bestTile = null, bestCount = 0;
+        let bestNatural = null, bestNaturalCount = 0;
 
         ALL_CANDIDATES.forEach(tile => {
             if (tileCount(currentTiles, tile) >= 4) return;
             const testTiles = [...currentTiles, tile];
             const count = surviving.filter(h => fits(h, testTiles)).length;
-            if (count > bestCount) { bestCount = count; bestTile = tile; }
+            if (tile === 'J') {
+                if (count > bestCount) { bestCount = count; bestTile = tile; }
+            } else {
+                if (count > bestNaturalCount) { bestNaturalCount = count; bestNatural = tile; }
+                if (count > bestCount) { bestCount = count; bestTile = tile; }
+            }
         });
+
+        // Prefer the best natural tile unless a joker strictly beats it
+        if (bestNatural && bestNaturalCount >= bestCount) {
+            bestTile = bestNatural;
+            bestCount = bestNaturalCount;
+        }
 
         if (!bestTile || bestCount === 0) break;
 
