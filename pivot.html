@@ -148,13 +148,13 @@
 
         .tile-rack {
             display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
+            flex-wrap: nowrap;
+            gap: 3px;
             background: rgba(255,255,255,0.5);
             border-radius: 8px;
-            padding: 12px;
-            min-height: 80px;
+            padding: 8px;
             align-items: center;
+            overflow-x: auto;
         }
 
         .tile-rack-label {
@@ -163,7 +163,7 @@
             color: var(--color-text-muted);
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .tile-group-sep {
@@ -176,14 +176,14 @@
 
         /* ── Tiles (mirrored from main game) ── */
         .tile {
-            width: 44px;
-            height: 56px;
+            width: 30px;
+            height: 40px;
             display: inline-flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             border: 1px solid rgba(0,0,0,0.15);
-            border-radius: 6px;
+            border-radius: 5px;
             background: white;
             font-weight: 600;
             cursor: default;
@@ -201,8 +201,8 @@
             pointer-events: none;
         }
 
-        .tile-number { font-size: 22px; font-weight: 700; line-height: 1; }
-        .tile-label  { font-size: 9px;  margin-top: 2px; }
+        .tile-number { font-size: 15px; font-weight: 700; line-height: 1; }
+        .tile-label  { font-size: 7px;  margin-top: 1px; }
 
         .tile-D    { background: #E3F2FD; color: #01579B; }
         .tile-B    { background: #E8F5E9; color: #1B5E20; }
@@ -251,32 +251,33 @@
 
         .selectors {
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 14px;
+            gap: 8px;
+            flex-wrap: nowrap;
+            align-items: flex-end;
+            margin-bottom: 10px;
         }
 
         .selectors label {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             color: var(--color-text-secondary);
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
 
         .selectors select {
             width: 100%;
-            padding: 8px 10px;
+            padding: 7px 8px;
             border: 1px solid var(--color-border);
             border-radius: 7px;
-            font-size: 14px;
+            font-size: 13px;
             background: white;
             color: var(--color-text-primary);
             appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: right 10px center;
-            padding-right: 28px;
+            background-position: right 8px center;
+            padding-right: 24px;
         }
         .selectors select:focus {
             outline: none;
@@ -284,10 +285,10 @@
             box-shadow: 0 0 0 2px var(--color-primary-light);
         }
 
-        .selector-group { flex: 1; min-width: 160px; }
+        .selector-group { flex: 1; min-width: 0; }
 
         .check-btn {
-            padding: 10px 28px;
+            padding: 7px 18px;
             background: var(--color-primary);
             color: white;
             border: none;
@@ -297,6 +298,8 @@
             cursor: pointer;
             transition: background 0.15s;
             align-self: flex-end;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         .check-btn:hover:not(:disabled) { background: var(--color-primary-dark); }
         .check-btn:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -475,7 +478,7 @@
         <h1>🀄 Pivot Challenge</h1>
         <div class="subtitle">How many hands can your tiles fit?</div>
     </div>
-    <a href="index.html" class="back-link">← Back to Game</a>
+    <a href="index.html" class="back-link">← Back to Home</a>
 </header>
 
 <main class="main">
@@ -498,10 +501,8 @@
             </div>
         </div>
 
-        <div class="instructions">
-            Using your physical card as a reference, find every hand where 9 of these 10 tiles
-            could be part of a 14-tile winning hand — with 5 more tiles to draw. Jokers
-            fill any jokerable slot (groups of 3+ identical tiles).
+        <div class="instructions" id="instructionsBox">
+            Use your NMJL card to find every hand where at least 9 of these 10 tiles could be used to reach Mahjong.
         </div>
 
         <div class="tile-rack-label">Your tiles</div>
@@ -616,10 +617,18 @@ function populateCardSelect() {
     }
 }
 
+function updateInstructionsYear() {
+    const sel = document.getElementById('cardSelect');
+    const year = sel ? (sel.options[sel.selectedIndex] && sel.options[sel.selectedIndex].textContent.match(/\d{4}/) ? sel.options[sel.selectedIndex].textContent.match(/\d{4}/)[0] : '') : '';
+    const el = document.getElementById('instructionsBox');
+    if (el) el.textContent = `Use your NMJL card${year ? ' for ' + year : ''} to find every hand where at least 9 of these 10 tiles could be used to reach Mahjong.`;
+}
+
 function switchCard(year) {
     if (typeof loadCard === 'function') {
         loadCard(year || null, function() {
             populateSectionSelect();
+            updateInstructionsYear();
             const result = generatePuzzle();
             if (result) loadPuzzle(result.finalTiles);
         });
@@ -971,8 +980,7 @@ function updateFoundDisplay() {
             return `<li class="found-item">
                 <span class="check-icon">✔</span>
                 <div>
-                    <span class="hand-name">Hand ${handNum}</span>
-                    <span class="hand-section"> — ${section}</span>
+                    <span class="hand-name">${section} Hand ${handNum}</span>
                 </div>
             </li>`;
         }).join('');
@@ -1015,7 +1023,7 @@ function revealMissed() {
         const div = document.createElement('div');
         div.className = 'missed-item';
         div.innerHTML = `<span class="missed-icon">💡</span>
-            <span><strong>Hand ${v.handNum}</strong> — ${v.section}</span>`;
+            <span><strong>${v.section} Hand ${v.handNum}</strong></span>`;
         missedEl.appendChild(div);
     });
     missedEl.style.display = 'flex';
@@ -1184,6 +1192,7 @@ window.addEventListener('load', () => {
     if (typeof loadCard === 'function') {
         loadCard(null, function() {
             populateSectionSelect();
+            updateInstructionsYear();
 
             // Generate first puzzle
             const firstPuzzle = generatePuzzle();
