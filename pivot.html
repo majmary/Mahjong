@@ -493,7 +493,7 @@
     <div class="puzzle-panel">
         <div class="puzzle-header">
             <div>
-                <h2>Your 10 Tiles</h2>
+                <h2>Your 8 Tiles</h2>
             </div>
             <div class="puzzle-meta">
                 <div id="validHandCount" style="font-size:14px; font-weight:700; color:var(--color-primary);">— hands possible</div>
@@ -501,7 +501,7 @@
         </div>
 
         <div class="instructions" id="instructionsBox">
-            Use your NMJL card to find every hand where at least 9 of these 10 tiles could be used to reach Mahjong.
+            Use your NMJL card to find every hand where all 8 of these tiles could be used to reach Mahjong.
         </div>
 
         <div class="tile-rack" id="tileRack">
@@ -622,7 +622,7 @@ function updateInstructionsYear() {
     const sel = document.getElementById('cardSelect');
     const year = sel ? (sel.options[sel.selectedIndex] && sel.options[sel.selectedIndex].textContent.match(/\d{4}/) ? sel.options[sel.selectedIndex].textContent.match(/\d{4}/)[0] : '') : '';
     const el = document.getElementById('instructionsBox');
-    if (el) el.textContent = `Use your NMJL card${year ? ' for ' + year : ''} to find every hand where at least 9 of these 10 tiles could be used to reach Mahjong.`;
+    if (el) el.textContent = `Use your NMJL card${year ? ' for ' + year : ''} to find every hand where all 8 of these tiles could be used to reach Mahjong.`;
 }
 
 function switchCard(year) {
@@ -722,32 +722,27 @@ function renderTileRack(tiles) {
 
 // ── Evaluation ─────────────────────────────────────────────
 /**
- * Does this hand definition "fit" the current 10 tiles?
- * A hand fits if any 9 of the 10 tiles can be placed into the pattern:
- *   - All naturals in the 9-tile subset are placed (none left in pool)
- *   - totalFilled === 9  (exactly 5 more tiles needed to complete)
- * Each tile is tried as the "spare" in turn; true if any subset works.
+ * Does this hand definition "fit" the current 8 tiles?
+ * A hand fits if all 8 tiles can be placed into the pattern:
+ *   - All naturals are placed (none left in pool)
+ *   - totalFilled === 8  (exactly 6 more tiles needed to complete)
  */
 function handFitsTiles(tiles, handDef) {
-    for (let skip = 0; skip < tiles.length; skip++) {
-        const nine = tiles.filter((_, i) => i !== skip);
-        try {
-            const fills = evaluatePattern(nine, handDef.code);
-            if (!fills || fills.length === 0) continue;
+    try {
+        const fills = evaluatePattern(tiles, handDef.code);
+        if (!fills || fills.length === 0) return false;
 
-            const jokersInHand = nine.filter(t => t === 'J').length;
-            let best = fills[0];
-            if (jokersInHand > 0) best = useJokersForScoring(best, jokersInHand);
+        const jokersInHand = tiles.filter(t => t === 'J').length;
+        let best = fills[0];
+        if (jokersInHand > 0) best = useJokersForScoring(best, jokersInHand);
 
-            // All naturals in the subset must be placed
-            const naturalsLeftOver = (best.handPool || []).filter(t => t !== 'J').length;
-            if (naturalsLeftOver > 0) continue;
+        // All naturals must be placed
+        const naturalsLeftOver = (best.handPool || []).filter(t => t !== 'J').length;
+        if (naturalsLeftOver > 0) return false;
 
-            // Exactly 9 tiles placed (14 total − 5 to draw = 9)
-            if (best.totalFilled === 9) return true;
-        } catch(e) {}
-    }
-    return false;
+        // Exactly 8 tiles placed (14 total minus 6 to draw = 8)
+        return best.totalFilled === 8;
+    } catch(e) { return false; }
 }
 
 // Strip trailing letter suffix from hand numbers: "1a" → "1", "2b" → "2", "10" → "10"
@@ -1081,16 +1076,18 @@ function analyzeConsensusExpansion(seedTiles) {
         return null;
     }
 
-    // ── Step 2: greedy expansion — 7 picks, naturals or jokers ─
+    // ── Step 2: greedy expansion — 5 picks, naturals or at most 1 joker ─
     let currentTiles = [...seedTiles];
     const chosenTiles = [];
 
-    for (let pick = 0; pick < 7; pick++) {
+    for (let pick = 0; pick < 5; pick++) {
         let bestTile = null, bestCount = 0;
         let bestNatural = null, bestNaturalCount = 0;
+        const jokersAlready = currentTiles.filter(t => t === 'J').length;
 
         ALL_CANDIDATES.forEach(tile => {
             if (tileCount(currentTiles, tile) >= 4) return;
+            if (tile === 'J' && jokersAlready >= 1) return; // max 1 joker
             const testTiles = [...currentTiles, tile];
             const count = surviving.filter(h => fits(h, testTiles)).length;
             if (tile === 'J') {
@@ -1114,26 +1111,22 @@ function analyzeConsensusExpansion(seedTiles) {
         surviving = surviving.filter(h => fits(h, currentTiles));
     }
 
-    // ── Step 3: final verification (9-of-10 rule) ────────────
+    // ── Step 3: final verification (all 8 tiles must fit) ────────────
     const finalTiles = currentTiles;
     const survivingHands = [];
 
     ACTIVE_CARD.forEach(handDef => {
-        for (let skip = 0; skip < finalTiles.length; skip++) {
-            const nine = finalTiles.filter((_, i) => i !== skip);
-            try {
-                const fills = evaluatePattern(nine, handDef.code);
-                if (!fills || fills.length === 0) continue;
-                const jokersInNine = nine.filter(t => t === 'J').length;
-                let best = fills[0];
-                if (jokersInNine > 0) best = useJokersForScoring(best, jokersInNine);
-                const leftover = (best.handPool || []).filter(t => t !== 'J').length;
-                if (leftover === 0 && best.totalFilled === 9) {
-                    survivingHands.push(handDef);
-                    return; // no need to try other skips for this hand
-                }
-            } catch(e) {}
-        }
+        try {
+            const fills = evaluatePattern(finalTiles, handDef.code);
+            if (!fills || fills.length === 0) return;
+            const jokersInFinalTiles = finalTiles.filter(t => t === 'J').length;
+            let best = fills[0];
+            if (jokersInFinalTiles > 0) best = useJokersForScoring(best, jokersInFinalTiles);
+            const leftover = (best.handPool || []).filter(t => t !== 'J').length;
+            if (leftover === 0 && best.totalFilled === 8) {
+                survivingHands.push(handDef);
+            }
+        } catch(e) {}
     });
 
     // ── Report ────────────────────────────────────────────────
@@ -1143,7 +1136,7 @@ function analyzeConsensusExpansion(seedTiles) {
     console.log(`  Seed:      [${seedTiles.join(', ')}]  →  ${seedMatchCount} matching hands`);
     const jokersInFinal = finalTiles.filter(t => t === 'J').length;
     console.log(`  Chosen:    [${chosenTiles.join(', ')}]  (${naturals} naturals, ${jokersInFinal} jokers)`);
-    console.log(`  Final 10:  [${finalTiles.join(', ')}]`);
+    console.log(`  Final 8:   [${finalTiles.join(', ')}]`);
     console.log(`  Surviving: ${survivingHands.length} hands across ${sections.length} section(s): ${sections.join(', ')}`);
     survivingHands.forEach(h => console.log(`    ✔ ${h.Section} Hand ${baseHandNum(h['hand number'])}`));
 
