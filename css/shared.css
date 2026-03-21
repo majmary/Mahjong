@@ -38,7 +38,7 @@ body {
 .page-header {
     background: var(--color-primary);
     color: white;
-    padding: 12px 16px;
+    padding: 10px 14px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -47,25 +47,35 @@ body {
     top: 0;
     z-index: 100;
     flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
+    align-self: stretch;
 }
 
 .page-header h1 {
     margin: 0;
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
     color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .page-header .subtitle {
     font-size: 11px;
     opacity: 0.75;
     margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .header-right {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
 .back-link {
