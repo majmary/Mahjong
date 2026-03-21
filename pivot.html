@@ -102,16 +102,6 @@
 
         /* ── Tiles (mirrored from main game) ── */
 
-
-        .tile-D    { background: #E3F2FD; color: #01579B; }
-        .tile-B    { background: #E8F5E9; color: #1B5E20; }
-        .tile-C    { background: #FFEBEE; color: #B71C1C; }
-        .tile-F    { background: #F3E5F5; color: #6A1B9A; }
-        .tile-J    { background: #FFFDE7; color: #F57F17; }
-        .tile-GD   { background: #C8E6C9; color: #1B5E20; }
-        .tile-RD   { background: #FFCDD2; color: #B71C1C; }
-        .tile-WD   { background: #BBDEFB; color: #01579B; }
-
         /* ── New Puzzle button ── */
 
         /* ── Answer section ── */
@@ -357,7 +347,7 @@
 <header class="page-header">
     <div>
         <h1>🀄 Pivot Challenge</h1>
-        <div class="subtitle">How many hands can your tiles fit?</div>
+        <div class="subtitle">How many hands fit?</div>
     </div>
     <div class="header-right">
         <select class="header-card-select" id="cardSelect" onchange="switchCard(this.value)"></select>
@@ -371,7 +361,7 @@
     <div class="puzzle-panel">
         <div class="puzzle-header">
             <div>
-                <h2>Your 10 Tiles</h2>
+                <h2>Your 8 Tiles</h2>
             </div>
             <div class="puzzle-meta">
                 <div id="validHandCount" style="font-size:14px; font-weight:700; color:var(--color-primary);">— hands possible</div>
@@ -1105,5 +1095,9 @@ window.addEventListener('load', () => {
 });
 </script>
 
+<div class="page-bottom-bar">
+    <span class="bar-hint-text" id="handCountBar">— hands possible</span>
+    <button class="bar-action-btn" id="newPuzzleBtn" onclick="newPuzzle()">🎲 New Puzzle</button>
+</div>
 </body>
 </html>
