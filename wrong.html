@@ -7,68 +7,8 @@
     <title>Mahjong Gone Wrong</title>
     <script src="data/card-2025.js"></script>
     <script src="js/card-loader.js"></script>
+    <link rel="stylesheet" href="css/shared.css">
     <style>
-        :root {
-            --color-primary:       #2c5f2d;
-            --color-primary-dark:  #1f4420;
-            --color-primary-light: #f0f8f0;
-            --color-bg-page:       #fafafa;
-            --color-text-primary:  #333333;
-            --color-text-secondary:#666666;
-            --color-text-muted:    #999999;
-            --color-border:        #e0e0e0;
-            --color-error:         #c62828;
-            --color-correct:       #2e7d32;
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
-            background: var(--color-bg-page);
-            color: var(--color-text-primary);
-            min-height: 100vh;
-        }
-
-        .page-header {
-            background: var(--color-primary);
-            color: white;
-            padding: 14px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-
-        .page-header h1 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-        }
-
-        .page-header .subtitle {
-            font-size: 12px;
-            opacity: 0.8;
-            margin-top: 2px;
-        }
-
-        .back-link {
-            color: rgba(255,255,255,0.85);
-            text-decoration: none;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            padding: 6px 12px;
-            border: 1px solid rgba(255,255,255,0.35);
-            border-radius: 6px;
-            transition: background 0.15s;
-            white-space: nowrap;
-        }
-        .back-link:hover { background: rgba(255,255,255,0.12); }
 
         /* ── Main layout ── */
         .puzzle-area {
@@ -158,56 +98,10 @@
 
         .group-gap { width: 4px; flex-shrink: 0; }
 
-        /* ── Tile styles (mirrors game.html) ── */
-        .tile {
-            width: clamp(30px, 3.5vw, 50px);
-            height: clamp(38px, 4.5vw, 64px);
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid rgba(0,0,0,0.15);
-            border-radius: 6px;
-            background: white;
-            font-weight: 600;
-            cursor: default;
-            margin: 1px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6);
-            position: relative;
-            overflow: hidden;
-            user-select: none;
-            flex-shrink: 0;
-        }
-
-        .tile::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 50%);
-            pointer-events: none;
-        }
-
-        .tile-number {
-            font-size: 14px;
-            font-weight: 700;
-            line-height: 1;
-        }
-
-        .tile-label {
-            font-size: 6px;
-            margin-top: 0;
-        }
-
         @media (max-width: 480px) {
-            .tile {
-                width: clamp(20px, 2.6vw, 34px);
-                height: clamp(26px, 3.4vw, 44px);
-                border-radius: 3px;
-                margin: 0;
-            }
-            .tile .tile-number { font-size: 14px; }
-            .tile .tile-label  { font-size: 6px; margin-top: 0; }
-            .btn-nav { width: 100%; }
+            .tile
+            .tile
+            .bar-action-btn { width: 100%; }
         }
 
         .tile-D  { background: #E3F2FD; color: #01579B; }
@@ -215,10 +109,6 @@
         .tile-C  { background: #FFEBEE; color: #B71C1C; }
         .tile-F  { background: #F3E5F5; color: #6A1B9A; }
         .tile-J  { background: #FFFDE7; color: #F57F17; }
-        .tile-WIND { background: #ECEFF1; color: #37474F; }
-        .tile-GD { background: #C8E6C9; color: #1B5E20; }
-        .tile-RD { background: #FFCDD2; color: #B71C1C; }
-        .tile-WD { background: #BBDEFB; color: #01579B; }
 
         /* ── Verdict UI ── */
         .verdict-section {
@@ -317,7 +207,7 @@
             justify-content: flex-end;
         }
 
-        .btn-nav {
+        .bar-action-btn {
             background: var(--color-primary);
             color: white;
             border: none;
@@ -457,10 +347,16 @@
         <h1>🀄 Mahjong Gone Wrong</h1>
         <div class="subtitle">Spot the invalid hands</div>
     </div>
-    <a href="index.html" class="back-link">← Back to Home</a>
+    <div class="header-right">
+        <select class="header-card-select" id="cardSelector">
+            <option>2026 Card</option>
+            <option>2025 Card</option>
+        </select>
+        <a href="index.html" class="back-link">← Home</a>
+    </div>
 </header>
 
-<div id="mainArea">
+<div id="mainArea" style="padding-bottom:70px;">
     <div class="loading-msg">Loading card…</div>
 </div>
 
@@ -1044,23 +940,17 @@ function showHand(idx) {
     card.appendChild(verdictSec);
     wrap.appendChild(card);
 
-    // Nav button
-    const navRow = document.createElement('div');
-    navRow.className = 'nav-row';
-    const navBtn = document.createElement('button');
-    navBtn.className = 'btn-nav';
-    navBtn.textContent = isLast ? 'See Results →' : 'Next Hand →';
-    navBtn.addEventListener('click', () => {
+    // Nav button — lives in fixed bottom bar
+    const bar = document.getElementById('bottomBar');
+    const barBtn = document.getElementById('barBtn');
+    const barHint = document.getElementById('barHint');
+    bar.style.display = 'flex';
+    barHint.innerHTML = 'Hand <strong>' + (idx+1) + '</strong> of ' + total;
+    barBtn.textContent = isLast ? 'See Results →' : 'Next Hand →';
+    barBtn.onclick = () => {
         userAnswers[idx] = { saysInvalid, selectedReasons: [...selectedReasons] };
-        if (isLast) {
-            showResults();
-        } else {
-            currentHandIdx++;
-            showHand(currentHandIdx);
-        }
-    });
-    navRow.appendChild(navBtn);
-    wrap.appendChild(navRow);
+        if (isLast) { showResults(); } else { currentHandIdx++; showHand(currentHandIdx); }
+    };
 
     area.appendChild(wrap);
 }
@@ -1201,5 +1091,9 @@ window.addEventListener('load', () => {
     loadCard(cardYear, () => newPuzzle());
 });
 </script>
+<div class="page-bottom-bar" id="bottomBar" style="display:none;">
+    <span class="bar-hint-text" id="barHint">Hand <strong>1</strong> of 3</span>
+    <button class="bar-action-btn" id="barBtn">Next Hand →</button>
+</div>
 </body>
 </html>
