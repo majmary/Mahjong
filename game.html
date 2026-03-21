@@ -157,7 +157,7 @@
             grid-area: south; 
             display: flex;
             justify-content: center;
-            overflow: hidden;
+            overflow: visible;
         }
         
         .player-hand-east { 
@@ -1277,8 +1277,9 @@
             }
 
             .player-hand-south .tile {
-                width: 36px;
-                height: 46px;
+                width: calc((100vw - 20px) / 14);
+                height: calc((100vw - 20px) / 14 * 1.28);
+                margin: 0;
             }
 
             .player-hand-south .tile .tile-number { font-size: 15px !important; }
