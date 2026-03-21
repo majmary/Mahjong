@@ -6,6 +6,7 @@
     // Registry of available cards.
     // To add a new year: add an entry here and drop the matching card-YYYY.js into data/
     const CARD_REGISTRY = {
+        '2026': { label: 'NMJL 2026 Card', file: 'data/card-2026.js' },
         '2025': { label: 'NMJL 2025 Card', file: 'data/card-2025.js' },
         '2024': { label: 'NMJL 2024 Card', file: 'data/card-2024.js' },
     };
