@@ -705,6 +705,9 @@
         }
 
         /* Responsive adjustments */
+        /* Push corner menu below shared header bar */
+        #cornerMenu { top: 58px !important; }
+
         @media (max-width: 1200px) {
             h1 {
                 font-size: 24px;
@@ -767,7 +770,7 @@
         #gameView {
             display: none;
             flex-direction: column;
-            align-items: center;
+            align-items: stretch;
             width: 100%;
             height: 100vh;
             overflow: hidden;
