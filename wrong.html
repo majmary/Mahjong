@@ -73,6 +73,11 @@
             gap: 1px;
             flex-shrink: 0;
         }
+        /* Tile size for wrong - clamp to fit 14 tiles */
+        .groups-row .tile {
+            width: clamp(24px, 6vw, 46px);
+            height: clamp(30px, 7.5vw, 58px);
+        }
 
         .tile-group.is-exposure {
             background: rgba(44,95,45,0.07);
@@ -103,12 +108,6 @@
             .tile
             .bar-action-btn { width: 100%; }
         }
-
-        .tile-D  { background: #E3F2FD; color: #01579B; }
-        .tile-B  { background: #E8F5E9; color: #1B5E20; }
-        .tile-C  { background: #FFEBEE; color: #B71C1C; }
-        .tile-F  { background: #F3E5F5; color: #6A1B9A; }
-        .tile-J  { background: #FFFDE7; color: #F57F17; }
 
         /* ── Verdict UI ── */
         .verdict-section {
@@ -344,7 +343,7 @@
 
 <header class="page-header">
     <div>
-        <h1>🀄 Mahjong Gone Wrong</h1>
+        <h1>🀄 Gone Wrong</h1>
         <div class="subtitle">Spot the invalid hands</div>
     </div>
     <div class="header-right">
