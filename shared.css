@@ -1,0 +1,199 @@
+/* ============================================================
+   shared.css — Mary on Mahjong
+   Shared design tokens, tile styles, header, and bottom bar.
+   Used by: game.html, pivot.html, wrong.html
+   ============================================================ */
+
+/* ── Design tokens ── */
+:root {
+    --color-primary:        #2c5f2d;
+    --color-primary-dark:   #1f4420;
+    --color-primary-light:  #f0f8f0;
+    --color-bg-page:        #fafafa;
+    --color-bg-subtle:      #f5f5f5;
+    --color-text-primary:   #333333;
+    --color-text-secondary: #666666;
+    --color-text-muted:     #999999;
+    --color-border:         #e0e0e0;
+    --color-success:        #2e7d32;
+    --color-success-light:  #f1f8e9;
+    --color-warning:        #f57f17;
+    --color-error:          #d32f2f;
+    --color-error-light:    #ffebee;
+    --color-table:          #e8f0e8;
+}
+
+/* ── Base ── */
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+    background: var(--color-bg-page);
+    color: var(--color-text-primary);
+}
+
+/* ── Page header bar ── */
+.page-header {
+    background: var(--color-primary);
+    color: white;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-shrink: 0;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: white;
+}
+
+.page-header .subtitle {
+    font-size: 11px;
+    opacity: 0.75;
+    margin-top: 1px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.back-link {
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+    font-size: 12px;
+    padding: 5px 10px;
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 6px;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+.back-link:hover { background: rgba(255,255,255,0.12); }
+
+/* Card selector in header (pivot, wrong) */
+.header-card-select {
+    padding: 4px 8px;
+    border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.15);
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* ── Corner menu offset (game) — clears the header bar ── */
+#cornerMenu { top: 58px !important; }
+
+/* ── Tiles ── */
+.tile {
+    width: clamp(30px, 3.5vw, 50px);
+    height: clamp(38px, 4.5vw, 64px);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 6px;
+    background: white;
+    font-weight: 600;
+    font-size: 15px;
+    margin: 1px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6);
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.tile::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 50%);
+    pointer-events: none;
+}
+
+.tile-number {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.tile-label {
+    font-size: 7px;
+    margin-top: 1px;
+}
+
+/* Tile color classes */
+.tile-B    { background: #E8F5E9; color: #1B5E20; }
+.tile-C    { background: #FFEBEE; color: #B71C1C; }
+.tile-D    { background: #E3F2FD; color: #01579B; }
+.tile-F    { background: #F3E5F5; color: #6A1B9A; }
+.tile-J    { background: #FFFDE7; color: #F57F17; }
+.tile-WIND { background: #ECEFF1; color: #37474F; }
+.tile-GD   { background: #C8E6C9; color: #1B5E20; }
+.tile-RD   { background: #FFCDD2; color: #B71C1C; }
+.tile-WD   { background: #BBDEFB; color: #01579B; }
+
+/* ── Bottom bar (pivot, wrong) ── */
+/* Game uses its own #bottomBar styling — this targets the
+   simpler fixed bar used by pivot and wrong. */
+.page-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255,255,255,0.97);
+    border-top: 2px solid var(--color-primary);
+    padding: 8px 16px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+    z-index: 200;
+    backdrop-filter: blur(4px);
+}
+
+.bar-action-btn {
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+.bar-action-btn:hover { background: var(--color-primary-dark); }
+
+.bar-hint-text {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+.bar-hint-text strong { color: var(--color-primary); }
+
+/* ── Portrait tile override ── */
+/* Game overrides south hand tiles to fixed px in its own portrait query.
+   This covers pivot and wrong's tile racks on portrait mobile. */
+@media (orientation: portrait) and (max-width: 600px) {
+    .tile {
+        width: 36px;
+        height: 46px;
+    }
+    .tile-number { font-size: 15px; }
+    .tile-label  { font-size: 7px; }
+}
