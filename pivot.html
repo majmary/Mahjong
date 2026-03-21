@@ -10,115 +10,42 @@
     <script src="js/card-loader.js"></script>
     <script src="js/patterns.js"></script>
 
+
+    <link rel="stylesheet" href="css/shared.css">
     <style>
         /* ── Shared design tokens (mirror main game) ── */
-        :root {
-            --color-primary:       #2c5f2d;
-            --color-primary-dark:  #1f4420;
-            --color-primary-light: #f0f8f0;
-            --color-bg-page:       #fafafa;
-            --color-bg-subtle:     #f5f5f5;
-            --color-text-primary:  #333333;
-            --color-text-secondary:#666666;
-            --color-text-muted:    #999999;
-            --color-border:        #e0e0e0;
-            --color-success:       #2e7d32;
-            --color-success-light: #f1f8e9;
-            --color-warning:       #f57f17;
-            --color-error:         #d32f2f;
-            --color-error-light:   #ffebee;
-            --color-table:         #e8f0e8;
-        }
 
         * { box-sizing: border-box; }
 
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
-            background: var(--color-bg-page);
-            color: var(--color-text-primary);
-            min-height: 100vh;
-        }
 
         /* ── Page chrome ── */
-        .page-header {
-            background: var(--color-primary);
-            color: white;
-            padding: 14px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
 
-        .page-header h1 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-        }
 
-        .page-header .subtitle {
-            font-size: 12px;
-            opacity: 0.8;
-            margin-top: 2px;
-        }
 
-        .back-link {
-            color: rgba(255,255,255,0.85);
-            text-decoration: none;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            padding: 6px 12px;
-            border: 1px solid rgba(255,255,255,0.35);
-            border-radius: 6px;
-            transition: background 0.15s;
-            white-space: nowrap;
-        }
-        .back-link:hover { background: rgba(255,255,255,0.12); }
 
         /* ── Main layout ── */
         .main {
             max-width: 720px;
             margin: 0 auto;
-            padding: 24px 16px 48px;
+            padding: 12px 12px 80px;
         }
 
         /* ── Card selector ── */
-        .card-selector {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            font-size: 13px;
-            color: var(--color-text-secondary);
-        }
-        .card-selector select {
-            padding: 5px 8px;
-            border: 1px solid var(--color-border);
-            border-radius: 6px;
-            font-size: 13px;
-            background: white;
-            color: var(--color-text-primary);
-        }
 
         /* ── Puzzle tile area ── */
         .puzzle-panel {
             background: var(--color-table);
             border: 1px solid #c5d9c5;
             border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 24px;
+            padding: 12px;
+            margin-bottom: 10px;
         }
 
         .puzzle-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 14px;
+            margin-bottom: 8px;
         }
 
         .puzzle-header h2 {
@@ -135,25 +62,25 @@
         }
 
         .instructions {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--color-text-secondary);
-            margin-bottom: 16px;
-            line-height: 1.5;
+            margin-bottom: 8px;
+            line-height: 1.4;
             background: rgba(255,255,255,0.6);
             border-radius: 8px;
-            padding: 10px 14px;
+            padding: 7px 10px;
             border-left: 3px solid var(--color-primary);
         }
 
         .tile-rack {
             display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
+            flex-wrap: nowrap;
+            gap: 3px;
             background: rgba(255,255,255,0.5);
             border-radius: 8px;
-            padding: 12px;
-            min-height: 80px;
+            padding: 5px 6px;
             align-items: center;
+            overflow-x: auto;
         }
 
         .tile-rack-label {
@@ -162,7 +89,7 @@
             color: var(--color-text-muted);
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .tile-group-sep {
@@ -174,108 +101,64 @@
         }
 
         /* ── Tiles (mirrored from main game) ── */
-        .tile {
-            width: 44px;
-            height: 56px;
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid rgba(0,0,0,0.15);
-            border-radius: 6px;
-            background: white;
-            font-weight: 600;
-            cursor: default;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6);
-            position: relative;
-            overflow: hidden;
-            user-select: none;
-            flex-shrink: 0;
-        }
-        .tile::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%);
-            pointer-events: none;
-        }
 
-        .tile-number { font-size: 22px; font-weight: 700; line-height: 1; }
-        .tile-label  { font-size: 9px;  margin-top: 2px; }
 
         .tile-D    { background: #E3F2FD; color: #01579B; }
         .tile-B    { background: #E8F5E9; color: #1B5E20; }
         .tile-C    { background: #FFEBEE; color: #B71C1C; }
         .tile-F    { background: #F3E5F5; color: #6A1B9A; }
         .tile-J    { background: #FFFDE7; color: #F57F17; }
-        .tile-WIND { background: #ECEFF1; color: #37474F; }
         .tile-GD   { background: #C8E6C9; color: #1B5E20; }
         .tile-RD   { background: #FFCDD2; color: #B71C1C; }
         .tile-WD   { background: #BBDEFB; color: #01579B; }
 
         /* ── New Puzzle button ── */
-        .new-puzzle-btn {
-            margin-top: 14px;
-            padding: 8px 18px;
-            background: var(--color-primary);
-            color: white;
-            border: none;
-            border-radius: 7px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.15s;
-        }
-        .new-puzzle-btn:hover { background: var(--color-primary-dark); }
-        .new-puzzle-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
 
         /* ── Answer section ── */
         .answer-panel {
             background: white;
             border: 1px solid var(--color-border);
             border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 24px;
+            padding: 12px;
+            margin-bottom: 10px;
         }
 
         .answer-panel h3 {
-            margin: 0 0 14px;
-            font-size: 15px;
+            margin: 0 0 8px;
+            font-size: 14px;
             font-weight: 700;
             color: var(--color-text-primary);
         }
 
         .selectors {
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 14px;
+            gap: 8px;
+            flex-wrap: nowrap;
+            align-items: flex-end;
+            margin-bottom: 10px;
         }
 
         .selectors label {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             color: var(--color-text-secondary);
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
 
         .selectors select {
             width: 100%;
-            padding: 8px 10px;
+            padding: 7px 8px;
             border: 1px solid var(--color-border);
             border-radius: 7px;
-            font-size: 14px;
+            font-size: 13px;
             background: white;
             color: var(--color-text-primary);
             appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: right 10px center;
-            padding-right: 28px;
+            background-position: right 8px center;
+            padding-right: 24px;
         }
         .selectors select:focus {
             outline: none;
@@ -283,10 +166,10 @@
             box-shadow: 0 0 0 2px var(--color-primary-light);
         }
 
-        .selector-group { flex: 1; min-width: 160px; }
+        .selector-group { flex: 1; min-width: 0; }
 
         .check-btn {
-            padding: 10px 28px;
+            padding: 7px 18px;
             background: var(--color-primary);
             color: white;
             border: none;
@@ -296,6 +179,8 @@
             cursor: pointer;
             transition: background 0.15s;
             align-self: flex-end;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         .check-btn:hover:not(:disabled) { background: var(--color-primary-dark); }
         .check-btn:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -333,19 +218,19 @@
             background: white;
             border: 1px solid var(--color-border);
             border-radius: 12px;
-            padding: 20px;
+            padding: 12px;
         }
 
         .found-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 14px;
+            margin-bottom: 8px;
         }
 
         .found-header h3 {
             margin: 0;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
         }
 
@@ -474,16 +359,13 @@
         <h1>🀄 Pivot Challenge</h1>
         <div class="subtitle">How many hands can your tiles fit?</div>
     </div>
-    <a href="index.html" class="back-link">← Back to Game</a>
+    <div class="header-right">
+        <select class="header-card-select" id="cardSelect" onchange="switchCard(this.value)"></select>
+        <a href="index.html" class="back-link">← Home</a>
+    </div>
 </header>
 
 <main class="main">
-
-    <!-- Card selector -->
-    <div class="card-selector">
-        <span>Playing with:</span>
-        <select id="cardSelect" onchange="switchCard(this.value)"></select>
-    </div>
 
     <!-- Puzzle panel -->
     <div class="puzzle-panel">
@@ -493,24 +375,17 @@
             </div>
             <div class="puzzle-meta">
                 <div id="validHandCount" style="font-size:14px; font-weight:700; color:var(--color-primary);">— hands possible</div>
-                <div style="margin-top:2px;">using these tiles</div>
             </div>
         </div>
 
-        <div class="instructions">
-            Using your physical card as a reference, find every hand where 9 of these 10 tiles
-            could be part of a 14-tile winning hand — with 5 more tiles to draw. Jokers
-            fill any jokerable slot (groups of 3+ identical tiles).
+        <div class="instructions" id="instructionsBox">
+            Use your NMJL card to find every hand where at least 9 of these 10 tiles could be used to reach Mahjong.
         </div>
 
-        <div class="tile-rack-label">Your tiles</div>
         <div class="tile-rack" id="tileRack">
             <!-- tiles rendered by JS -->
         </div>
 
-        <button class="new-puzzle-btn" id="newPuzzleBtn" onclick="newPuzzle()">
-            🎲 New Puzzle
-        </button>
     </div>
     <!-- Answer entry -->
     <div class="answer-panel">
@@ -615,10 +490,18 @@ function populateCardSelect() {
     }
 }
 
+function updateInstructionsYear() {
+    const sel = document.getElementById('cardSelect');
+    const year = sel ? (sel.options[sel.selectedIndex] && sel.options[sel.selectedIndex].textContent.match(/\d{4}/) ? sel.options[sel.selectedIndex].textContent.match(/\d{4}/)[0] : '') : '';
+    const el = document.getElementById('instructionsBox');
+    if (el) el.textContent = `Use your NMJL card${year ? ' for ' + year : ''} to find every hand where at least 9 of these 10 tiles could be used to reach Mahjong.`;
+}
+
 function switchCard(year) {
     if (typeof loadCard === 'function') {
         loadCard(year || null, function() {
             populateSectionSelect();
+            updateInstructionsYear();
             const result = generatePuzzle();
             if (result) loadPuzzle(result.finalTiles);
         });
@@ -681,29 +564,32 @@ function renderTileRack(tiles) {
     const rack = document.getElementById('tileRack');
     rack.innerHTML = '';
 
-    // Separate naturals and jokers for display
-    const naturals = tiles.filter(t => t !== 'J');
-    const jokers   = tiles.filter(t => t === 'J');
+    // Sort order: flowers, bams, cracks, dots, dragons (GD/RD/WD), winds, jokers
+    function tileOrder(t) {
+        if (t === 'F')  return [0, 0];
+        if (t === 'GD') return [4, 0];
+        if (t === 'RD') return [4, 1];
+        if (t === 'WD') return [4, 2];
+        if (t.length === 2 && t[1] === 'B') return [1, parseInt(t[0])];
+        if (t.length === 2 && t[1] === 'C') return [2, parseInt(t[0])];
+        if (t.length === 2 && t[1] === 'D') return [3, parseInt(t[0])];
+        if (t === 'N')  return [5, 0];
+        if (t === 'E')  return [5, 1];
+        if (t === 'W')  return [5, 2];
+        if (t === 'S')  return [5, 3];
+        if (t === 'J')  return [6, 0];
+        return [9, 0];
+    }
 
-    // Sort naturals: suit order then number
-    const suitOrder = { 'B': 1, 'C': 2, 'D': 3, 'F': 0 };
-    const honorOrder = { 'N':7,'E':8,'S':9,'W':10,'GD':4,'RD':5,'WD':6 };
-    naturals.sort((a, b) => {
-        const getSuit = t => {
-            if (honorOrder[t] !== undefined) return honorOrder[t];
-            return (suitOrder[t[1]] || 9) * 10 + (parseInt(t[0]) || 0);
-        };
-        return getSuit(a) - getSuit(b);
+    const sorted = [...tiles].sort((a, b) => {
+        const oa = tileOrder(a), ob = tileOrder(b);
+        for (let i = 0; i < Math.max(oa.length, ob.length); i++) {
+            if ((oa[i] || 0) !== (ob[i] || 0)) return (oa[i] || 0) - (ob[i] || 0);
+        }
+        return 0;
     });
 
-    naturals.forEach(t => rack.appendChild(makeTileEl(t)));
-
-    if (jokers.length > 0) {
-        const sep = document.createElement('div');
-        sep.className = 'tile-group-sep';
-        rack.appendChild(sep);
-        jokers.forEach(t => rack.appendChild(makeTileEl(t)));
-    }
+    sorted.forEach(t => rack.appendChild(makeTileEl(t)));
 }
 
 // ── Evaluation ─────────────────────────────────────────────
@@ -778,6 +664,8 @@ function loadPuzzle(tiles) {
     // Show total count
     const countEl = document.getElementById('validHandCount');
     countEl.textContent = `${validHands.length} hand${validHands.length !== 1 ? 's' : ''} possible`;
+    const barCount = document.getElementById('handCountBar');
+    if (barCount) barCount.textContent = countEl.textContent;
 
     updateFoundDisplay();
     clearFeedback();
@@ -841,6 +729,7 @@ function newPuzzle() {
     const btn = document.getElementById('newPuzzleBtn');
     btn.disabled = true;
     btn.textContent = '⏳ Generating…';
+    btn.style.opacity = '0.5';
 
     // Use setTimeout so the UI updates before the computation runs
     setTimeout(() => {
@@ -854,6 +743,7 @@ function newPuzzle() {
 
         btn.disabled = false;
         btn.textContent = '🎲 New Puzzle';
+        btn.style.opacity = '';
     }, 30);
 }
 
@@ -970,8 +860,7 @@ function updateFoundDisplay() {
             return `<li class="found-item">
                 <span class="check-icon">✔</span>
                 <div>
-                    <span class="hand-name">Hand ${handNum}</span>
-                    <span class="hand-section"> — ${section}</span>
+                    <span class="hand-name">${section} Hand ${handNum}</span>
                 </div>
             </li>`;
         }).join('');
@@ -1014,7 +903,7 @@ function revealMissed() {
         const div = document.createElement('div');
         div.className = 'missed-item';
         div.innerHTML = `<span class="missed-icon">💡</span>
-            <span><strong>Hand ${v.handNum}</strong> — ${v.section}</span>`;
+            <span><strong>${v.section} Hand ${v.handNum}</strong></span>`;
         missedEl.appendChild(div);
     });
     missedEl.style.display = 'flex';
@@ -1074,13 +963,25 @@ function analyzeConsensusExpansion(seedTiles) {
 
     for (let pick = 0; pick < 7; pick++) {
         let bestTile = null, bestCount = 0;
+        let bestNatural = null, bestNaturalCount = 0;
 
         ALL_CANDIDATES.forEach(tile => {
             if (tileCount(currentTiles, tile) >= 4) return;
             const testTiles = [...currentTiles, tile];
             const count = surviving.filter(h => fits(h, testTiles)).length;
-            if (count > bestCount) { bestCount = count; bestTile = tile; }
+            if (tile === 'J') {
+                if (count > bestCount) { bestCount = count; bestTile = tile; }
+            } else {
+                if (count > bestNaturalCount) { bestNaturalCount = count; bestNatural = tile; }
+                if (count > bestCount) { bestCount = count; bestTile = tile; }
+            }
         });
+
+        // Prefer the best natural tile unless a joker strictly beats it
+        if (bestNatural && bestNaturalCount >= bestCount) {
+            bestTile = bestNatural;
+            bestCount = bestNaturalCount;
+        }
 
         if (!bestTile || bestCount === 0) break;
 
@@ -1183,6 +1084,7 @@ window.addEventListener('load', () => {
     if (typeof loadCard === 'function') {
         loadCard(null, function() {
             populateSectionSelect();
+            updateInstructionsYear();
 
             // Generate first puzzle
             const firstPuzzle = generatePuzzle();
