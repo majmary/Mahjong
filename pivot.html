@@ -613,8 +613,8 @@ function populateCardSelect() {
             opt.textContent = card.label;
             sel.appendChild(opt);
         });
-        // Default to the most recent card (last in list) rather than the oldest
-        sel.value = cards[cards.length - 1].year || '';
+        // Default to the first card in the registry (most current)
+        sel.value = cards[0].year || '';
     }
 }
 
@@ -1199,7 +1199,9 @@ window.addEventListener('load', () => {
     populateCardSelect();
 
     if (typeof loadCard === 'function') {
-        loadCard(null, function() {
+        const sel = document.getElementById('cardSelect');
+        const selectedYear = sel ? sel.value : null;
+        loadCard(selectedYear || null, function() {
             populateSectionSelect();
             updateInstructionsYear();
 
