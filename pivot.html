@@ -784,6 +784,15 @@ function loadPuzzle(tiles) {
     // Pre-compute valid hands (used for scoring and validation)
     validHands = computeValidHands(tiles);
 
+    // Diagnostic logging
+    const cardYear = window.ACTIVE_CARD_YEAR || '?';
+    console.log(`[Pivot] Card: ${cardYear}  (${ACTIVE_CARD ? ACTIVE_CARD.length : 0} hands loaded)`);
+    console.log(`[Pivot] Tiles: ${tiles.join(' ')}`);
+    console.log(`[Pivot] ${validHands.length} matching hand(s):`);
+    validHands.forEach(v => {
+        console.log(`  ✔ [${v.section}] Hand ${v.handNum}  code: ${v.handDef.code}`);
+    });
+
     // Show total count
     const countEl = document.getElementById('validHandCount');
     countEl.textContent = `${validHands.length} hand${validHands.length !== 1 ? 's' : ''} possible`;
