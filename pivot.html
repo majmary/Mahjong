@@ -350,7 +350,7 @@
         <div class="subtitle">How many hands fit?</div>
     </div>
     <div class="header-right">
-        <select class="header-card-select" id="cardSelect" onchange="switchCard(this.value)"></select>
+        <select class="header-card-select" id="cardSelect"></select>
         <a href="index.html" class="back-link">← Home</a>
     </div>
 </header>
@@ -459,26 +459,6 @@ function showNotification(msg, type = 'error') {
 
 
 // ── Card switching ──────────────────────────────────────────
-function populateCardSelect() {
-    const sel = document.getElementById('cardSelect');
-    sel.innerHTML = '';
-    const cards = typeof getAvailableCards === 'function' ? getAvailableCards() : [];
-    if (cards.length === 0) {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = 'NMJL 2025';
-        sel.appendChild(opt);
-    } else {
-        cards.forEach(card => {
-            const opt = document.createElement('option');
-            opt.value = card.year || '';
-            opt.textContent = card.label;
-            sel.appendChild(opt);
-        });
-        // Default to the most recent card (last in list) rather than the oldest
-        sel.value = cards[cards.length - 1].year || '';
-    }
-}
 
 function updateInstructionsYear() {
     const sel = document.getElementById('cardSelect');
@@ -488,14 +468,13 @@ function updateInstructionsYear() {
 }
 
 function switchCard(year) {
-    if (typeof loadCard === 'function') {
-        loadCard(year || null, function() {
-            populateSectionSelect();
-            updateInstructionsYear();
-            const result = generatePuzzle();
-            if (result) loadPuzzle(result.finalTiles);
-        });
-    }
+    loadCard(year || null, function() {
+        populateSectionSelect();
+        updateInstructionsYear();
+        const result = generatePuzzle();
+        if (result) loadPuzzle(result.finalTiles);
+        else showNotification('Could not generate a starting puzzle — please click New Puzzle.', 'error');
+    });
 }
 
 // ── Tile rendering ──────────────────────────────────────────
@@ -1069,24 +1048,10 @@ function testConsensusExpansion() {
 
 
 window.addEventListener('load', () => {
-    populateCardSelect();
+    populateCardSelect('cardSelect', switchCard);
 
     if (typeof loadCard === 'function') {
-        loadCard(null, function() {
-            populateSectionSelect();
-            updateInstructionsYear();
-
-            // Generate first puzzle
-            const firstPuzzle = generatePuzzle();
-            if (firstPuzzle) {
-                loadPuzzle(firstPuzzle.finalTiles);
-            } else {
-                showNotification('Could not generate a starting puzzle — please click New Puzzle.', 'error');
-            }
-
-            // Analysis still available via console if needed
-            // setTimeout(testConsensusExpansion, 100);
-        });
+        switchCard(null);
     } else {
         document.querySelector('.main').innerHTML =
             '<div class="status-message">⚠️ Could not load card data. ' +
