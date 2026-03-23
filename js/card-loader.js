@@ -67,7 +67,7 @@
         const sel = document.getElementById(selId);
         if (!sel) return;
         sel.innerHTML = '';
-        const cards = getAvailableCards(); // newest first
+        const cards = window.getAvailableCards(); // newest first
         cards.forEach(function(card) {
             const opt = document.createElement('option');
             opt.value = card.year;
