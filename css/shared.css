@@ -101,6 +101,10 @@ body {
     font-size: 12px;
     cursor: pointer;
 }
+.header-card-select option {
+    background: white;
+    color: var(--color-text-primary);
+}
 
 /* ── Corner menu offset (game) — clears the header bar ── */
 #cornerMenu { top: 58px !important; }
