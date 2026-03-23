@@ -57,9 +57,27 @@
         document.head.appendChild(script);
     };
 
-    // Load the default card immediately so it's ready when the page opens
-    // card-2025.js is loaded via a <script> tag in index.html, so CARD_LIBRARY['2025']
-    // will already be populated — this just activates it as the default.
     window.CARD_LIBRARY = window.CARD_LIBRARY || {};
+
+    // Populate a card-year <select> and wire its onchange.
+    // Call this from each page's load handler:
+    //   populateCardSelect('cardSelect', switchCard);
+    // onChangeFn receives the selected year string.
+    window.populateCardSelect = function(selId, onChangeFn) {
+        const sel = document.getElementById(selId);
+        if (!sel) return;
+        sel.innerHTML = '';
+        const cards = getAvailableCards(); // newest first
+        cards.forEach(function(card) {
+            const opt = document.createElement('option');
+            opt.value = card.year;
+            opt.textContent = card.label;
+            sel.appendChild(opt);
+        });
+        if (cards.length) sel.value = cards[0].year; // default to newest
+        sel.addEventListener('change', function() {
+            if (onChangeFn) onChangeFn(this.value);
+        });
+    };
 
 })();
