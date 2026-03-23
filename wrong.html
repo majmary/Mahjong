@@ -61,7 +61,7 @@
         /* ── Tile groups ── */
         .groups-row {
             display: flex;
-            flex-wrap: nowrap;
+            flex-wrap: wrap;
             align-items: flex-start;
             gap: 0;
             margin-bottom: 14px;
@@ -72,11 +72,6 @@
             flex-wrap: nowrap;
             gap: 1px;
             flex-shrink: 0;
-        }
-        /* Tile size for wrong - clamp to fit 14 tiles */
-        .groups-row .tile {
-            width: clamp(24px, 6vw, 46px);
-            height: clamp(30px, 7.5vw, 58px);
         }
 
         .tile-group.is-exposure {
@@ -253,7 +248,7 @@
 
         .result-groups-row {
             display: flex;
-            flex-wrap: nowrap;
+            flex-wrap: wrap;
             align-items: flex-start;
             gap: 0;
             margin-bottom: 12px;
@@ -347,9 +342,7 @@
         <div class="subtitle">Spot the invalid hands</div>
     </div>
     <div class="header-right">
-        <select class="header-card-select" id="cardSelector">
-            <option>2026 Card</option>
-            <option>2025 Card</option>
+        <select class="header-card-select" id="cardSelect">
         </select>
         <a href="index.html" class="back-link">← Home</a>
     </div>
@@ -1065,28 +1058,19 @@ function newPuzzle() {
     showHand(0);
 }
 
-function onCardChange() {
-    const year = document.getElementById('cardSelector').value;
+function switchCard(year) {
     loadCard(year, () => newPuzzle());
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 window.addEventListener('load', () => {
-    if (window.CARD_LIBRARY) {
-        const sel = document.getElementById('cardSelector');
-        if (sel) {
-            sel.innerHTML = '';
-            Object.keys(window.CARD_LIBRARY).sort().reverse().forEach(year => {
-                const opt = document.createElement('option');
-                opt.value = year;
-                opt.textContent = year + ' Card';
-                sel.appendChild(opt);
-            });
-        }
-    }
-
+    populateCardSelect('cardSelect', switchCard);
     const cardYear = new URLSearchParams(window.location.search).get('year') || null;
+    if (cardYear) {
+        const sel = document.getElementById('cardSelect');
+        if (sel) sel.value = cardYear;
+    }
     loadCard(cardYear, () => newPuzzle());
 });
 </script>
