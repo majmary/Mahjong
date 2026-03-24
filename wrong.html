@@ -689,7 +689,7 @@ function applyExposures(instance) {
     const { groups, handDef } = instance;
     let hasIllegal = false;
     groups.forEach(group => {
-        if (Math.random() < 0.05) {
+        if (Math.random() < 0.10) {
             group.isExposure = true;
             if (!isExposureLegal(group, handDef)) hasIllegal = true;
         }
@@ -740,7 +740,7 @@ function buildPuzzle() {
     const usedCodes = new Set();
 
     for (const handDef of shuffledCard) {
-        if (chosen.length >= 3) break;
+        if (chosen.length >= 1) break;
         if (usedCodes.has(handDef.code)) continue;
         // Skip hands with R tiles (Consecutive run 7 — out of scope for resolution)
         if (/\br\b/i.test(handDef.code) && handDef.code.includes('[')) continue;
@@ -756,7 +756,7 @@ function buildPuzzle() {
         chosen.push(instance);
     }
 
-    if (chosen.length < 3) return null;
+    if (chosen.length < 1) return null;
 
     return chosen.map(instance => {
         // Layer 1: fill corruption (50%)
@@ -833,14 +833,12 @@ function buildHandIdEl(handDef) {
 
 // ── Play phase ────────────────────────────────────────────────────────────────
 
-let currentPuzzle  = null;
-let currentHandIdx = 0;
-let userAnswers    = []; // [{ saysInvalid: bool, selectedReasons: string[] }, ...]
+let currentPuzzle = null;
+let sessionPoints = 0;
+let sessionMax    = 0;
 
-function showHand(idx) {
-    const item = currentPuzzle[idx];
-    const total = currentPuzzle.length;
-    const isLast = idx === total - 1;
+function showHand() {
+    const item = currentPuzzle[0];
 
     const area = document.getElementById('mainArea');
     area.innerHTML = '';
@@ -848,12 +846,6 @@ function showHand(idx) {
     // ── Outer container ──
     const wrap = document.createElement('div');
     wrap.style.cssText = 'max-width:600px; margin:0 auto; padding:20px 16px 40px; display:flex; flex-direction:column; gap:0;';
-
-    // Progress
-    const prog = document.createElement('div');
-    prog.style.cssText = 'font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--color-text-muted); margin-bottom:12px;';
-    prog.textContent = 'Hand ' + (idx + 1) + ' of ' + total;
-    wrap.appendChild(prog);
 
     // Card
     const card = document.createElement('div');
@@ -933,132 +925,109 @@ function showHand(idx) {
     wrap.appendChild(card);
 
     // Nav button — lives in fixed bottom bar
-    const bar = document.getElementById('bottomBar');
+    const bar    = document.getElementById('bottomBar');
     const barBtn = document.getElementById('barBtn');
     const barHint = document.getElementById('barHint');
     bar.style.display = 'flex';
-    barHint.innerHTML = 'Hand <strong>' + (idx+1) + '</strong> of ' + total;
-    barBtn.textContent = isLast ? 'See Results →' : 'Next Hand →';
+    barHint.innerHTML = sessionMax === 0
+        ? 'Score: <strong>—</strong>'
+        : 'Score: <strong>' + sessionPoints + '</strong> / ' + sessionMax;
+    barBtn.textContent = 'Submit →';
     barBtn.onclick = () => {
-        userAnswers[idx] = { saysInvalid, selectedReasons: [...selectedReasons] };
-        if (isLast) { showResults(); } else { currentHandIdx++; showHand(currentHandIdx); }
+        const answer = { saysInvalid, selectedReasons: [...selectedReasons] };
+        revealResult(item, answer, card, toggle, btnValid, btnInvalid, reasonsGrid);
     };
 
     area.appendChild(wrap);
 }
 
-// ── Results phase ─────────────────────────────────────────────────────────────
+// ── Reveal result inline on the live card ─────────────────────────────────────
 
-function showResults() {
-    const area = document.getElementById('mainArea');
-    area.innerHTML = '';
+function revealResult(item, answer, card, toggle, btnValid, btnInvalid, reasonsGrid) {
+    const { isCorrupted, activeReasons } = item;
+    const { saysInvalid, selectedReasons } = answer;
 
-    const wrap = document.createElement('div');
-    wrap.className = 'results-area';
+    const handMax = 1 + activeReasons.length;
+    const callCorrect = saysInvalid === isCorrupted;
+    let handPoints = callCorrect ? 1 : 0;
 
-    let totalPoints = 0;
-    let maxPoints = 0;
-
-    currentPuzzle.forEach((item, idx) => {
-        const answer = userAnswers[idx] || { saysInvalid: false, selectedReasons: [] };
-        const { isCorrupted, activeReasons } = item;
-        const { saysInvalid, selectedReasons } = answer;
-
-        const handMax = 1 + activeReasons.length;
-        maxPoints += handMax;
-
-        const callCorrect = saysInvalid === isCorrupted;
-        let handPoints = callCorrect ? 1 : 0;
-
-        const allReasonValues = REASON_DEFS.map(r => r.value);
-        allReasonValues.forEach(r => {
-            const applies   = activeReasons.includes(r);
-            const selected  = selectedReasons.includes(r);
-            if (selected && applies)  handPoints++;
-            if (selected && !applies) handPoints--;
-        });
-        handPoints = Math.max(0, handPoints);
-        totalPoints += handPoints;
-
-        // Build result card
-        const card = document.createElement('div');
-        card.className = 'result-card ' + (callCorrect ? 'res-correct' : 'res-wrong');
-
-        const handLabel = document.createElement('div');
-        handLabel.className = 'result-hand-label';
-        handLabel.textContent = 'Hand ' + (idx + 1);
-        card.appendChild(handLabel);
-
-        // Tiles (compact)
-        card.appendChild(buildGroupsRow(item.instance.groups, 'result-groups-row'));
-
-        // Verdict line
-        const verdictLine = document.createElement('div');
-        verdictLine.className = 'result-verdict-line';
-        if (!isCorrupted) {
-            verdictLine.textContent = callCorrect ? '✓ Correct — this hand is valid.' : '✗ You said invalid — this hand is actually valid.';
-        } else {
-            const reasonStr = activeReasons.map(r => corruptionLabel(r)).join(', ');
-            if (callCorrect) {
-                verdictLine.textContent = '✓ Correct — this hand is invalid.';
-            } else {
-                verdictLine.textContent = '✗ You said valid — this hand is actually invalid.';
-            }
-            if (isCorrupted) {
-                const detail = document.createElement('div');
-                detail.className = 'result-detail';
-                detail.textContent = 'Reason' + (activeReasons.length > 1 ? 's' : '') + ': ' + reasonStr + '.';
-                card.appendChild(verdictLine);
-                card.appendChild(detail);
-
-                // Points
-                const pts = document.createElement('div');
-                pts.className = 'result-pts';
-                pts.textContent = handPoints + ' / ' + handMax + ' pts';
-                card.appendChild(pts);
-                card.appendChild(buildHandIdEl(item.instance.handDef));
-                wrap.appendChild(card);
-                return;
-            }
-        }
-
-        card.appendChild(verdictLine);
-
-        const pts = document.createElement('div');
-        pts.className = 'result-pts';
-        pts.textContent = handPoints + ' / ' + handMax + ' pts';
-        card.appendChild(pts);
-
-        card.appendChild(buildHandIdEl(item.instance.handDef));
-        wrap.appendChild(card);
+    const allReasonValues = REASON_DEFS.map(r => r.value);
+    allReasonValues.forEach(r => {
+        const applies  = activeReasons.includes(r);
+        const selected = selectedReasons.includes(r);
+        if (selected && applies)  handPoints++;
+        if (selected && !applies) handPoints--;
     });
+    handPoints = Math.max(0, handPoints);
 
-    // Score banner
-    const banner = document.createElement('div');
-    banner.className = 'score-banner';
-    banner.innerHTML = '<div class="score-big">' + totalPoints + '<span style="font-size:32px;opacity:0.7"> / ' + maxPoints + '</span></div>' +
-        '<div class="score-sub">points earned</div>' +
-        '<button class="btn-again" onclick="newPuzzle()">Try Another Puzzle</button>';
-    wrap.appendChild(banner);
+    sessionPoints += handPoints;
+    sessionMax    += handMax;
 
-    area.appendChild(wrap);
+    // Freeze toggle buttons
+    btnValid.disabled   = true;
+    btnInvalid.disabled = true;
+    // Freeze reason buttons
+    reasonsGrid.querySelectorAll('.reason-btn').forEach(b => { b.disabled = true; });
+
+    // Color the card
+    card.classList.add(callCorrect ? 'revealed-correct' : 'revealed-wrong');
+
+    // Verdict line
+    const verdictLine = document.createElement('div');
+    verdictLine.className = 'result-verdict-line';
+    verdictLine.style.marginTop = '12px';
+    if (!isCorrupted) {
+        verdictLine.textContent = callCorrect
+            ? '✓ Correct — this hand is valid.'
+            : '✗ You said invalid — this hand is actually valid.';
+    } else {
+        verdictLine.textContent = callCorrect
+            ? '✓ Correct — this hand is invalid.'
+            : '✗ You said valid — this hand is actually invalid.';
+    }
+    card.appendChild(verdictLine);
+
+    // Reason detail (always show for corrupted hands)
+    if (isCorrupted) {
+        const reasonStr = activeReasons.map(r => corruptionLabel(r)).join(', ');
+        const detail = document.createElement('div');
+        detail.className = 'result-detail';
+        detail.textContent = 'Reason' + (activeReasons.length > 1 ? 's' : '') + ': ' + reasonStr + '.';
+        card.appendChild(detail);
+    }
+
+    // Points for this hand
+    const pts = document.createElement('div');
+    pts.className = 'result-pts';
+    pts.textContent = handPoints + ' / ' + handMax + ' pts this hand';
+    card.appendChild(pts);
+
+    // Hand identity
+    card.appendChild(buildHandIdEl(item.instance.handDef));
+
+    // Update bar: show running score, swap button to Next Hand
+    const barHint = document.getElementById('barHint');
+    const barBtn  = document.getElementById('barBtn');
+    barHint.innerHTML = 'Score: <strong>' + sessionPoints + '</strong> / ' + sessionMax;
+    barBtn.textContent = 'Next Hand →';
+    barBtn.onclick = () => newPuzzle();
 }
 
 // ── Puzzle lifecycle ──────────────────────────────────────────────────────────
 
 function newPuzzle() {
-    currentPuzzle  = buildPuzzle();
-    currentHandIdx = 0;
-    userAnswers    = [];
+    currentPuzzle = buildPuzzle();
     if (!currentPuzzle) {
         document.getElementById('mainArea').innerHTML =
             '<div class="loading-msg">Could not generate puzzle — please try again.</div>';
         return;
     }
-    showHand(0);
+    showHand();
 }
 
 function switchCard(year) {
+    sessionPoints = 0;
+    sessionMax    = 0;
     loadCard(year, () => newPuzzle());
 }
 
@@ -1075,7 +1044,7 @@ window.addEventListener('load', () => {
 });
 </script>
 <div class="page-bottom-bar" id="bottomBar" style="display:none;">
-    <span class="bar-hint-text" id="barHint">Hand <strong>1</strong> of 3</span>
+    <span class="bar-hint-text" id="barHint">Score: <strong>—</strong></span>
     <button class="bar-action-btn" id="barBtn">Next Hand →</button>
 </div>
 </body>
