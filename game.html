@@ -1260,17 +1260,17 @@
                 position: relative;
             }
 
-            /* ☰ button fills the strip header height in portrait */
+            /* ☰ button sits at the right end of the strip header in portrait */
             #cornerMenu {
                 position: absolute;
                 top: 0;
                 right: 0;
-                height: 100%;
+                height: auto;
             }
 
             #cornerMenuBtn {
                 width: 36px;
-                height: 100%;
+                height: 32px;
                 border-radius: 0 0 0 6px;
                 font-size: 15px;
                 top: unset;
@@ -1443,7 +1443,7 @@
         <div id="cornerMenu">
             <button id="cornerMenuBtn" onclick="toggleCornerMenu()" title="Menu">☰</button>
             <div id="cornerMenuDropdown">
-                <div id="cornerMenuCardLabel" style="padding: 8px 12px; font-size: 11px; color: var(--color-text-muted); font-weight: 600; letter-spacing: 0.05em; border-bottom: 1px solid var(--color-border); margin-bottom: 4px; text-align: center;">🀄 NMJL 2025</div>
+                <div id="cornerMenuCardLabel" style="padding: 8px 12px; font-size: 11px; color: var(--color-text-muted); font-weight: 600; letter-spacing: 0.05em; border-bottom: 1px solid var(--color-border); margin-bottom: 4px; text-align: center;">🀄 NMJL 2026</div>
                 <button onclick="showHandPeek()">🃏 View All Hands</button>
                 <button id="muteBtn" onclick="SoundEngine.toggleMute(); document.getElementById('cornerMenuDropdown').classList.remove('open');">🔊 Mute</button>
                 <button onclick="toggleFullscreen()">⛶ Full Screen</button>
@@ -1510,7 +1510,7 @@
 
     <script>
         // Currently active card label (e.g. "NMJL 2025") — set when launching a game
-        let activeCardLabel = 'NMJL 2025';
+        let activeCardLabel = 'NMJL 2026';
 
         // Game state
         const gameState = {
@@ -7467,11 +7467,22 @@
             return true;
         }
 
-        // Header card select
+        // Header card select — load the chosen year directly
         function switchCard(year) {
-            const sel = document.getElementById('cardSelect');
-            if (sel) sel.value = year;
-            changeCardMidGame();
+            if (typeof gameState !== 'undefined' && gameState.phase !== 'setup' && !gameState.gameOver) {
+                if (!confirm('Change card? Current game will be lost.')) {
+                    // Revert the select back to the active year
+                    syncCardLabel();
+                    return;
+                }
+            }
+            loadCard(year || null, function() {
+                syncCardLabel();
+                document.getElementById('landingView').style.display = 'none';
+                document.getElementById('cardPickerView').style.display = 'none';
+                document.getElementById('gameView').style.display = 'flex';
+                startNewGame();
+            });
         }
 
         // Redeal current hand with 10% penalty
@@ -7484,20 +7495,22 @@
             dealNextRound({ redeal: true });
         }
 
+        // Sync all card label displays to the currently active card year
+        function syncCardLabel() {
+            const year = window.ACTIVE_CARD_YEAR || '2026';
+            const cards = typeof getAvailableCards === 'function' ? getAvailableCards() : [];
+            const match = cards.find(c => c.year === year);
+            activeCardLabel = match ? match.label : 'NMJL ' + year;
+            const cardLabelEl = document.getElementById('cornerMenuCardLabel');
+            if (cardLabelEl) cardLabelEl.textContent = '🀄 ' + activeCardLabel;
+            const sel = document.getElementById('cardSelect');
+            if (sel) sel.value = year;
+        }
+
         function launchGame(year) {
             // Load the requested card year (defaults to current if not specified)
             loadCard(year || null, function() {
-                // Derive the card label: if a specific year was requested, look it up in
-                // the registry. If no year was passed (default card), keep the initialized
-                // default — don't use cards[0] which may be an older year.
-                if (year) {
-                    const cards = typeof getAvailableCards === 'function' ? getAvailableCards() : [];
-                    const match = cards.find(c => c.year === year);
-                    activeCardLabel = match ? match.label : 'NMJL ' + year;
-                }
-                // Keep corner menu label in sync
-                const cardLabelEl = document.getElementById('cornerMenuCardLabel');
-                if (cardLabelEl) cardLabelEl.textContent = '🀄 ' + activeCardLabel;
+                syncCardLabel();
                 document.getElementById('landingView').style.display = 'none';
                 document.getElementById('cardPickerView').style.display = 'none';
                 document.getElementById('gameView').style.display = 'flex';
@@ -7629,6 +7642,7 @@ window.addEventListener('load', () => {
         if (sel) sel.value = cardYear;
     }
     loadCard(cardYear || null, function() {
+        syncCardLabel();
         document.getElementById('landingView').style.display = 'none';
         document.getElementById('gameView').style.display = 'flex';
         startNewGame();
