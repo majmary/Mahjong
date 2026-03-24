@@ -865,6 +865,12 @@ function showHand() {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'max-width:600px; margin:0 auto; padding:20px 16px 40px; display:flex; flex-direction:column; gap:0;';
 
+    // Instructions
+    const instr = document.createElement('div');
+    instr.className = 'instructions';
+    instr.textContent = 'Your opponent declared Mahjong! Is it a valid hand? If not, select all the reasons it isn\'t. Tiles in a box are exposed.';
+    wrap.appendChild(instr);
+
     // Card
     const card = document.createElement('div');
     card.className = 'hand-card';
