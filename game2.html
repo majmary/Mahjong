@@ -27,7 +27,6 @@
     <!-- Game modules — order matters -->
     <script src="js/sound.js"></script>
     <script src="js/patterns.js"></script>
-    <link rel="stylesheet" href="css/shared.css">
     <style>
         :root {
             --color-primary: #2c5f2d;
@@ -811,10 +810,58 @@
         }
 
         /* ── Corner menu ── */
-        /* ── Game-specific header overrides ── */
-        /* Smaller title so card select + Home link have room */
-        .page-header h1 { font-size: 13px; }
-        .page-header .subtitle { display: none; }
+        /* ── Page header bar (inlined from shared.css) ── */
+        .page-header {
+            background: #2c5f2d;
+            color: white;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            position: sticky;
+            top: 0;
+            z-index: 600;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .page-header h1 {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+            white-space: nowrap;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .header-card-select {
+            padding: 4px 8px;
+            border-radius: 5px;
+            border: 1px solid rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.15);
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .header-card-select option {
+            background: white;
+            color: #333333;
+        }
+        .back-link {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            font-size: 12px;
+            padding: 5px 10px;
+            border: 1px solid rgba(255,255,255,0.35);
+            border-radius: 6px;
+            transition: background 0.15s;
+            white-space: nowrap;
+        }
+        .back-link:hover { background: rgba(255,255,255,0.12); }
 
         #cornerMenu {
             position: fixed;
@@ -1253,16 +1300,29 @@
                 flex-direction: row;
                 align-items: center;
                 padding: 3px 8px 3px 8px;
-                padding-right: 48px; /* clear the ☰ menu button */
+                padding-right: 40px; /* clear the ☰ button */
                 background: rgba(255,255,255,0.96);
                 border-bottom: 1px solid var(--color-border);
                 gap: 8px;
-                min-height: 26px;
+                min-height: 32px;
             }
 
-            /* In portrait, nudge the fixed ☰ button down to sit in the strip header row */
+            /* Portrait ☰ sits flush in the strip header row */
             #cornerMenu {
-                top: 54px;
+                top: 48px;
+                right: 0;
+            }
+            #cornerMenuBtn {
+                background: white;
+                color: var(--color-primary);
+                border: none;
+                border-left: 1px solid var(--color-border);
+                border-radius: 0;
+                width: 36px;
+                height: 32px;
+                font-size: 16px;
+                box-shadow: none;
+                backdrop-filter: none;
             }
 
             #portraitStripCards {
