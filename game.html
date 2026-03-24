@@ -811,6 +811,11 @@
         }
 
         /* ── Corner menu ── */
+        /* ── Game-specific header overrides ── */
+        /* Smaller title so card select + Home link have room */
+        .page-header h1 { font-size: 13px; }
+        .page-header .subtitle { display: none; }
+
         #cornerMenu {
             position: fixed;
             top: 10px;
@@ -1247,12 +1252,31 @@
                 display: flex;
                 flex-direction: row;
                 align-items: center;
-                padding: 3px 8px 3px 8px;
-                padding-right: 48px; /* clear the ☰ menu button */
+                padding: 3px 8px;
                 background: rgba(255,255,255,0.96);
                 border-bottom: 1px solid var(--color-border);
                 gap: 8px;
                 min-height: 26px;
+                position: relative;
+            }
+
+            /* ☰ button fills the strip header height in portrait */
+            #cornerMenu {
+                position: absolute;
+                top: 0;
+                right: 0;
+                height: 100%;
+            }
+
+            #cornerMenuBtn {
+                width: 36px;
+                height: 100%;
+                border-radius: 0 0 0 6px;
+                font-size: 15px;
+                top: unset;
+                right: unset;
+                position: relative;
+                box-shadow: none;
             }
 
             #portraitStripCards {
@@ -1389,11 +1413,10 @@
 <header class="page-header">
     <div>
         <h1>🀄 Mary on Mahjong</h1>
-        <div class="subtitle">American Mahjong</div>
     </div>
     <div class="header-right">
         <select class="header-card-select" id="cardSelect"></select>
-        <a href="index.html" class="back-link" id="homeLink" onclick="return confirmHome()">← Home</a>
+        <a href="index.html" class="back-link" onclick="return confirmHome()">← Home</a>
     </div>
 </header>
 
@@ -1421,13 +1444,11 @@
             <button id="cornerMenuBtn" onclick="toggleCornerMenu()" title="Menu">☰</button>
             <div id="cornerMenuDropdown">
                 <div id="cornerMenuCardLabel" style="padding: 8px 12px; font-size: 11px; color: var(--color-text-muted); font-weight: 600; letter-spacing: 0.05em; border-bottom: 1px solid var(--color-border); margin-bottom: 4px; text-align: center;">🀄 NMJL 2025</div>
-                <button onclick="confirmNewGame()">🔄 New Game</button>
-                <button onclick="changeCardMidGame()">🀄 Change Card</button>
                 <button onclick="showHandPeek()">🃏 View All Hands</button>
                 <button id="muteBtn" onclick="SoundEngine.toggleMute(); document.getElementById('cornerMenuDropdown').classList.remove('open');">🔊 Mute</button>
                 <button onclick="toggleFullscreen()">⛶ Full Screen</button>
+                <button onclick="confirmRedeal()">🀄 Redeal (−10%)</button>
                 <button onclick="confirmResetScores()">💰 Reset Scores</button>
-                <button onclick="returnToHome()">🏠 Home</button>
             </div>
         </div>
 
@@ -5597,9 +5618,10 @@
             handLabel.textContent = `Hand ${gameState.currentHand} of ${gameState.totalHands}`;
             header.appendChild(handLabel);
 
-            const spacer = document.createElement('div');
-            spacer.style.flex = '1';
-            header.appendChild(spacer);
+            const sep = document.createElement('span');
+            sep.style.cssText = 'font-size:11px; color:var(--color-text-muted); flex-shrink:0;';
+            sep.textContent = '·';
+            header.appendChild(sep);
 
             const youChip = document.createElement('span');
             youChip.style.cssText = 'font-size:11px; font-weight:700; color:var(--color-primary); white-space:nowrap; flex-shrink:0;';
@@ -7437,7 +7459,7 @@
                window.location.href = 'index.html';
         }
 
-        // Called by the header Home link — shows confirm if game in progress
+        // Header Home link — confirms if game in progress
         function confirmHome() {
             if (typeof gameState !== 'undefined' && gameState.phase !== 'setup' && !gameState.gameOver) {
                 if (!confirm('Return to home? Current game will be lost.')) return false;
@@ -7445,11 +7467,21 @@
             return true;
         }
 
-        // Called by header card select — reuses changeCardMidGame confirmation logic
+        // Header card select
         function switchCard(year) {
             const sel = document.getElementById('cardSelect');
-            if (sel) sel.value = year; // keep select in sync
+            if (sel) sel.value = year;
             changeCardMidGame();
+        }
+
+        // Redeal current hand with 10% penalty
+        function confirmRedeal() {
+            document.getElementById('cornerMenuDropdown').classList.remove('open');
+            const humanPlayer = gameState.players.find(p => p.isHuman);
+            const humanScore = humanPlayer ? gameState.scores[humanPlayer.name] : 100;
+            const penalty = humanScore < 10 ? 1 : Math.floor(humanScore * 0.1);
+            if (!confirm(`Re-deal this hand? You'll lose ${penalty} pts (10% penalty).`)) return;
+            dealNextRound({ redeal: true });
         }
 
         function launchGame(year) {
