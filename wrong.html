@@ -82,19 +82,7 @@
             position: relative;
         }
 
-        .tile-group.is-exposure::after {
-            content: 'Exposed';
-            position: absolute;
-            bottom: -14px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 8px;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: var(--color-primary);
-            white-space: nowrap;
-        }
+
 
         .group-gap { width: 4px; flex-shrink: 0; }
 
@@ -683,13 +671,14 @@ function corruptHand(instance) {
 }
 
 // Apply per-group exposure layer (independent of fill corruption).
-// Each group has a 5% chance of being marked as exposed.
+// Groups of 1–2 tiles: 3% chance. Groups of 3+ tiles: 10% chance.
 // Returns true if any resulting exposure is illegal.
 function applyExposures(instance) {
     const { groups, handDef } = instance;
     let hasIllegal = false;
     groups.forEach(group => {
-        if (Math.random() < 0.10) {
+        const rate = group.tiles.length >= 3 ? 0.10 : 0.03;
+        if (Math.random() < rate) {
             group.isExposure = true;
             if (!isExposureLegal(group, handDef)) hasIllegal = true;
         }
