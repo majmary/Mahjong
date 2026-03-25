@@ -825,28 +825,31 @@ function buildPuzzle() {
 
         // Layer 4: confirm corruption is actually detectable — if the final tile set
         // still matches a valid hand on the card, treat it as uncorrupted.
-        // A genuine match requires all non-joker tiles to be consumed (handPool empty of naturals).
+        // Logic mirrors game's checkMahjong: useJokersForScoring then check for
+        // any fully complete match (14/14, no ? remaining in any group).
         if (fillCorruption) {
             const flatTiles = instance.groups.flatMap(g => g.tiles);
+            const jokersInHand = flatTiles.filter(t => t === 'J').length;
             const isActuallyValid = window.ACTIVE_CARD.some(handDef => {
                 try {
                     const results = evaluatePattern(flatTiles, handDef.code);
                     if (!results || results.length === 0) return false;
-                    const result = results[0];
-                    // All natural tiles must be consumed — only jokers may remain in the pool
-                    const naturalsRemaining = result.handPool.filter(t => t !== 'J').length;
-                    if (naturalsRemaining > 0) return false;
-                    // Reject matches where two different suit variables resolved to the same suit
-                    const suitValues = Object.values(result.suitVarMap).filter(Boolean);
-                    if (suitValues.length !== new Set(suitValues).size) return false;
-                    // Reject matches where a K-sequence group has missing tiles (?),
-                    // since jokers are not legal in consecutive runs
-                    const missingInKGroup = result.groups.some(g =>
-                        g.tiles.includes('K') && g.matchedTiles.includes('?')
-                    );
-                    if (missingInKGroup) return false;
-                    console.log('Layer4 VALID MATCH:', handDef.code, 'suitVarMap:', JSON.stringify(result.suitVarMap), 'tiles:', flatTiles.join(' '), 'matched:', JSON.stringify(result.groups.map(g => g.matchedTiles)));
-                    return true;
+                    // Check ALL results for a complete match, not just results[0]
+                    const completeMatch = results.find(r => {
+                        const enhanced = jokersInHand > 0 ? useJokersForScoring(r, jokersInHand) : r;
+                        if (enhanced.totalFilled !== 14) return false;
+                        // No group may have unfilled slots
+                        if (enhanced.groups.some(g => g.matchedTiles.includes('?'))) return false;
+                        // Distinct suits: different suit variables must resolve to different suits
+                        const suitValues = Object.values(enhanced.suitVarMap).filter(Boolean);
+                        if (suitValues.length !== new Set(suitValues).size) return false;
+                        return true;
+                    });
+                    if (completeMatch) {
+                        const enhanced = jokersInHand > 0 ? useJokersForScoring(completeMatch, jokersInHand) : completeMatch;
+                        console.log('Layer4 VALID MATCH:', handDef.code, 'suitVarMap:', JSON.stringify(enhanced.suitVarMap), 'tiles:', flatTiles.join(' '), 'matched:', JSON.stringify(enhanced.groups.map(g => g.matchedTiles)));
+                    }
+                    return !!completeMatch;
                 } catch (e) { return false; }
             });
             if (isActuallyValid) fillCorruption = null;
