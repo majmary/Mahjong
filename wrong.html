@@ -654,10 +654,35 @@ function corruptHand(instance) {
     }
 
     if (type === CORRUPTION_TYPES.WRONG_SIZE) {
-        const g = pick(sizableGroups);
-        g.tiles = (Math.random() < 0.5 && g.tiles.length > 2)
-            ? g.tiles.slice(0, -1)
-            : [...g.tiles, g.tiles[0]];
+        // Decide direction, then find a compensating group to keep total at 14.
+        // Try both directions; if one has no valid compensating group, try the other.
+
+        // Build candidate pairs: [groupToResize, direction, compensatingGroup]
+        const candidates = [];
+        for (const g of sizableGroups) {
+            const others = groups.filter(og => og !== g);
+            // Direction: ADD to g — need a compensating group to remove from (>= 2 tiles)
+            const canRemoveFrom = others.filter(og => og.tiles.length >= 2);
+            if (canRemoveFrom.length > 0) {
+                candidates.push({ g, direction: 'add', comp: pick(canRemoveFrom) });
+            }
+            // Direction: REMOVE from g — g must have > 2 tiles; need a group to add to
+            if (g.tiles.length > 2) {
+                const canAddTo = others.filter(og => og.tiles.some(t => t.length === 2 && SUITS.includes(t[1])));
+                if (canAddTo.length > 0) {
+                    candidates.push({ g, direction: 'remove', comp: pick(canAddTo) });
+                }
+            }
+        }
+        if (candidates.length === 0) return null;
+        const { g, direction, comp } = pick(candidates);
+        if (direction === 'add') {
+            g.tiles = [...g.tiles, g.tiles[0]];
+            comp.tiles = comp.tiles.slice(0, -1);
+        } else {
+            comp.tiles = [...comp.tiles, comp.tiles[0]];
+            g.tiles = g.tiles.slice(0, -1);
+        }
         return type;
     }
 
