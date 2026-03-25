@@ -803,12 +803,17 @@ function cloneInstance(instance) {
 function isHandValid(instance, debugCorruption) {
     const flatTiles = instance.groups.flatMap(g => g.tiles);
     const jokersInHand = flatTiles.filter(t => t === 'J').length;
+    let bestDebug = null; // track closest match for FALSE logging
+
     const matched = window.ACTIVE_CARD.some(handDef => {
         try {
             const results = evaluatePattern(flatTiles, handDef.code);
             if (!results || results.length === 0) return false;
             return results.some(r => {
                 const enhanced = jokersInHand > 0 ? useJokersForScoring(r, jokersInHand) : r;
+                if (debugCorruption && enhanced.totalFilled > (bestDebug ? bestDebug.totalFilled : 0)) {
+                    bestDebug = { code: handDef.code, enhanced };
+                }
                 if (enhanced.totalFilled !== 14) return false;
                 if (enhanced.groups.some(g => g.matchedTiles.includes('?'))) return false;
                 const suitValues = Object.values(enhanced.suitVarMap).filter(Boolean);
@@ -818,7 +823,11 @@ function isHandValid(instance, debugCorruption) {
             });
         } catch (e) { return false; }
     });
-    if (debugCorruption && !matched) console.log('isHandValid FALSE:', flatTiles.join(' '), 'corruption:', debugCorruption);
+    if (debugCorruption && !matched) {
+        const bd = bestDebug;
+        console.log('isHandValid FALSE:', flatTiles.join(' '), 'corruption:', debugCorruption,
+            bd ? '| best:' + bd.code + ' filled:' + bd.enhanced.totalFilled + ' matched:' + JSON.stringify(bd.enhanced.groups.map(g => g.matchedTiles)) : '');
+    }
     return matched;
 }
 
