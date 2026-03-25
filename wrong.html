@@ -800,10 +800,10 @@ function cloneInstance(instance) {
 // Mirrors game's checkMahjong logic: evaluatePattern + useJokersForScoring,
 // look for any result that is fully complete (14/14, no ? in any group),
 // with distinct suit variable assignments.
-function isHandValid(instance) {
+function isHandValid(instance, debugCorruption) {
     const flatTiles = instance.groups.flatMap(g => g.tiles);
     const jokersInHand = flatTiles.filter(t => t === 'J').length;
-    return window.ACTIVE_CARD.some(handDef => {
+    const matched = window.ACTIVE_CARD.some(handDef => {
         try {
             const results = evaluatePattern(flatTiles, handDef.code);
             if (!results || results.length === 0) return false;
@@ -813,10 +813,13 @@ function isHandValid(instance) {
                 if (enhanced.groups.some(g => g.matchedTiles.includes('?'))) return false;
                 const suitValues = Object.values(enhanced.suitVarMap).filter(Boolean);
                 if (suitValues.length !== new Set(suitValues).size) return false;
+                if (debugCorruption) console.log('isHandValid TRUE:', handDef.code, JSON.stringify(enhanced.suitVarMap), flatTiles.join(' '));
                 return true;
             });
         } catch (e) { return false; }
     });
+    if (debugCorruption && !matched) console.log('isHandValid FALSE:', flatTiles.join(' '), 'corruption:', debugCorruption);
+    return matched;
 }
 
 function buildPuzzle() {
@@ -870,7 +873,7 @@ function buildPuzzle() {
                 if (!enforceMaxFourPerTile(instance)) continue;
 
                 // Keep this corruption only if the hand is now genuinely invalid
-                if (!isHandValid(instance)) {
+                if (!isHandValid(instance, corruptionType)) {
                     fillCorruption = corruptionType;
                     break;
                 }
