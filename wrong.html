@@ -793,10 +793,17 @@ function buildPuzzle() {
         // still matches a valid hand on the card, treat it as uncorrupted.
         if (fillCorruption) {
             const flatTiles = instance.groups.flatMap(g => g.tiles);
-            const check = evaluateBestMatch(flatTiles, 1);
-            if (check.bestMatch && check.bestMatch.tilesNeeded === 0) {
-                fillCorruption = null;
-            }
+            const jokersInHand = flatTiles.filter(t => t === 'J').length;
+            const isActuallyValid = window.ACTIVE_CARD.some(handDef => {
+                try {
+                    const results = evaluatePattern(flatTiles, handDef.code);
+                    if (!results || results.length === 0) return false;
+                    let result = results[0];
+                    if (jokersInHand > 0) result = useJokersForScoring(result, jokersInHand);
+                    return result.totalFilled === 14;
+                } catch (e) { return false; }
+            });
+            if (isActuallyValid) fillCorruption = null;
         }
 
         // Collect all reasons that actually apply
