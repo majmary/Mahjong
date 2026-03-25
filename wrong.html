@@ -758,29 +758,37 @@ function makeTileEl(tile) {
 
 // ── Puzzle state ──────────────────────────────────────────────────────────────
 
-// Clamp every natural tile (non-Joker, non-Flower) to a max of 4 copies across
-// the whole hand. Any excess occurrence is replaced with a Joker.
-function enforceMaxFourPerTile(instance) {
-    const counts = {};
-    instance.groups.forEach(g => {
-        g.tiles.forEach(t => {
-            if (t === 'J' || t === 'F') return;
-            counts[t] = (counts[t] || 0) + 1;
-        });
-    });
+// Deep-copy the mutable parts of an instance so corruption can be undone.
+function cloneInstance(instance) {
+    return {
+        groups: instance.groups.map(g => ({ ...g, tiles: [...g.tiles] })),
+        suitMap: { ...instance.suitMap },
+        numMap:  { ...instance.numMap },
+        kStartMap: { ...instance.kStartMap },
+        handDef: instance.handDef
+    };
+}
 
-    // Build a set of tiles that are over the limit
-    const over = new Set(Object.keys(counts).filter(t => counts[t] > 4));
-    if (over.size === 0) return;
-
-    // Walk groups and replace excess occurrences with J
-    const seen = {};
-    instance.groups.forEach(g => {
-        g.tiles = g.tiles.map(t => {
-            if (t === 'J' || t === 'F' || !over.has(t)) return t;
-            seen[t] = (seen[t] || 0) + 1;
-            return seen[t] > 4 ? 'J' : t;
-        });
+// Check whether a set of tiles constitutes a valid hand on the active card.
+// Mirrors game's checkMahjong logic: evaluatePattern + useJokersForScoring,
+// look for any result that is fully complete (14/14, no ? in any group),
+// with distinct suit variable assignments.
+function isHandValid(instance) {
+    const flatTiles = instance.groups.flatMap(g => g.tiles);
+    const jokersInHand = flatTiles.filter(t => t === 'J').length;
+    return window.ACTIVE_CARD.some(handDef => {
+        try {
+            const results = evaluatePattern(flatTiles, handDef.code);
+            if (!results || results.length === 0) return false;
+            return results.some(r => {
+                const enhanced = jokersInHand > 0 ? useJokersForScoring(r, jokersInHand) : r;
+                if (enhanced.totalFilled !== 14) return false;
+                if (enhanced.groups.some(g => g.matchedTiles.includes('?'))) return false;
+                const suitValues = Object.values(enhanced.suitVarMap).filter(Boolean);
+                if (suitValues.length !== new Set(suitValues).size) return false;
+                return true;
+            });
+        } catch (e) { return false; }
     });
 }
 
@@ -811,49 +819,43 @@ function buildPuzzle() {
     if (chosen.length < 1) return null;
 
     return chosen.map(instance => {
-        // Layer 1: fill corruption (50%)
+        // Corruption retry loop (50% chance of attempting corruption)
         let fillCorruption = null;
         if (Math.random() < 0.5) {
-            fillCorruption = corruptHand(instance); // may return null if no corruption possible
+            const cleanCopy = cloneInstance(instance);
+            const MAX_ATTEMPTS = 5;
+            for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+                // Restore clean state before each attempt
+                instance.groups    = cleanCopy.groups.map(g => ({ ...g, tiles: [...g.tiles] }));
+                instance.suitMap   = { ...cleanCopy.suitMap };
+                instance.numMap    = { ...cleanCopy.numMap };
+                instance.kStartMap = { ...cleanCopy.kStartMap };
+
+                const corruptionType = corruptHand(instance);
+                if (!corruptionType) continue; // no corruption possible this attempt
+
+                // Enforce max 4 of any natural tile; excess become jokers
+                enforceMaxFourPerTile(instance);
+
+                // Keep this corruption only if the hand is now genuinely invalid
+                if (!isHandValid(instance)) {
+                    fillCorruption = corruptionType;
+                    break;
+                }
+                // Otherwise loop and try again
+            }
+
+            // If no corruption stuck, restore the clean hand
+            if (!fillCorruption) {
+                instance.groups    = cleanCopy.groups.map(g => ({ ...g, tiles: [...g.tiles] }));
+                instance.suitMap   = { ...cleanCopy.suitMap };
+                instance.numMap    = { ...cleanCopy.numMap };
+                instance.kStartMap = { ...cleanCopy.kStartMap };
+            }
         }
 
-        // Layer 2: per-group exposures (10% per group, independent)
+        // Exposures: independent layer, always runs after corruption is settled
         const exposureCorrupted = applyExposures(instance);
-
-        // Layer 3: clamp any natural tile to max 4 copies; fill excess with jokers
-        enforceMaxFourPerTile(instance);
-
-        // Layer 4: confirm corruption is actually detectable — if the final tile set
-        // still matches a valid hand on the card, treat it as uncorrupted.
-        // Logic mirrors game's checkMahjong: useJokersForScoring then check for
-        // any fully complete match (14/14, no ? remaining in any group).
-        if (fillCorruption) {
-            const flatTiles = instance.groups.flatMap(g => g.tiles);
-            const jokersInHand = flatTiles.filter(t => t === 'J').length;
-            const isActuallyValid = window.ACTIVE_CARD.some(handDef => {
-                try {
-                    const results = evaluatePattern(flatTiles, handDef.code);
-                    if (!results || results.length === 0) return false;
-                    // Check ALL results for a complete match, not just results[0]
-                    const completeMatch = results.find(r => {
-                        const enhanced = jokersInHand > 0 ? useJokersForScoring(r, jokersInHand) : r;
-                        if (enhanced.totalFilled !== 14) return false;
-                        // No group may have unfilled slots
-                        if (enhanced.groups.some(g => g.matchedTiles.includes('?'))) return false;
-                        // Distinct suits: different suit variables must resolve to different suits
-                        const suitValues = Object.values(enhanced.suitVarMap).filter(Boolean);
-                        if (suitValues.length !== new Set(suitValues).size) return false;
-                        return true;
-                    });
-                    if (completeMatch) {
-                        const enhanced = jokersInHand > 0 ? useJokersForScoring(completeMatch, jokersInHand) : completeMatch;
-                        console.log('Layer4 VALID MATCH:', handDef.code, 'suitVarMap:', JSON.stringify(enhanced.suitVarMap), 'tiles:', flatTiles.join(' '), 'matched:', JSON.stringify(enhanced.groups.map(g => g.matchedTiles)));
-                    }
-                    return !!completeMatch;
-                } catch (e) { return false; }
-            });
-            if (isActuallyValid) fillCorruption = null;
-        }
 
         // Collect all reasons that actually apply
         const activeReasons = [];
