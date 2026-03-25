@@ -435,11 +435,15 @@ function resolveGroup(group, suitMap, numMap, kStartMap) {
     const tiles = [];
     const suit = group.suitVar ? suitMap[group.suitVar] : null;
 
-    // For groups with D tiles but no suitVar, pick a dragon suit up-front
-    let unboundDragonSuit = null;
-    if (!group.suitVar && group.tiles.includes('D')) {
-        unboundDragonSuit = pick(SUITS);
-    }
+    // For groups with no suitVar that need a suit (numeric, wildcard, Q, K tiles),
+    // pick one random suit up-front so all tiles in the group share the same suit.
+    const SUITED_CHARS = new Set(['X','V','Y','M','Q','K','0','1','2','3','4','5','6','7','8','9','D']);
+    const needsSuit = !group.suitVar && group.tiles.some(t => SUITED_CHARS.has(t));
+    const unboundSuit = needsSuit ? pick(SUITS) : null;
+    const effectiveSuit = suit || unboundSuit;
+
+    // For groups with D tiles but no suitVar, use the same unboundSuit
+    const unboundDragonSuit = unboundSuit;
 
     // For wildcard tiles (X/V/Y/M) with no numVar, pick a base number up-front
     let unboundNum = null;
@@ -459,11 +463,13 @@ function resolveGroup(group, suitMap, numMap, kStartMap) {
         // K sequence
         const start = kStartMap[group.kName];
         if (start === undefined) return null;
+        const kSuit = effectiveSuit;
+        if (!kSuit) return null;
         const L = group.tiles.filter(t => t === 'K').length;
         for (let i = 0; i < L; i++) {
             const num = start + i;
             if (num < 1 || num > 9) return null;
-            tiles.push(num + suit);
+            tiles.push(num + kSuit);
         }
         return tiles;
     }
@@ -475,7 +481,7 @@ function resolveGroup(group, suitMap, numMap, kStartMap) {
         if (char === '0') { tiles.push('WD'); continue; }
 
         if (char === 'D') {
-            const dragonSuit = suit || unboundDragonSuit;
+            const dragonSuit = effectiveSuit || unboundDragonSuit;
             if (!dragonSuit) return null;
             tiles.push(DRAGON_MAP[dragonSuit]);
             continue;
@@ -484,7 +490,8 @@ function resolveGroup(group, suitMap, numMap, kStartMap) {
         if (/[0-9]/.test(char)) {
             const num = parseInt(char) + (group.offset || 0);
             if (num < 1 || num > 9) return null;
-            tiles.push(num + (suit || 'B'));
+            if (!effectiveSuit) return null;
+            tiles.push(num + effectiveSuit);
             continue;
         }
 
@@ -494,7 +501,8 @@ function resolveGroup(group, suitMap, numMap, kStartMap) {
             if (base === undefined || base === null) return null;
             const num = base + (group.offset || 0);
             if (num < 1 || num > 9) return null;
-            tiles.push(num + (suit || 'B'));
+            if (!effectiveSuit) return null;
+            tiles.push(num + effectiveSuit);
             continue;
         }
 
@@ -504,7 +512,8 @@ function resolveGroup(group, suitMap, numMap, kStartMap) {
             if (start === undefined) return null;
             const num = start + (group.offset || 0);
             if (num < 1 || num > 9) return null;
-            tiles.push(num + (suit || 'B'));
+            if (!effectiveSuit) return null;
+            tiles.push(num + effectiveSuit);
             continue;
         }
 
