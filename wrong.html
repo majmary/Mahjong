@@ -810,7 +810,7 @@ function isHandValid(instance, debugCorruption) {
             const results = evaluatePattern(flatTiles, handDef.code);
             if (!results || results.length === 0) return false;
             return results.some(r => {
-                const enhanced = jokersInHand > 0 ? useJokersForScoring(r, jokersInHand) : r;
+                const enhanced = jokersInHand > 0 ? { ...useJokersForScoring(r, jokersInHand), suitVarMap: r.suitVarMap } : r;
                 if (debugCorruption && enhanced.totalFilled > (bestDebug ? bestDebug.enhanced.totalFilled : 0)) {
                     bestDebug = { code: handDef.code, enhanced };
                 }
