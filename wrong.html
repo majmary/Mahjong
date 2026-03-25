@@ -811,7 +811,7 @@ function isHandValid(instance, debugCorruption) {
             if (!results || results.length === 0) return false;
             return results.some(r => {
                 const enhanced = jokersInHand > 0 ? useJokersForScoring(r, jokersInHand) : r;
-                if (debugCorruption && enhanced.totalFilled > (bestDebug ? bestDebug.totalFilled : 0)) {
+                if (debugCorruption && enhanced.totalFilled > (bestDebug ? bestDebug.enhanced.totalFilled : 0)) {
                     bestDebug = { code: handDef.code, enhanced };
                 }
                 if (enhanced.totalFilled !== 14) return false;
@@ -821,7 +821,7 @@ function isHandValid(instance, debugCorruption) {
                 if (debugCorruption) console.log('isHandValid TRUE:', handDef.code, JSON.stringify(enhanced.suitVarMap), flatTiles.join(' '));
                 return true;
             });
-        } catch (e) { return false; }
+        } catch (e) { if (debugCorruption) console.log('isHandValid ERROR:', handDef.code, e.message); return false; }
     });
     if (debugCorruption && !matched) {
         const bd = bestDebug;
