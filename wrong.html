@@ -825,16 +825,22 @@ function buildPuzzle() {
 
         // Layer 4: confirm corruption is actually detectable — if the final tile set
         // still matches a valid hand on the card, treat it as uncorrupted.
+        // A genuine match requires all non-joker tiles to be consumed (handPool empty of naturals).
         if (fillCorruption) {
             const flatTiles = instance.groups.flatMap(g => g.tiles);
-            const jokersInHand = flatTiles.filter(t => t === 'J').length;
             const isActuallyValid = window.ACTIVE_CARD.some(handDef => {
                 try {
                     const results = evaluatePattern(flatTiles, handDef.code);
                     if (!results || results.length === 0) return false;
-                    let result = results[0];
-                    if (jokersInHand > 0) result = useJokersForScoring(result, jokersInHand);
-                    return result.totalFilled === 14;
+                    const result = results[0];
+                    // All natural tiles must be consumed — only jokers may remain in the pool
+                    const naturalsRemaining = result.handPool.filter(t => t !== 'J').length;
+                    if (naturalsRemaining > 0) return false;
+                    // Reject matches where two different suit variables resolved to the same suit
+                    const suitValues = Object.values(result.suitVarMap).filter(Boolean);
+                    if (suitValues.length !== new Set(suitValues).size) return false;
+                    console.log('Layer4 VALID MATCH:', handDef.code, 'suitVarMap:', JSON.stringify(result.suitVarMap), 'tiles:', flatTiles.join(' '));
+                    return true;
                 } catch (e) { return false; }
             });
             if (isActuallyValid) fillCorruption = null;
