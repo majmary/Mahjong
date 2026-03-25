@@ -760,6 +760,8 @@ function makeTileEl(tile) {
 
 // Clamp every natural tile (non-Joker, non-Flower) to a max of 4 copies across
 // the whole hand. Any excess occurrence is replaced with a Joker.
+// Returns false if any group ends up with no natural tiles (all-joker group),
+// which is invalid — caller should discard this corruption attempt.
 function enforceMaxFourPerTile(instance) {
     const counts = {};
     instance.groups.forEach(g => {
@@ -769,15 +771,18 @@ function enforceMaxFourPerTile(instance) {
         });
     });
     const over = new Set(Object.keys(counts).filter(t => counts[t] > 4));
-    if (over.size === 0) return;
-    const seen = {};
-    instance.groups.forEach(g => {
-        g.tiles = g.tiles.map(t => {
-            if (t === 'J' || t === 'F' || !over.has(t)) return t;
-            seen[t] = (seen[t] || 0) + 1;
-            return seen[t] > 4 ? 'J' : t;
+    if (over.size > 0) {
+        const seen = {};
+        instance.groups.forEach(g => {
+            g.tiles = g.tiles.map(t => {
+                if (t === 'J' || t === 'F' || !over.has(t)) return t;
+                seen[t] = (seen[t] || 0) + 1;
+                return seen[t] > 4 ? 'J' : t;
+            });
         });
-    });
+    }
+    // Reject if any group has no natural tiles (i.e. all jokers — flowers are fine)
+    return !instance.groups.some(g => g.tiles.every(t => t === 'J'));
 }
 
 // Deep-copy the mutable parts of an instance so corruption can be undone.
@@ -856,8 +861,9 @@ function buildPuzzle() {
                 const corruptionType = corruptHand(instance);
                 if (!corruptionType) continue; // no corruption possible this attempt
 
-                // Enforce max 4 of any natural tile; excess become jokers
-                enforceMaxFourPerTile(instance);
+                // Enforce max 4 of any natural tile; excess become jokers.
+                // If any group ends up all-joker, discard this attempt.
+                if (!enforceMaxFourPerTile(instance)) continue;
 
                 // Keep this corruption only if the hand is now genuinely invalid
                 if (!isHandValid(instance)) {
