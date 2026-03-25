@@ -846,6 +846,9 @@ function buildPuzzle() {
     if (chosen.length < 1) return null;
 
     return chosen.map(instance => {
+        // Enforce max 4 per tile on the clean hand (quints instantiate with 5 of same tile)
+        enforceMaxFourPerTile(instance);
+
         // Corruption retry loop (50% chance of attempting corruption)
         let fillCorruption = null;
         if (Math.random() < 0.5) {
