@@ -7,6 +7,7 @@
     <title>Mahjong Gone Wrong</title>
     <script src="data/card-2025.js"></script>
     <script src="js/card-loader.js"></script>
+    <script src="js/patterns.js"></script>
     <link rel="stylesheet" href="css/shared.css">
     <style>
 
@@ -354,8 +355,6 @@ function shuffle(arr) {
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-const SUITS = ['B', 'C', 'D'];
-const DRAGON_MAP = { B: 'GD', C: 'RD', D: 'WD' };
 const VARIABLE_TILES = new Set(['X', 'V', 'Y', 'M', 'Q', 'R', 'K']);
 const EVEN_NUMS  = [2, 4, 6, 8];
 const ODD_NUMS   = [1, 3, 5, 7, 9];
@@ -603,10 +602,14 @@ function corruptHand(instance) {
     if (suitVarNames.length > 0) possible.push(CORRUPTION_TYPES.WRONG_SUIT);
 
     for (const nv of numVarNames) {
-        if (validBasesForNumVar(groups, nv).filter(v => v !== numMap[nv]).length > 0) {
-            possible.push(CORRUPTION_TYPES.WRONG_NUMBER);
-            break;
-        }
+        if (validBasesForNumVar(groups, nv).filter(v => v !== numMap[nv]).length === 0) continue;
+        // Skip numVars where every group using them has 5+ tiles — changing the number
+        // on quint groups produces a hand that enforceMaxFourPerTile will joker-fill back
+        // into another valid quint, making the corruption undetectable.
+        const nvGroups = groups.filter(g => g.groupSpec.numVar === nv);
+        if (nvGroups.every(g => g.tiles.length >= 5)) continue;
+        possible.push(CORRUPTION_TYPES.WRONG_NUMBER);
+        break;
     }
 
     const sizableGroups = groups.filter(g => {
@@ -785,6 +788,16 @@ function buildPuzzle() {
 
         // Layer 3: clamp any natural tile to max 4 copies; fill excess with jokers
         enforceMaxFourPerTile(instance);
+
+        // Layer 4: confirm corruption is actually detectable — if the final tile set
+        // still matches a valid hand on the card, treat it as uncorrupted.
+        if (fillCorruption) {
+            const flatTiles = instance.groups.flatMap(g => g.tiles);
+            const check = evaluateBestMatch(flatTiles, 1);
+            if (check.bestMatch && check.bestMatch.tilesNeeded === 0) {
+                fillCorruption = null;
+            }
+        }
 
         // Collect all reasons that actually apply
         const activeReasons = [];
