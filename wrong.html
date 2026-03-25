@@ -758,6 +758,28 @@ function makeTileEl(tile) {
 
 // ── Puzzle state ──────────────────────────────────────────────────────────────
 
+// Clamp every natural tile (non-Joker, non-Flower) to a max of 4 copies across
+// the whole hand. Any excess occurrence is replaced with a Joker.
+function enforceMaxFourPerTile(instance) {
+    const counts = {};
+    instance.groups.forEach(g => {
+        g.tiles.forEach(t => {
+            if (t === 'J' || t === 'F') return;
+            counts[t] = (counts[t] || 0) + 1;
+        });
+    });
+    const over = new Set(Object.keys(counts).filter(t => counts[t] > 4));
+    if (over.size === 0) return;
+    const seen = {};
+    instance.groups.forEach(g => {
+        g.tiles = g.tiles.map(t => {
+            if (t === 'J' || t === 'F' || !over.has(t)) return t;
+            seen[t] = (seen[t] || 0) + 1;
+            return seen[t] > 4 ? 'J' : t;
+        });
+    });
+}
+
 // Deep-copy the mutable parts of an instance so corruption can be undone.
 function cloneInstance(instance) {
     return {
