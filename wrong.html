@@ -839,6 +839,10 @@ function buildPuzzle() {
         }
         if (!instance) continue;
 
+        // Enforce max 4 per tile on the clean hand (quints instantiate with 5 of same tile).
+        // If this produces an all-joker group, this hand is unservable — skip it.
+        if (!enforceMaxFourPerTile(instance)) continue;
+
         usedCodes.add(handDef.code);
         chosen.push(instance);
     }
@@ -846,9 +850,6 @@ function buildPuzzle() {
     if (chosen.length < 1) return null;
 
     return chosen.map(instance => {
-        // Enforce max 4 per tile on the clean hand (quints instantiate with 5 of same tile)
-        enforceMaxFourPerTile(instance);
-
         // Corruption retry loop (50% chance of attempting corruption)
         let fillCorruption = null;
         if (Math.random() < 0.5) {
