@@ -816,6 +816,8 @@ function isHandValid(instance, debugCorruption) {
                 }
                 if (enhanced.totalFilled !== 14) return false;
                 if (enhanced.groups.some(g => g.matchedTiles.includes('?'))) return false;
+                // Every group must have at least one natural tile (not a joker)
+                if (enhanced.groups.some(g => !g.matchedTiles.some(t => t !== 'J'))) return false;
                 const suitValues = Object.values(enhanced.suitVarMap).filter(Boolean);
                 if (suitValues.length !== new Set(suitValues).size) return false;
                 if (debugCorruption) console.log('isHandValid TRUE:', handDef.code, JSON.stringify(enhanced.suitVarMap), flatTiles.join(' '));
