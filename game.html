@@ -1799,6 +1799,10 @@
         function executeJokerExchange(currentPlayer, exposureOwner, exposureIndex, jokerIndex, tileToGive) {
             console.log(`Executing joker exchange: ${currentPlayer.name} gives ${tileToGive} to ${exposureOwner.name}`);
             SoundEngine.jokerExchange();
+            // Announce only if a bot is doing the exchange
+            if (!currentPlayer.isHuman) {
+                SoundEngine.announcePhrase('jokerExchange', currentPlayer.personality);
+            }
             
             // Remove tile from current player's hand
             const tileIndexInHand = currentPlayer.tiles.indexOf(tileToGive);
@@ -2156,7 +2160,10 @@
             gameState.winningMatch = match || null;
 
             if (winner.isHuman) SoundEngine.playerWins();
-            else SoundEngine.botWins();
+            else {
+                SoundEngine.botWins();
+                SoundEngine.announcePhrase('mahjong', winner.personality);
+            }
             
             // Calculate and apply scoring FIRST, so overlay is built with correct state
             calculateRoundScoring(winner, pattern);
@@ -2274,39 +2281,79 @@
             'Alyssa': {
                 // Balanced but hates closed hands — extra penalty beyond the engine's built-in 0.7
                 closedHandMultiplier: 0.35,
+                voice: { lang: 'en-US', gender: 'female', rate: 1.0, pitch: 1.0 },
+                phrases: {
+                    call:    { word: 'Call' },
+                    mahjong: { word: 'Mah Jong', rate: 0.85, pitch: 1.4 },
+                },
             },
             'Cathy': {
                 // Makes mistakes: misses calls 1/10 times, discards wrong tile 1/25 times
                 missCallRate: 0.10,
                 badDiscardRate: 0.04,
+                voice: { lang: 'en-US', gender: 'female', rate: 1.2, pitch: 1.5 },
+                phrases: {
+                    call:    { word: 'Oh! Call', rate: 1.3, pitch: 1.6 },
+                    mahjong: { word: 'Mah Jong!', rate: 1.1, pitch: 1.6 },
+                },
             },
             'Dan': {
                 // Prefers concrete number-section hands (no variables), avoids ambiguous patterns
                 sectionWeights: { '2025': 1.5, '2468': 1.5, '13579': 1.5, '369': 1.5 },
                 concreteBoost: 1.3,
+                voice: { lang: 'en-US', gender: 'male', rate: 0.9, pitch: 0.7 },
+                phrases: {
+                    call:    { word: 'Call' },
+                    mahjong: { word: 'Mah Jong', rate: 0.75, pitch: 0.8 },
+                },
             },
             'Ian': {
                 // Gambler — targets by point value on the card, not likelihood of completing
                 pointsBasedScoring: true,
+                voice: { lang: 'en-US', gender: 'male', rate: 1.1, pitch: 1.3 },
+                phrases: {
+                    call:    { word: 'Call' },
+                    mahjong: { word: 'Mah Jong', rate: 0.85, pitch: 1.5 },
+                },
             },
             'Katie': {
                 // Locks into her best hand after Charleston and never switches
                 handLockMode: 'immediate',
+                voice: { lang: 'en-US', gender: 'female', rate: 0.95, pitch: 0.85 },
+                phrases: {
+                    call:    { word: 'Call' },
+                    mahjong: { word: 'Mah Jong', rate: 0.8, pitch: 1.0 },
+                },
             },
             'Martin': {
                 // Maximizes tiles covered by top hands; commits only when wall hits 30
                 handLockMode: 'flex',
                 flexLockThreshold: 30,
+                voice: { lang: 'en-US', gender: 'male', rate: 0.85, pitch: 0.85 },
+                phrases: {
+                    call:    { word: 'Call' },
+                    mahjong: { word: 'Mah Jong', rate: 0.75, pitch: 1.0 },
+                },
             },
             'Mary': {
                 // Loves winds, dragons, and the white dragon used as 0
                 sectionWeights: { 'Winds and Dragons': 1.6 },
                 funCodeBoost: 1.45,
+                voice: { lang: 'en-US', gender: 'female', rate: 1.0, pitch: 1.1 },
+                phrases: {
+                    call:    { word: 'Call' },
+                    mahjong: { word: 'Mah Jong', rate: 0.8, pitch: 1.3 },
+                },
             },
             'Rachel': {
                 // Like Martin but commits earlier — reverts to normal at 60 tiles remaining
                 handLockMode: 'flex',
                 flexLockThreshold: 60,
+                voice: { lang: 'en-US', gender: 'female', rate: 1.1, pitch: 1.3 },
+                phrases: {
+                    call:    { word: "I'll take that", rate: 1.1, pitch: 1.3 },
+                    mahjong: { word: 'Mah Jong', rate: 0.8, pitch: 1.5 },
+                },
             },
         };
 
@@ -4174,6 +4221,11 @@
             }
             
             const discardedTile = player.tiles.splice(tileIndex, 1)[0];
+
+            // Announce the tile if a bot is discarding
+            if (!player.isHuman) {
+                SoundEngine.announceTile(discardedTile, player.personality);
+            }
             
             // Update action tracking with what tile was discarded
             if (gameState.lastPlayerAction && gameState.lastPlayerAction.player === player.name) {
@@ -4317,6 +4369,7 @@
             console.log('  Called tile:', calledTile);
             console.log('  Tiles from hand to expose:', tilesForExposure);
             SoundEngine.botCall();
+            SoundEngine.announcePhrase('call', player.personality);
             
             // Find and remove the tiles from hand
             const exposedTiles = [];
