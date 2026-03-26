@@ -120,4 +120,112 @@ const SoundEngine = {
             this._osc('sine', 262, t + 0.70, 0.60, 0.05, ctx);
         } catch(e) {}
     },
+
+    // ── Speech system ──
+
+    // Standard tile names — used as fallback when personality has no override
+    TILE_NAMES: {
+        '1B':'One Bam',   '2B':'Two Bam',   '3B':'Three Bam',
+        '4B':'Four Bam',  '5B':'Five Bam',  '6B':'Six Bam',
+        '7B':'Seven Bam', '8B':'Eight Bam', '9B':'Nine Bam',
+        '1C':'One Crak',  '2C':'Two Crak',  '3C':'Three Crak',
+        '4C':'Four Crak', '5C':'Five Crak', '6C':'Six Crak',
+        '7C':'Seven Crak','8C':'Eight Crak','9C':'Nine Crak',
+        '1D':'One Dot',   '2D':'Two Dot',   '3D':'Three Dot',
+        '4D':'Four Dot',  '5D':'Five Dot',  '6D':'Six Dot',
+        '7D':'Seven Dot', '8D':'Eight Dot', '9D':'Nine Dot',
+        'N':'North',      'E':'East',       'W':'West',       'S':'South',
+        'GD':'Green Dragon', 'RD':'Red Dragon', 'WD':'White Dragon',
+        'F':'Flower',     'J':'Joker',
+    },
+
+    // Default phrases — used when personality has no override for a key
+    DEFAULT_PHRASES: {
+        call:          { word: 'Call' },
+        mahjong:       { word: 'Mah Jong', rate: 0.8, pitch: 1.5 },
+        jokerExchange: null,  // silent by default
+    },
+
+    // Heuristic gender detection from voice name
+    _genderHint(name) {
+        const n = name.toLowerCase();
+        const f = ['female','woman','zira','hazel','susan','kate','karen','victoria','moira',
+                   'fiona','samantha','allison','ava','evelyn','nicky','aria','jenny','ana',
+                   'libby','mia','natasha','helena','laura','linda','alice','clara','emma',
+                   'amelie','marie','anna','catherine','serena','tessa','veena','paulina'];
+        const m = ['male','man','david','mark','fred','tom','daniel','james','lee','rishi',
+                   'george','oliver','liam','ken','alex','aaron','gordon','bruce','arthur',
+                   'eddy','ralph','reed','rocko'];
+        if (f.some(w => n.includes(w))) return 'female';
+        if (m.some(w => n.includes(w))) return 'male';
+        return null;
+    },
+
+    // Find best available voice for a given lang + gender, with graceful fallback
+    _resolveVoice(lang, gender) {
+        const voices = speechSynthesis.getVoices();
+        if (!voices || voices.length === 0) return null;
+        // 1. Matching lang + gender
+        const match1 = voices.find(v => v.lang.startsWith(lang) && this._genderHint(v.name) === gender);
+        if (match1) return match1;
+        // 2. Matching lang only
+        const match2 = voices.find(v => v.lang.startsWith(lang));
+        if (match2) return match2;
+        // 3. Any English
+        const match3 = voices.find(v => v.lang.startsWith('en'));
+        if (match3) return match3;
+        // 4. Whatever is available
+        return voices[0] || null;
+    },
+
+    // Core speak function — merges bot voice config with per-phrase overrides
+    _speak(text, voiceConfig, overrides = {}) {
+        if (this._muted) return;
+        if (!text || typeof speechSynthesis === 'undefined') return;
+        try {
+            const cfg = voiceConfig || { lang: 'en-US', gender: 'female', rate: 1.0, pitch: 1.0 };
+            const voice = this._resolveVoice(cfg.lang || 'en-US', cfg.gender || 'female');
+            const u = new SpeechSynthesisUtterance(text);
+            if (voice) u.voice = voice;
+            u.rate  = overrides.rate  ?? cfg.rate  ?? 1.0;
+            u.pitch = overrides.pitch ?? cfg.pitch ?? 1.0;
+            speechSynthesis.cancel();
+            speechSynthesis.speak(u);
+        } catch(e) {}
+    },
+
+    // Announce a tile discard — respects per-personality tile name overrides and weighted alternates
+    announceTile(tileCode, personality) {
+        if (this._muted) return;
+        const tileNames = personality && personality.tileNames && personality.tileNames[tileCode];
+        let word;
+        if (Array.isArray(tileNames)) {
+            // Weighted random pick: [{ word, weight }, ...]
+            const total = tileNames.reduce((s, t) => s + (t.weight || 1), 0);
+            let r = Math.random() * total;
+            word = tileNames[tileNames.length - 1].word;
+            for (const entry of tileNames) {
+                r -= (entry.weight || 1);
+                if (r <= 0) { word = entry.word; break; }
+            }
+        } else if (typeof tileNames === 'string') {
+            word = tileNames;
+        } else {
+            word = this.TILE_NAMES[tileCode] || tileCode;
+        }
+        this._speak(word, personality && personality.voice);
+    },
+
+    // Announce a phrase (call / mahjong / jokerExchange)
+    announcePhrase(phraseKey, personality) {
+        if (this._muted) return;
+        // Per-personality override, then global default
+        const cfg = (personality && personality.phrases && personality.phrases[phraseKey] !== undefined)
+            ? personality.phrases[phraseKey]
+            : this.DEFAULT_PHRASES[phraseKey];
+        if (!cfg) return;  // null = intentionally silent
+        const text = typeof cfg === 'string' ? cfg : cfg.word;
+        if (!text) return;
+        this._speak(text, personality && personality.voice, cfg);
+    },
 };
