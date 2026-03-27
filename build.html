@@ -77,11 +77,23 @@
 
         /* ── Bottom bar multi-button layout ── */
         .page-bottom-bar {
+            flex-direction: column;
             gap: 6px;
-            flex-wrap: wrap;
-            justify-content: flex-start;
         }
-        /* Secondary style for New Pattern */
+        .bar-top-row {
+            width: 100%;
+        }
+        .bar-top-row .bar-action-btn {
+            width: 100%;
+        }
+        .bar-bottom-row {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+        }
+        .bar-bottom-row button {
+            flex: 1;
+        }
         .bar-secondary-btn {
             background: var(--color-bg-subtle);
             color: var(--color-text-primary);
@@ -326,9 +338,13 @@
 
     <!-- ── Bottom bar ── -->
     <div class="page-bottom-bar">
-        <button class="bar-secondary-btn" id="newPatternBtn">New Pattern ↻</button>
-        <button class="bar-action-btn" id="validateBtn">Validate</button>
-        <button class="bar-action-btn" id="tryAgainBtn">Try Again</button>
+        <div class="bar-top-row">
+            <button class="bar-action-btn" id="validateBtn">Validate</button>
+        </div>
+        <div class="bar-bottom-row">
+            <button class="bar-action-btn" id="tryAgainBtn">Try Again</button>
+            <button class="bar-secondary-btn" id="newPatternBtn">New Pattern ↻</button>
+        </div>
     </div>
 
 </div><!-- end #app -->
