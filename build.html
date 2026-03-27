@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Build a Hand — Mary on Mahjong</title>
+    <link rel="stylesheet" href="shared.css">
+    <style>
+        /* ── Page structure ── */
+        html, body { height: 100%; overflow: hidden; }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            height: 100dvh;
+        }
+
+        #scrollContent {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 12px 12px 0 12px;
+            /* bottom padding computed in JS / kept generous */
+            padding-bottom: var(--picker-clearance, 280px);
+        }
+
+        /* ── Pattern card ── */
+        #patternCard {
+            background: white;
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+
+        .pattern-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 2px;
+        }
+
+        .pattern-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-text-primary);
+        }
+
+        .pattern-meta {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+        }
+
+        .pattern-description {
+            font-size: 14px;
+            line-height: 1.55;
+            margin-top: 5px;
+            word-break: break-word;
+        }
+
+        /* ── New Pattern button (sits just below pattern card) ── */
+        #newPatternBtn {
+            display: inline-block;
+            margin-bottom: 10px;
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            background: var(--color-bg-subtle);
+            border: 1px solid var(--color-border);
+            border-radius: 7px;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+        }
+        #newPatternBtn:hover { background: var(--color-border); }
+
+        /* ── Result banner ── */
+        #resultBanner {
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-weight: 600;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 8px;
+            display: none;
+        }
+        #resultBanner.valid {
+            display: block;
+            background: var(--color-success-light);
+            color: var(--color-success);
+            border: 1px solid var(--color-success);
+        }
+        #resultBanner.invalid {
+            display: block;
+            background: var(--color-error-light);
+            color: var(--color-error);
+            border: 1px solid var(--color-error);
+        }
+
+        /* Try Again shown only after valid result */
+        #tryAgainBtn {
+            display: none;
+            margin-bottom: 10px;
+            padding: 7px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+        }
+        #tryAgainBtn.visible { display: inline-block; }
+        #tryAgainBtn:hover { background: var(--color-primary-dark); }
+
+        /* ── Hand rack ── */
+        #rackSection {
+            margin-bottom: 6px;
+        }
+
+        .rack-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-muted);
+            margin-bottom: 5px;
+        }
+
+        #rackContainer {
+            background: var(--color-table);
+            border-radius: 10px;
+            padding: 8px 10px;
+            min-height: 64px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            align-items: center;
+        }
+
+        .rack-tile {
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.1s;
+            touch-action: manipulation;
+        }
+        .rack-tile:active { transform: scale(0.88); }
+
+        /* Small ✕ on rack tiles */
+        .rack-tile::after {
+            content: '×';
+            position: absolute;
+            top: 1px;
+            right: 2px;
+            font-size: 9px;
+            color: rgba(0,0,0,0.35);
+            line-height: 1;
+            font-weight: 700;
+        }
+
+        .rack-slot-empty {
+            width: clamp(30px, 3.5vw, 50px);
+            height: clamp(38px, 4.5vw, 64px);
+            border: 2px dashed rgba(0,0,0,0.15);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.4);
+            flex-shrink: 0;
+        }
+
+        /* ── Tile picker ── */
+        #tilePicker {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.97);
+            border-top: 1px solid var(--color-border);
+            padding: 6px 8px 4px 8px;
+            padding-bottom: max(4px, calc(env(safe-area-inset-bottom) - 52px));
+            z-index: 150;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+            /* sits above the page-bottom-bar */
+            /* dynamically pushed up in JS */
+        }
+
+        .picker-row {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            margin-bottom: 3px;
+        }
+        .picker-row:last-child { margin-bottom: 0; }
+
+        .picker-row-label {
+            font-size: 8px;
+            font-weight: 700;
+            color: var(--color-text-muted);
+            width: 22px;
+            flex-shrink: 0;
+            text-align: right;
+            padding-right: 3px;
+            text-transform: uppercase;
+        }
+
+        .picker-tile {
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.1s, opacity 0.15s;
+            touch-action: manipulation;
+            flex-shrink: 0;
+        }
+        .picker-tile:active { transform: scale(0.86); }
+
+        .picker-tile.at-limit  { opacity: 0.3; }
+        .picker-tile.rack-full { opacity: 0.3; pointer-events: none; }
+        .picker-tile.joker-disabled { opacity: 0.2; pointer-events: none; }
+
+        .tile-count-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: var(--color-primary);
+            color: white;
+            border-radius: 50%;
+            width: 13px;
+            height: 13px;
+            font-size: 8px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        /* ── Bottom bar override: sits below picker ── */
+        /* page-bottom-bar from shared.css is already fixed bottom:0.
+           We push the picker above it via JS after measuring. */
+
+        /* ── Portrait tweaks ── */
+        @media (orientation: portrait) and (max-width: 600px) {
+            .rack-slot-empty {
+                width: 36px;
+                height: 46px;
+            }
+        }
+
+        /* ── Desktop ── */
+        @media (min-width: 700px) {
+            #scrollContent {
+                max-width: 680px;
+                margin: 0 auto;
+                width: 100%;
+            }
+            /* On desktop picker and bottom bar can be narrower */
+            #tilePicker, .page-bottom-bar {
+                max-width: 680px;
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                width: 680px;
+                border-radius: 0 0 10px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+
+    <!-- ── Header ── -->
+    <header class="page-header">
+        <div>
+            <h1>Build a Hand</h1>
+        </div>
+        <div class="header-right">
+            <select class="header-card-select" id="cardSelect"></select>
+            <a href="index.html" class="back-link">← Home</a>
+        </div>
+    </header>
+
+    <!-- ── Scrollable content ── -->
+    <div id="scrollContent">
+
+        <!-- Pattern card -->
+        <div id="patternCard">
+            <div class="pattern-header-row">
+                <span class="pattern-title" id="patternTitle">Loading…</span>
+                <span class="pattern-meta" id="patternMeta"></span>
+            </div>
+            <div class="pattern-description" id="patternDescription"></div>
+        </div>
+
+        <!-- New Pattern button -->
+        <button id="newPatternBtn">New Pattern ↻</button>
+
+        <!-- Result banner -->
+        <div id="resultBanner"></div>
+
+        <!-- Try Again (after valid result) -->
+        <button id="tryAgainBtn">Try Again with Same Pattern</button>
+
+        <!-- Hand rack -->
+        <div id="rackSection">
+            <div class="rack-label">Your Hand &nbsp;<span id="tileCountLabel" style="font-weight:400;color:var(--color-text-secondary)"></span></div>
+            <div id="rackContainer"></div>
+        </div>
+
+    </div><!-- end scrollContent -->
+
+    <!-- ── Tile picker (fixed, above bottom bar) ── -->
+    <div id="tilePicker">
+        <div class="picker-row" id="rowBam">
+            <span class="picker-row-label">Bam</span>
+        </div>
+        <div class="picker-row" id="rowCrak">
+            <span class="picker-row-label">Crk</span>
+        </div>
+        <div class="picker-row" id="rowDot">
+            <span class="picker-row-label">Dot</span>
+        </div>
+        <div class="picker-row" id="rowHonors">
+            <span class="picker-row-label">Hon</span>
+        </div>
+    </div>
+
+    <!-- ── Bottom bar ── -->
+    <div class="page-bottom-bar">
+        <button class="bar-action-btn" id="validateBtn">Validate</button>
+        <span class="bar-hint-text" id="hintText">Build a hand matching the pattern above</span>
+    </div>
+
+</div><!-- end #app -->
+
+<!-- Card data files — adjust paths to match your deployment -->
+<script src="card-2026.js"></script>
+<script src="card-2025.js"></script>
+<script src="card-2024.js"></script>
+<script src="card-loader.js"></script>
+<script src="patterns.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════
+//  build.html — Build a Hand
+//  Depends on: shared.css, card-loader.js, patterns.js
+// ════════════════════════════════════════════════════════════
+
+'use strict';
+
+// ── State ────────────────────────────────────────────────────
+let currentPattern   = null;   // current card hand object
+let currentHand      = [];     // array of tile-id strings in rack
+let patternTileCount = 0;      // total tiles required by current pattern
+let hasQuints        = false;  // whether pattern contains a quint group
+
+// ── Tile definitions ─────────────────────────────────────────
+const HONOR_TILES = ['N', 'E', 'W', 'S', 'F', 'GD', 'RD', 'WD', 'J'];
+
+// Per-hand tile limit (not cross-hand)
+function tileLimit(tile) {
+    return (tile === 'J' || tile === 'F') ? 8 : 4;
+}
+
+// ── Tile display helpers ──────────────────────────────────────
+function tileInfo(tile) {
+    if (tile.length === 2 && 'BCD'.includes(tile[1])) {
+        return {
+            number: tile[0],
+            label:  { B: 'BAM', C: 'CRK', D: 'DOT' }[tile[1]],
+            cls:    'tile-' + tile[1]
+        };
+    }
+    const honorMap = {
+        GD: { number: 'G', label: 'DRAG', cls: 'tile-GD' },
+        RD: { number: 'R', label: 'DRAG', cls: 'tile-RD' },
+        WD: { number: 'W', label: 'DRAG', cls: 'tile-WD' },
+        J:  { number: 'J', label: 'JKR',  cls: 'tile-J'  },
+        F:  { number: 'F', label: 'FLR',  cls: 'tile-WIND' },
+        N:  { number: 'N', label: 'WIND', cls: 'tile-WIND' },
+        E:  { number: 'E', label: 'WIND', cls: 'tile-WIND' },
+        W:  { number: 'W', label: 'WIND', cls: 'tile-WIND' },
+        S:  { number: 'S', label: 'WIND', cls: 'tile-WIND' },
+    };
+    return honorMap[tile] || { number: tile, label: '', cls: '' };
+}
+
+function buildTileEl(tile, extraClass = '') {
+    const { number, label, cls } = tileInfo(tile);
+    const div = document.createElement('div');
+    div.className = ['tile', cls, extraClass].filter(Boolean).join(' ');
+    div.innerHTML =
+        `<span class="tile-number">${number}</span>` +
+        `<span class="tile-label">${label}</span>`;
+    return div;
+}
+
+// ── Pattern loading ──────────────────────────────────────────
+function loadPattern(pattern) {
+    currentPattern   = pattern;
+    currentHand      = [];
+
+    // Tile count from parsed groups
+    let groups = [];
+    try {
+        groups = parsePattern(pattern.code);
+    } catch (e) {
+        console.error('parsePattern error:', e);
+    }
+    patternTileCount = groups.reduce((sum, g) => sum + g.tiles.length, 0);
+
+    // Quints: group of 5 identical tiles (requires joker — only 4 naturals exist)
+    hasQuints = groups.some(g =>
+        g.tiles.length >= 5 && g.tiles.every(t => t === g.tiles[0])
+    );
+
+    renderPatternCard();
+    renderRack();
+    updatePickerBadges();
+    hideResult();
+    updateHint();
+}
+
+function renderPatternCard() {
+    const p = currentPattern;
+
+    document.getElementById('patternTitle').textContent =
+        `${p.Section}  ·  Hand ${p['hand number']}`;
+
+    const closed = (p.status || '').toLowerCase() === 'closed';
+    document.getElementById('patternMeta').textContent =
+        `${p.points} pts · ${closed ? 'Closed' : 'Open'}`;
+
+    const descEl = document.getElementById('patternDescription');
+    descEl.innerHTML = '';
+    if (Array.isArray(p.description)) {
+        p.description.forEach(span => {
+            const s = document.createElement('span');
+            s.textContent = span.text;
+            s.style.color = span.color || 'inherit';
+            if (span.bold) s.style.fontWeight = '700';
+            descEl.appendChild(s);
+        });
+    } else if (typeof p.description === 'string') {
+        descEl.textContent = p.description;
+    }
+}
+
+// ── Hand rack ────────────────────────────────────────────────
+function renderRack() {
+    const rack = document.getElementById('rackContainer');
+    rack.innerHTML = '';
+
+    // Placed tiles
+    currentHand.forEach((tile, idx) => {
+        const el = buildTileEl(tile, 'rack-tile');
+        el.title = 'Tap to remove';
+        el.addEventListener('click', () => removeTile(idx));
+        rack.appendChild(el);
+    });
+
+    // Empty slots
+    const remaining = patternTileCount - currentHand.length;
+    for (let i = 0; i < remaining; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'rack-slot-empty';
+        rack.appendChild(slot);
+    }
+
+    document.getElementById('tileCountLabel').textContent =
+        `(${currentHand.length} / ${patternTileCount})`;
+}
+
+function removeTile(idx) {
+    currentHand.splice(idx, 1);
+    renderRack();
+    updatePickerBadges();
+    hideResult();
+    updateHint();
+}
+
+// ── Tile picker ──────────────────────────────────────────────
+function buildPicker() {
+    const rows = {
+        rowBam:    Array.from({length: 9}, (_, i) => `${i+1}B`),
+        rowCrak:   Array.from({length: 9}, (_, i) => `${i+1}C`),
+        rowDot:    Array.from({length: 9}, (_, i) => `${i+1}D`),
+        rowHonors: HONOR_TILES,
+    };
+
+    Object.entries(rows).forEach(([rowId, tiles]) => {
+        const row = document.getElementById(rowId);
+        // Keep the label span (first child), remove rest
+        while (row.children.length > 1) row.removeChild(row.lastChild);
+        tiles.forEach(tile => row.appendChild(makePickerTile(tile)));
+    });
+}
+
+function makePickerTile(tile) {
+    const { number, label, cls } = tileInfo(tile);
+    const div = document.createElement('div');
+    div.className = `tile ${cls} picker-tile`;
+    div.dataset.tile = tile;
+    div.innerHTML =
+        `<span class="tile-number">${number}</span>` +
+        `<span class="tile-label">${label}</span>`;
+    div.addEventListener('click', () => onPickerClick(tile));
+    return div;
+}
+
+function onPickerClick(tile) {
+    // Rack full
+    if (currentHand.length >= patternTileCount) return;
+    // Tile limit
+    const count = currentHand.filter(t => t === tile).length;
+    if (count >= tileLimit(tile)) return;
+    // Jokers only when pattern needs them
+    if (tile === 'J' && !hasQuints) return;
+
+    currentHand.push(tile);
+    renderRack();
+    updatePickerBadges();
+    hideResult();
+    updateHint();
+}
+
+function updatePickerBadges() {
+    const rackFull = currentHand.length >= patternTileCount;
+
+    document.querySelectorAll('.picker-tile').forEach(el => {
+        const tile  = el.dataset.tile;
+        const count = currentHand.filter(t => t === tile).length;
+        const limit = tileLimit(tile);
+        const atLim = count >= limit;
+
+        // Badge
+        let badge = el.querySelector('.tile-count-badge');
+        if (count > 0) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'tile-count-badge';
+                el.appendChild(badge);
+            }
+            badge.textContent = count;
+        } else if (badge) {
+            badge.remove();
+        }
+
+        // State classes
+        el.classList.toggle('at-limit',      atLim && !rackFull);
+        el.classList.toggle('rack-full',     rackFull);
+        el.classList.toggle('joker-disabled', tile === 'J' && !hasQuints);
+    });
+}
+
+// ── Validation ───────────────────────────────────────────────
+function validateHand() {
+    if (!currentPattern) return;
+
+    if (currentHand.length !== patternTileCount) {
+        const diff = patternTileCount - currentHand.length;
+        showResult('invalid',
+            diff > 0
+                ? `✗  Need ${diff} more tile${diff === 1 ? '' : 's'}.`
+                : `✗  Too many tiles — remove ${-diff}.`
+        );
+        return;
+    }
+
+    let results;
+    try {
+        results = evaluatePattern(currentHand, currentPattern.code);
+    } catch (e) {
+        showResult('invalid', '✗  Error evaluating hand.');
+        console.error(e);
+        return;
+    }
+
+    if (!results || results.length === 0) {
+        showResult('invalid', '✗  No match found for this pattern.');
+        return;
+    }
+
+    const best = results[0];
+    const missing = best.groups.reduce(
+        (sum, g) => sum + g.matchedTiles.filter(t => t === '?').length, 0
+    );
+
+    if (missing === 0) {
+        showResult('valid', '✓  Valid hand!');
+        document.getElementById('tryAgainBtn').classList.add('visible');
+    } else {
+        showResult('invalid',
+            `✗  ${missing} tile${missing === 1 ? '' : 's'} don't fit the pattern.`
+        );
+    }
+}
+
+// ── Result UI ────────────────────────────────────────────────
+function showResult(type, msg) {
+    const banner = document.getElementById('resultBanner');
+    banner.className = type;   // 'valid' or 'invalid' — CSS handles display
+    banner.textContent = msg;
+    if (type !== 'valid') {
+        document.getElementById('tryAgainBtn').classList.remove('visible');
+    }
+}
+
+function hideResult() {
+    const banner = document.getElementById('resultBanner');
+    banner.className = '';
+    banner.style.display = '';
+    document.getElementById('tryAgainBtn').classList.remove('visible');
+}
+
+function updateHint() {
+    const remaining = patternTileCount - currentHand.length;
+    const hint = document.getElementById('hintText');
+    if (remaining === 0) {
+        hint.innerHTML = 'Hand complete — press <strong>Validate</strong>';
+    } else if (remaining < 0) {
+        hint.textContent = `Remove ${-remaining} tile${-remaining === 1 ? '' : 's'}`;
+    } else {
+        hint.textContent = `Add ${remaining} more tile${remaining === 1 ? '' : 's'}`;
+    }
+}
+
+// ── New / Try Again ──────────────────────────────────────────
+function newPattern() {
+    if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) return;
+    const idx = Math.floor(Math.random() * ACTIVE_CARD.length);
+    loadPattern(ACTIVE_CARD[idx]);
+}
+
+function tryAgain() {
+    currentHand = [];
+    renderRack();
+    updatePickerBadges();
+    hideResult();
+    updateHint();
+}
+
+// ── Layout: push picker above bottom bar ─────────────────────
+function positionPicker() {
+    const bar    = document.querySelector('.page-bottom-bar');
+    const picker = document.getElementById('tilePicker');
+    if (!bar || !picker) return;
+    const barH   = bar.getBoundingClientRect().height;
+    picker.style.bottom = barH + 'px';
+
+    // Set scroll content bottom padding
+    const pickerH = picker.getBoundingClientRect().height;
+    document.getElementById('scrollContent').style.paddingBottom =
+        (barH + pickerH + 16) + 'px';
+}
+
+// ── Init ─────────────────────────────────────────────────────
+document.getElementById('validateBtn').addEventListener('click', validateHand);
+document.getElementById('tryAgainBtn').addEventListener('click', tryAgain);
+document.getElementById('newPatternBtn').addEventListener('click', newPattern);
+
+// Card selector
+const cardSelect = document.getElementById('cardSelect');
+if (typeof populateCardSelect === 'function') {
+    populateCardSelect(cardSelect);
+}
+cardSelect.addEventListener('change', () => {
+    if (typeof loadCard === 'function') loadCard(cardSelect.value);
+    newPattern();
+});
+
+// Build picker
+buildPicker();
+
+// Position picker above bottom bar (after render)
+requestAnimationFrame(() => {
+    positionPicker();
+    // Re-position if fonts / layout settles
+    setTimeout(positionPicker, 200);
+});
+window.addEventListener('resize', positionPicker);
+window.addEventListener('orientationchange', () => setTimeout(positionPicker, 300));
+
+// Load first pattern
+if (typeof ACTIVE_CARD !== 'undefined' && ACTIVE_CARD && ACTIVE_CARD.length > 0) {
+    newPattern();
+} else {
+    // Card may load asynchronously — poll briefly
+    const wait = setInterval(() => {
+        if (typeof ACTIVE_CARD !== 'undefined' && ACTIVE_CARD && ACTIVE_CARD.length > 0) {
+            clearInterval(wait);
+            newPattern();
+        }
+    }, 100);
+    setTimeout(() => clearInterval(wait), 4000);
+}
+</script>
+</body>
+</html>
