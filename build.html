@@ -94,10 +94,11 @@
         .bar-bottom-row button {
             flex: 1;
         }
-        .bar-secondary-btn {
-            background: var(--color-bg-subtle);
-            color: var(--color-text-primary);
-            border: 1px solid var(--color-border);
+        .bar-secondary-btn,
+        #tryAgainBtn {
+            background: var(--color-primary-light);
+            color: var(--color-primary);
+            border: 1px solid rgba(44,95,45,0.25);
             border-radius: 8px;
             padding: 10px 14px;
             font-size: 13px;
@@ -106,7 +107,8 @@
             white-space: nowrap;
             transition: background 0.15s;
         }
-        .bar-secondary-btn:hover { background: var(--color-border); }
+        .bar-secondary-btn:hover,
+        #tryAgainBtn:hover { background: #daeeda; }
 
         /* Try Again — always visible */
         #tryAgainBtn { display: inline-block; }
