@@ -331,9 +331,6 @@
 </div><!-- end #app -->
 
 <!-- Card data files — adjust paths to match your deployment -->
-<script src="data/card-2026.js"></script>
-<script src="data/card-2025.js"></script>
-<script src="data/card-2024.js"></script>
 <script src="js/card-loader.js"></script>
 <script src="js/patterns.js"></script>
 <script>
@@ -651,45 +648,24 @@ document.getElementById('validateBtn').addEventListener('click', validateHand);
 document.getElementById('tryAgainBtn').addEventListener('click', tryAgain);
 document.getElementById('newPatternBtn').addEventListener('click', newPattern);
 
-// Card selector
-const cardSelect = document.getElementById('cardSelect');
-if (typeof populateCardSelect === 'function') {
-    populateCardSelect(cardSelect);
-}
-// Load the default card immediately so ACTIVE_CARD is defined
-if (typeof loadCard === 'function' && cardSelect.value) {
-    loadCard(cardSelect.value);
-}
-cardSelect.addEventListener('change', () => {
-    if (typeof loadCard === 'function') loadCard(cardSelect.value);
-    newPattern();
+// Card selector — populateCardSelect wires its own change handler
+populateCardSelect('cardSelect', function(year) {
+    loadCard(year, newPattern);
 });
+
+// Load default card, then serve first pattern via callback
+loadCard('2026', newPattern);
 
 // Build picker
 buildPicker();
 
-// Position picker above bottom bar (after render)
+// Position picker above bottom bar
 requestAnimationFrame(() => {
     positionPicker();
-    // Re-position if fonts / layout settles
     setTimeout(positionPicker, 200);
 });
 window.addEventListener('resize', positionPicker);
 window.addEventListener('orientationchange', () => setTimeout(positionPicker, 300));
-
-// Load first pattern
-if (typeof ACTIVE_CARD !== 'undefined' && ACTIVE_CARD && ACTIVE_CARD.length > 0) {
-    newPattern();
-} else {
-    // Card may load asynchronously — poll briefly
-    const wait = setInterval(() => {
-        if (typeof ACTIVE_CARD !== 'undefined' && ACTIVE_CARD && ACTIVE_CARD.length > 0) {
-            clearInterval(wait);
-            newPattern();
-        }
-    }, 100);
-    setTimeout(() => clearInterval(wait), 4000);
-}
 </script>
 </body>
 </html>
