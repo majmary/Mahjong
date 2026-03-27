@@ -599,7 +599,10 @@ function validateHand() {
     }
 
     const best = results[0];
-    const missing = best.groups.reduce(
+    const jokersInHand = currentHand.filter(t => t === 'J').length;
+    const scored = jokersInHand > 0 ? useJokersForScoring(best, jokersInHand) : best;
+
+    const missing = scored.groups.reduce(
         (sum, g) => sum + g.matchedTiles.filter(t => t === '?').length, 0
     );
 
@@ -608,14 +611,14 @@ function validateHand() {
     } else {
         // handPool = tiles the engine couldn't place.
         // Find which rack indices those correspond to by elimination.
-        const unmatched = [...best.handPool]; // leftovers
+        const unmatched = [...scored.handPool];
         const wrongIndices = new Set();
         const handCopy = [...currentHand];
         unmatched.forEach(tile => {
             const idx = handCopy.indexOf(tile);
             if (idx !== -1) {
                 wrongIndices.add(idx);
-                handCopy[idx] = null; // consume it
+                handCopy[idx] = null;
             }
         });
 
