@@ -9,6 +9,7 @@
 const SoundEngine = {
     _ctx: null,
     _muted: localStorage.getItem('mahjong_muted') === 'true',
+    _voiceMuted: localStorage.getItem('mahjong_voice_muted') === 'true',
 
     get ctx() {
         if (!this._ctx) this._ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -16,13 +17,20 @@ const SoundEngine = {
     },
 
     get muted() { return this._muted; },
+    get voiceMuted() { return this._voiceMuted; },
 
     toggleMute() {
         this._muted = !this._muted;
         localStorage.setItem('mahjong_muted', this._muted);
-        // Update corner menu button label
         const btn = document.getElementById('muteBtn');
         if (btn) btn.textContent = this._muted ? '🔇 Unmute' : '🔊 Mute';
+    },
+
+    toggleVoiceMute() {
+        this._voiceMuted = !this._voiceMuted;
+        localStorage.setItem('mahjong_voice_muted', this._voiceMuted);
+        const btn = document.getElementById('voiceMuteBtn');
+        if (btn) btn.textContent = this._voiceMuted ? '🔇 Unmute Voices' : '🗣️ Mute Voices';
     },
 
     // Low-level helpers
@@ -180,7 +188,7 @@ const SoundEngine = {
 
     // Core speak function — merges bot voice config with per-phrase overrides
     _speak(text, voiceConfig, overrides = {}) {
-        if (this._muted) return;
+        if (this._muted || this._voiceMuted) return;
         if (!text || typeof speechSynthesis === 'undefined') return;
         try {
             const cfg = voiceConfig || { lang: 'en-US', gender: 'female', rate: 1.0, pitch: 1.0 };
@@ -196,7 +204,7 @@ const SoundEngine = {
 
     // Announce a tile discard — respects per-personality tile name overrides and weighted alternates
     announceTile(tileCode, personality) {
-        if (this._muted) return;
+        if (this._muted || this._voiceMuted) return;
         const tileNames = personality && personality.tileNames && personality.tileNames[tileCode];
         let word;
         if (Array.isArray(tileNames)) {
@@ -218,7 +226,7 @@ const SoundEngine = {
 
     // Announce a phrase (call / mahjong / jokerExchange)
     announcePhrase(phraseKey, personality) {
-        if (this._muted) return;
+        if (this._muted || this._voiceMuted) return;
         // Per-personality override, then global default
         const cfg = (personality && personality.phrases && personality.phrases[phraseKey] !== undefined)
             ? personality.phrases[phraseKey]
