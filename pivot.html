@@ -805,6 +805,62 @@ function harvestSeeds(attempts = 200) {
     return found;
 }
 
+// ── 2-tile seed harvester (console tool) ────────────────────
+/**
+ * harvestSeeds2(attempts)
+ *
+ * Like harvestSeeds but uses only a 2-tile seed (1 anchor + 1 companion).
+ * Gives the greedy expander more freedom, potentially surfacing unusual
+ * hand combinations that 3-tile seeds miss.
+ *
+ * Example: harvestSeeds2(500)
+ */
+function harvestSeeds2(attempts = 500) {
+    const year = window.ACTIVE_CARD_YEAR || '2026';
+    const MIN_HANDS = 3;
+
+    const NUMBER_POOL = [];
+    for (let n = 1; n <= 9; n++) ['B','C','D'].forEach(s => NUMBER_POOL.push(`${n}${s}`));
+    const COMPANION_POOL = [];
+    for (let n = 1; n <= 9; n++) ['B','C','D'].forEach(s => COMPANION_POOL.push(`${n}${s}`));
+    ['N','E','S','W','GD','RD','WD','F'].forEach(t => COMPANION_POOL.push(t));
+
+    function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    const found = [];
+    const seenKeys = new Set();
+
+    for (let i = 0; i < attempts; i++) {
+        const anchor = NUMBER_POOL[Math.floor(Math.random() * NUMBER_POOL.length)];
+        const companion = shuffle(COMPANION_POOL.filter(t => t !== anchor))[0];
+        const seed = [anchor, companion];
+        const key = [...seed].sort().join(',');
+        if (seenKeys.has(key)) continue;
+
+        const result = analyzeConsensusExpansion(seed);
+        if (result && result.survivingHands.length >= MIN_HANDS) {
+            seenKeys.add(key);
+            const handNames = result.survivingHands
+                .map(h => `${h.Section} Hand ${baseHandNum(h['hand number'])}`)
+                .join(', ');
+            console.log(`[${seed.join(', ')}]  ->  ${result.survivingHands.length} hands: ${handNames}`);
+            found.push(seed);
+        }
+    }
+
+    console.log(`\n=== ${found.length} successful 2-tile seeds found for card year ${year} ===`);
+    console.log(`Paste this into HARDCODED_SEEDS['${year}']:\n`);
+    console.log(JSON.stringify(found));
+    return found;
+}
+
 function newPuzzle() {
     const btn = document.getElementById('newPuzzleBtn');
     btn.disabled = true;
