@@ -63,20 +63,41 @@
             word-break: break-word;
         }
 
-        /* ── New Pattern button (sits just below pattern card) ── */
-        #newPatternBtn {
-            display: inline-block;
-            margin-bottom: 10px;
-            padding: 6px 14px;
-            font-size: 12px;
-            font-weight: 600;
-            background: var(--color-bg-subtle);
-            border: 1px solid var(--color-border);
-            border-radius: 7px;
+        /* ── Instruction box ── */
+        #instructionBox {
+            background: var(--color-primary-light);
+            border: 1px solid rgba(44,95,45,0.2);
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-size: 13px;
             color: var(--color-text-secondary);
-            cursor: pointer;
+            margin-bottom: 10px;
+            line-height: 1.45;
         }
-        #newPatternBtn:hover { background: var(--color-border); }
+
+        /* ── Bottom bar multi-button layout ── */
+        .page-bottom-bar {
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+        /* Secondary style for New Pattern */
+        .bar-secondary-btn {
+            background: var(--color-bg-subtle);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+        .bar-secondary-btn:hover { background: var(--color-border); }
+
+        /* Try Again — always visible */
+        #tryAgainBtn { display: inline-block; }
 
         /* ── Result banner ── */
         #resultBanner {
@@ -100,22 +121,6 @@
             color: var(--color-error);
             border: 1px solid var(--color-error);
         }
-
-        /* Try Again shown only after valid result */
-        #tryAgainBtn {
-            display: none;
-            margin-bottom: 10px;
-            padding: 7px 18px;
-            font-size: 13px;
-            font-weight: 600;
-            background: var(--color-primary);
-            color: white;
-            border: none;
-            border-radius: 7px;
-            cursor: pointer;
-        }
-        #tryAgainBtn.visible { display: inline-block; }
-        #tryAgainBtn:hover { background: var(--color-primary-dark); }
 
         /* ── Hand rack ── */
         #rackSection {
@@ -288,6 +293,9 @@
     <!-- ── Scrollable content ── -->
     <div id="scrollContent">
 
+        <!-- Instruction box -->
+        <div id="instructionBox"></div>
+
         <!-- Pattern card -->
         <div id="patternCard">
             <div class="pattern-header-row">
@@ -297,14 +305,8 @@
             <div class="pattern-description" id="patternDescription"></div>
         </div>
 
-        <!-- New Pattern button -->
-        <button id="newPatternBtn">New Pattern ↻</button>
-
         <!-- Result banner -->
         <div id="resultBanner"></div>
-
-        <!-- Try Again (after valid result) -->
-        <button id="tryAgainBtn">Try Again with Same Pattern</button>
 
         <!-- Hand rack -->
         <div id="rackSection">
@@ -324,8 +326,9 @@
 
     <!-- ── Bottom bar ── -->
     <div class="page-bottom-bar">
+        <button class="bar-secondary-btn" id="newPatternBtn">New Pattern ↻</button>
         <button class="bar-action-btn" id="validateBtn">Validate</button>
-        <span class="bar-hint-text" id="hintText">Build a hand matching the pattern above</span>
+        <button class="bar-action-btn" id="tryAgainBtn">Try Again</button>
     </div>
 
 </div><!-- end #app -->
@@ -387,7 +390,13 @@ function buildTileEl(tile, extraClass = '') {
     return div;
 }
 
-// ── Pattern loading ──────────────────────────────────────────
+function renderInstructionBox() {
+    const year = window.ACTIVE_CARD_YEAR || '';
+    const label = year ? `NMJL ${year}` : 'current';
+    document.getElementById('instructionBox').textContent =
+        `Get to know the ${label} card hands by seeing them for yourself. ` +
+        `Use the tiles below to make a hand, and validate it to be sure you've got it right.`;
+}
 function loadPattern(pattern) {
     currentPattern   = pattern;
     currentHand      = [];
@@ -406,6 +415,7 @@ function loadPattern(pattern) {
         g.tiles.length >= 5 && g.tiles.every(t => t === g.tiles[0])
     );
 
+    renderInstructionBox();
     renderPatternCard();
     renderRack();
     updatePickerBadges();
@@ -574,7 +584,6 @@ function validateHand() {
 
     if (missing === 0) {
         showResult('valid', '✓  Valid hand!');
-        document.getElementById('tryAgainBtn').classList.add('visible');
     } else {
         // Diagnose why groups failed
         const failedGroups = best.groups.filter(g =>
@@ -610,7 +619,6 @@ function showResult(type, msg) {
     banner.className = type;   // 'valid' or 'invalid' — CSS handles display
     banner.textContent = msg;
     if (type !== 'valid') {
-        document.getElementById('tryAgainBtn').classList.remove('visible');
     }
 }
 
@@ -618,20 +626,9 @@ function hideResult() {
     const banner = document.getElementById('resultBanner');
     banner.className = '';
     banner.style.display = '';
-    document.getElementById('tryAgainBtn').classList.remove('visible');
 }
 
-function updateHint() {
-    const remaining = patternTileCount - currentHand.length;
-    const hint = document.getElementById('hintText');
-    if (remaining === 0) {
-        hint.innerHTML = 'Hand complete — press <strong>Validate</strong>';
-    } else if (remaining < 0) {
-        hint.textContent = `Remove ${-remaining} tile${-remaining === 1 ? '' : 's'}`;
-    } else {
-        hint.textContent = `Add ${remaining} more tile${remaining === 1 ? '' : 's'}`;
-    }
-}
+function updateHint() { /* hint text moved to bottom bar — no-op */ }
 
 // ── New / Try Again ──────────────────────────────────────────
 function newPattern() {
