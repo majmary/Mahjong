@@ -87,7 +87,6 @@ function pivotCharFitsTile(ch, tile) {
 function pivotPass1(slots, tenTiles) {
     const freq = pivotFreq(tenTiles.filter(t => t !== 'J'));
     for (const [tile, count] of Object.entries(freq)) {
-        if (count < 2) continue;
         const ok = slots.some(slot => slot.tiles.some(ch => pivotCharFitsTile(ch, tile)));
         if (!ok) return false;
     }
