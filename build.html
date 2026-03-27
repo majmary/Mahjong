@@ -167,7 +167,10 @@
         }
         .rack-tile:active { transform: scale(0.88); }
 
-        /* Small ✕ on rack tiles */
+        .rack-tile.wrong {
+            outline: 2px solid var(--color-error);
+            background: var(--color-error-light) !important;
+        }
         .rack-tile::after {
             content: '×';
             position: absolute;
@@ -601,30 +604,28 @@ function validateHand() {
     if (missing === 0) {
         showResult('valid', '✓  Valid hand!');
     } else {
-        // Diagnose why groups failed
-        const failedGroups = best.groups.filter(g =>
-            g.matchedTiles.some(t => t === '?')
-        );
-        const totalInFailed  = failedGroups.reduce((s, g) => s + g.tiles.length, 0);
-        const matchedInFailed = failedGroups.reduce(
-            (s, g) => s + g.matchedTiles.filter(t => t !== '?').length, 0
-        );
+        // handPool = tiles the engine couldn't place.
+        // Find which rack indices those correspond to by elimination.
+        const unmatched = [...best.handPool]; // leftovers
+        const wrongIndices = new Set();
+        const handCopy = [...currentHand];
+        unmatched.forEach(tile => {
+            const idx = handCopy.indexOf(tile);
+            if (idx !== -1) {
+                wrongIndices.add(idx);
+                handCopy[idx] = null; // consume it
+            }
+        });
 
-        let hint = '';
-        if (matchedInFailed === 0) {
-            // Every tile in every failed group is unmatched — likely wrong suit
-            hint = 'Check your suits.';
-        } else if (matchedInFailed === totalInFailed - missing) {
-            // Some tiles matched within a group — likely wrong value or tile
-            hint = 'Check your tile values.';
-        } else {
-            // Mix — both suit and value issues
-            hint = 'Check suits and tile values.';
-        }
+        // Highlight wrong tiles in rack
+        document.querySelectorAll('.rack-tile').forEach((el, i) => {
+            el.classList.toggle('wrong', wrongIndices.has(i));
+        });
 
-        const verb = missing === 1 ? "doesn't" : "don't";
+        const count = wrongIndices.size || missing;
+        const verb = count === 1 ? 'is' : 'are';
         showResult('invalid',
-            `✗  ${missing} tile${missing === 1 ? '' : 's'} ${verb} fit the pattern. ${hint}`
+            `✗  ${count} tile${count === 1 ? '' : 's'} ${verb} wrong.`
         );
     }
 }
@@ -642,6 +643,8 @@ function hideResult() {
     const banner = document.getElementById('resultBanner');
     banner.className = '';
     banner.style.display = '';
+    // Clear any wrong-tile highlights
+    document.querySelectorAll('.rack-tile.wrong').forEach(el => el.classList.remove('wrong'));
 }
 
 function updateHint() { /* hint text moved to bottom bar — no-op */ }
