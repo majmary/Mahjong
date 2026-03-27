@@ -1491,6 +1491,7 @@
                 <div id="cornerMenuCardLabel" style="padding: 8px 12px; font-size: 11px; color: var(--color-text-muted); font-weight: 600; letter-spacing: 0.05em; border-bottom: 1px solid var(--color-border); margin-bottom: 4px; text-align: center;">🀄 NMJL 2026</div>
                 <button onclick="showHandPeek()">🃏 View All Hands</button>
                 <button id="muteBtn" onclick="SoundEngine.toggleMute(); document.getElementById('cornerMenuDropdown').classList.remove('open');">🔊 Mute</button>
+                <button id="voiceMuteBtn" onclick="SoundEngine.toggleVoiceMute(); document.getElementById('cornerMenuDropdown').classList.remove('open');">🗣️ Mute Voices</button>
                 <button onclick="toggleFullscreen()">⛶ Full Screen</button>
                 <button onclick="confirmRedeal()">🀄 Redeal (−10%)</button>
                 <button onclick="confirmResetScores()">💰 Reset Scores</button>
@@ -7759,6 +7760,8 @@ window.addEventListener('load', () => {
     // Set correct mute button label based on saved preference
     const muteBtn = document.getElementById('muteBtn');
     if (muteBtn) muteBtn.textContent = SoundEngine.muted ? '🔇 Unmute' : '🔊 Mute';
+    const voiceMuteBtn = document.getElementById('voiceMuteBtn');
+    if (voiceMuteBtn) voiceMuteBtn.textContent = SoundEngine.voiceMuted ? '🔇 Unmute Voices' : '🗣️ Mute Voices';
             // Register service worker for PWA offline support
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('sw.js').then(reg => {
