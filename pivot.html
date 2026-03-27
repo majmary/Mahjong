@@ -959,23 +959,10 @@ function analyzeConsensusExpansion(seedTiles) {
         surviving = surviving.filter(h => fits(h, currentTiles));
     }
 
-    // ── Step 3: final verification (all-8 rule) ──────────────
+    // ── Step 3: final verification (pivot-eval strict check) ─────
     const finalTiles = currentTiles;
-    const survivingHands = [];
-
-    ACTIVE_CARD.forEach(handDef => {
-        try {
-            const fills = evaluatePattern(finalTiles, handDef.code);
-            if (!fills || fills.length === 0) return;
-            const jokersInFinal = finalTiles.filter(t => t === 'J').length;
-            let best = fills[0];
-            if (jokersInFinal > 0) best = useJokersForScoring(best, jokersInFinal);
-            const leftover = (best.handPool || []).filter(t => t !== 'J').length;
-            if (leftover === 0 && best.totalFilled === 8) {
-                survivingHands.push(handDef);
-            }
-        } catch(e) {}
-    });
+    const survivingHandDefs = pivotComputeValidHands(finalTiles);
+    const survivingHands = survivingHandDefs.map(v => v.handDef);
 
     // ── Report ────────────────────────────────────────────────
     const seedMatchCount = ACTIVE_CARD.filter(h => fits(h, seedTiles)).length;
