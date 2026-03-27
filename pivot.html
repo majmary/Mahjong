@@ -647,25 +647,71 @@ function loadPuzzle(tiles) {
     document.getElementById('revealBtn').style.display = '';
 }
 
+// ── Seed pool ────────────────────────────────────────────────
+/**
+ * Hardcoded starter seeds per card year.
+ * Replace placeholder arrays with real seeds from harvestSeeds().
+ */
+const HARDCODED_SEEDS = {
+    '2026': [],
+    '2025': [],
+    '2024': [],
+};
+
+const SEED_POOL_KEY_PREFIX = 'pivot_seeds_';
+const SEED_POOL_MAX = 100;
+
+/** Returns combined seed pool (hardcoded + localStorage) for a card year, deduplicated. */
+function getSeedPool(year) {
+    const hardcoded = HARDCODED_SEEDS[year] || [];
+    let stored = [];
+    try {
+        stored = JSON.parse(localStorage.getItem(SEED_POOL_KEY_PREFIX + year) || '[]');
+    } catch(e) {}
+    const seen = new Set();
+    const combined = [];
+    [...hardcoded, ...stored].forEach(seed => {
+        const key = [...seed].sort().join(',');
+        if (!seen.has(key)) { seen.add(key); combined.push(seed); }
+    });
+    return combined;
+}
+
+/** Saves a successful seed to localStorage for the given card year. */
+function saveSeedToPool(seed, year) {
+    let stored = [];
+    try {
+        stored = JSON.parse(localStorage.getItem(SEED_POOL_KEY_PREFIX + year) || '[]');
+    } catch(e) {}
+    const key = [...seed].sort().join(',');
+    const alreadyThere = stored.some(s => [...s].sort().join(',') === key);
+    if (!alreadyThere) {
+        stored.push(seed);
+        if (stored.length > SEED_POOL_MAX) stored = stored.slice(stored.length - SEED_POOL_MAX);
+        try { localStorage.setItem(SEED_POOL_KEY_PREFIX + year, JSON.stringify(stored)); } catch(e) {}
+    }
+}
+
 // ── Puzzle generator ────────────────────────────────────────
 /**
  * generatePuzzle()
  *
- * Randomly picks an anchor from {2, 3, 6, card-year-digit}, then two
- * random companion tiles, runs consensus expansion, and returns the
- * resulting 10-tile set if at least 2 hands survive.
- * Retries up to MAX_ATTEMPTS times before giving up.
+ * Phase 1: tries MAX_ATTEMPTS random seeds. On success, saves seed to localStorage.
+ * Phase 2: if all random attempts fail, falls back to the combined seed pool
+ *          (hardcoded + localStorage) in shuffled order.
+ * Returns null only if everything fails.
  *
- * Returns { finalTiles, survivingHands } or null if no valid puzzle found.
+ * Returns { finalTiles, survivingHands } or null.
  */
 function generatePuzzle() {
     const MAX_ATTEMPTS = 40;
+    const MIN_HANDS = 3;
 
-    // Full pool of number tiles (1–9 in each suit) — any one may be the seed tile
+    const year = window.ACTIVE_CARD_YEAR || '2026';
+
     const NUMBER_POOL = [];
     for (let n = 1; n <= 9; n++) ['B','C','D'].forEach(s => NUMBER_POOL.push(`${n}${s}`));
 
-    // Full pool of companion tile types (all suited numbers + honors)
     const COMPANION_POOL = [];
     for (let n = 1; n <= 9; n++) ['B','C','D'].forEach(s => COMPANION_POOL.push(`${n}${s}`));
     ['N','E','S','W','GD','RD','WD','F'].forEach(t => COMPANION_POOL.push(t));
@@ -679,19 +725,84 @@ function generatePuzzle() {
         return a;
     }
 
+    // ── Phase 1: random attempts ──────────────────────────────
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-        // Pick one random number tile as seed, then 2 random companions (no duplicates in seed)
         const anchor = NUMBER_POOL[Math.floor(Math.random() * NUMBER_POOL.length)];
         const companions = shuffle(COMPANION_POOL.filter(t => t !== anchor)).slice(0, 2);
         const seed = [anchor, ...companions];
 
         const result = analyzeConsensusExpansion(seed);
-        if (result && result.survivingHands.length >= 3) {
+        if (result && result.survivingHands.length >= MIN_HANDS) {
+            saveSeedToPool(seed, year);
+            return result;
+        }
+    }
+
+    // ── Phase 2: fall back to known-good seed pool ────────────
+    const pool = shuffle(getSeedPool(year));
+    for (const seed of pool) {
+        const result = analyzeConsensusExpansion(seed);
+        if (result && result.survivingHands.length >= MIN_HANDS) {
             return result;
         }
     }
 
     return null; // failed to find a valid puzzle
+}
+
+// ── Seed harvester (console tool) ───────────────────────────
+/**
+ * harvestSeeds(attempts)
+ *
+ * Run from the browser console to collect good seeds for the hardcoded pool.
+ * Prints each seed with its matching hands, then a JSON array to paste back.
+ *
+ * Example: harvestSeeds(200)
+ */
+function harvestSeeds(attempts = 200) {
+    const year = window.ACTIVE_CARD_YEAR || '2026';
+    const MIN_HANDS = 3;
+
+    const NUMBER_POOL = [];
+    for (let n = 1; n <= 9; n++) ['B','C','D'].forEach(s => NUMBER_POOL.push(`${n}${s}`));
+    const COMPANION_POOL = [];
+    for (let n = 1; n <= 9; n++) ['B','C','D'].forEach(s => COMPANION_POOL.push(`${n}${s}`));
+    ['N','E','S','W','GD','RD','WD','F'].forEach(t => COMPANION_POOL.push(t));
+
+    function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    const found = [];
+    const seenKeys = new Set();
+
+    for (let i = 0; i < attempts; i++) {
+        const anchor = NUMBER_POOL[Math.floor(Math.random() * NUMBER_POOL.length)];
+        const companions = shuffle(COMPANION_POOL.filter(t => t !== anchor)).slice(0, 2);
+        const seed = [anchor, ...companions];
+        const key = [...seed].sort().join(',');
+        if (seenKeys.has(key)) continue;
+
+        const result = analyzeConsensusExpansion(seed);
+        if (result && result.survivingHands.length >= MIN_HANDS) {
+            seenKeys.add(key);
+            const handNames = result.survivingHands
+                .map(h => `${h.Section} Hand ${baseHandNum(h['hand number'])}`)
+                .join(', ');
+            console.log(`[${seed.join(', ')}]  ->  ${result.survivingHands.length} hands: ${handNames}`);
+            found.push(seed);
+        }
+    }
+
+    console.log(`\n=== ${found.length} successful seeds found for card year ${year} ===`);
+    console.log(`Paste this into HARDCODED_SEEDS['${year}']:\n`);
+    console.log(JSON.stringify(found));
+    return found;
 }
 
 function newPuzzle() {
