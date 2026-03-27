@@ -358,39 +358,33 @@ function tileLimit(tile) {
     return (tile === 'J' || tile === 'F') ? 8 : 4;
 }
 
-// ── Tile display — matches game.html getTileDisplay exactly ──
-function getTileDisplay(tile) {
-    if (tile === 'WD') return { number: 'O', label: 'White',  color: '#BBDEFB', textColor: '#01579B', cls: 'tile-WD'   };
-    if (tile === 'GD') return { number: 'G', label: 'Green',  color: '#C8E6C9', textColor: '#1B5E20', cls: 'tile-GD'   };
-    if (tile === 'RD') return { number: 'R', label: 'Red',    color: '#FFCDD2', textColor: '#B71C1C', cls: 'tile-RD'   };
-    if (tile === 'N')  return { number: 'N', label: 'North',  color: '#ECEFF1', textColor: '#37474F', cls: 'tile-WIND' };
-    if (tile === 'E')  return { number: 'E', label: 'East',   color: '#ECEFF1', textColor: '#37474F', cls: 'tile-WIND' };
-    if (tile === 'W')  return { number: 'W', label: 'West',   color: '#ECEFF1', textColor: '#37474F', cls: 'tile-WIND' };
-    if (tile === 'S')  return { number: 'S', label: 'South',  color: '#ECEFF1', textColor: '#37474F', cls: 'tile-WIND' };
-    if (tile === 'F')  return { number: 'F', label: 'Flower', color: '#F3E5F5', textColor: '#6A1B9A', cls: 'tile-F'    };
-    if (tile === 'J')  return { number: 'J', label: 'Joker',  color: '#FFFDE7', textColor: '#F57F17', cls: 'tile-J'    };
-    if (tile.length === 2 && tile[1] === 'B') return { number: tile[0], label: 'Bam',   color: '#E8F5E9', textColor: '#1B5E20', cls: 'tile-B' };
-    if (tile.length === 2 && tile[1] === 'D') return { number: tile[0], label: 'Dot',   color: '#E3F2FD', textColor: '#01579B', cls: 'tile-D' };
-    if (tile.length === 2 && tile[1] === 'C') return { number: tile[0], label: 'Crack', color: '#FFEBEE', textColor: '#B71C1C', cls: 'tile-C' };
-    return { number: tile, label: '', color: '#f5f5f5', textColor: '#333333', cls: '' };
+// ── Tile display — uses shared.css classes ────────────────────
+function tileInfo(tile) {
+    if (tile === 'GD') return { number: 'G', label: 'Green',  cls: 'tile-GD'   };
+    if (tile === 'RD') return { number: 'R', label: 'Red',    cls: 'tile-RD'   };
+    if (tile === 'WD') return { number: 'O', label: 'White',  cls: 'tile-WD'   };
+    if (tile === 'F')  return { number: 'F', label: 'Flower', cls: 'tile-F'    };
+    if (tile === 'J')  return { number: 'J', label: 'Joker',  cls: 'tile-J'    };
+    if (tile === 'N')  return { number: 'N', label: 'North',  cls: 'tile-WIND' };
+    if (tile === 'E')  return { number: 'E', label: 'East',   cls: 'tile-WIND' };
+    if (tile === 'W')  return { number: 'W', label: 'West',   cls: 'tile-WIND' };
+    if (tile === 'S')  return { number: 'S', label: 'South',  cls: 'tile-WIND' };
+    if (tile.length === 2 && tile[1] === 'B') return { number: tile[0], label: 'Bam',   cls: 'tile-B' };
+    if (tile.length === 2 && tile[1] === 'C') return { number: tile[0], label: 'Crack', cls: 'tile-C' };
+    if (tile.length === 2 && tile[1] === 'D') return { number: tile[0], label: 'Dot',   cls: 'tile-D' };
+    return { number: tile, label: '', cls: '' };
 }
 
 function buildTileEl(tile, extraClass = '') {
-    const d = getTileDisplay(tile);
+    const { number, label, cls } = tileInfo(tile);
     const div = document.createElement('div');
-    div.className = ['tile', d.cls, extraClass].filter(Boolean).join(' ');
-    div.style.backgroundColor = d.color;
-
+    div.className = ['tile', cls, extraClass].filter(Boolean).join(' ');
     const numDiv = document.createElement('div');
     numDiv.className = 'tile-number';
-    numDiv.style.color = d.textColor;
-    numDiv.textContent = d.number;
-
+    numDiv.textContent = number;
     const lblDiv = document.createElement('div');
     lblDiv.className = 'tile-label';
-    lblDiv.style.color = d.textColor;
-    lblDiv.textContent = d.label;
-
+    lblDiv.textContent = label;
     div.appendChild(numDiv);
     div.appendChild(lblDiv);
     return div;
@@ -497,26 +491,10 @@ function buildPicker() {
 }
 
 function makePickerTile(tile) {
-    const d = getTileDisplay(tile);
-    const div = document.createElement('div');
-    div.className = `tile ${d.cls} picker-tile`;
-    div.dataset.tile = tile;
-    div.style.backgroundColor = d.color;
-
-    const numDiv = document.createElement('div');
-    numDiv.className = 'tile-number';
-    numDiv.style.color = d.textColor;
-    numDiv.textContent = d.number;
-
-    const lblDiv = document.createElement('div');
-    lblDiv.className = 'tile-label';
-    lblDiv.style.color = d.textColor;
-    lblDiv.textContent = d.label;
-
-    div.appendChild(numDiv);
-    div.appendChild(lblDiv);
-    div.addEventListener('click', () => onPickerClick(tile));
-    return div;
+    const el = buildTileEl(tile, 'picker-tile');
+    el.dataset.tile = tile;
+    el.addEventListener('click', () => onPickerClick(tile));
+    return el;
 }
 
 function onPickerClick(tile) {
