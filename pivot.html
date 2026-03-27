@@ -728,8 +728,8 @@ function generatePuzzle() {
     // ── Phase 1: random attempts ──────────────────────────────
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         const anchor = NUMBER_POOL[Math.floor(Math.random() * NUMBER_POOL.length)];
-        const companions = shuffle(COMPANION_POOL.filter(t => t !== anchor)).slice(0, 2);
-        const seed = [anchor, ...companions];
+        const companion = shuffle(COMPANION_POOL.filter(t => t !== anchor))[0];
+        const seed = [anchor, companion];
 
         const result = analyzeConsensusExpansion(seed);
         if (result && result.survivingHands.length >= MIN_HANDS) {
@@ -1097,7 +1097,7 @@ function analyzeConsensusExpansion(seedTiles) {
     let currentTiles = [...seedTiles];
     const chosenTiles = [];
 
-    for (let pick = 0; pick < 5; pick++) {
+    for (let pick = 0; pick < 6; pick++) {
         let bestTile = null, bestCount = 0;
         let bestNatural = null, bestNaturalCount = 0;
 
