@@ -211,16 +211,16 @@
 
         /* Picker tiles must fit 9 across — override shared.css clamp sizes */
         #tilePicker .tile {
-            width: 32px;
-            height: 42px;
+            width: 40px;
+            height: 52px;
             margin: 0;
         }
-        #tilePicker .tile-number { font-size: 13px; }
-        #tilePicker .tile-label  { font-size: 6px; }
+        #tilePicker .tile-number { font-size: 15px; }
+        #tilePicker .tile-label  { font-size: 7px; }
 
         @media (max-width: 380px) {
-            #tilePicker .tile { width: 28px; height: 38px; }
-            #tilePicker .tile-number { font-size: 11px; }
+            #tilePicker .tile { width: 34px; height: 44px; }
+            #tilePicker .tile-number { font-size: 13px; }
         }
 
         .tile-count-badge {
@@ -576,8 +576,30 @@ function validateHand() {
         showResult('valid', '✓  Valid hand!');
         document.getElementById('tryAgainBtn').classList.add('visible');
     } else {
+        // Diagnose why groups failed
+        const failedGroups = best.groups.filter(g =>
+            g.matchedTiles.some(t => t === '?')
+        );
+        const totalInFailed  = failedGroups.reduce((s, g) => s + g.tiles.length, 0);
+        const matchedInFailed = failedGroups.reduce(
+            (s, g) => s + g.matchedTiles.filter(t => t !== '?').length, 0
+        );
+
+        let hint = '';
+        if (matchedInFailed === 0) {
+            // Every tile in every failed group is unmatched — likely wrong suit
+            hint = 'Check your suits.';
+        } else if (matchedInFailed === totalInFailed - missing) {
+            // Some tiles matched within a group — likely wrong value or tile
+            hint = 'Check your tile values.';
+        } else {
+            // Mix — both suit and value issues
+            hint = 'Check suits and tile values.';
+        }
+
+        const verb = missing === 1 ? "doesn't" : "don't";
         showResult('invalid',
-            `✗  ${missing} tile${missing === 1 ? '' : 's'} don't fit the pattern.`
+            `✗  ${missing} tile${missing === 1 ? '' : 's'} ${verb} fit the pattern. ${hint}`
         );
     }
 }
