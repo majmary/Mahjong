@@ -196,17 +196,6 @@
         }
         .picker-row:last-child { margin-bottom: 0; }
 
-        .picker-row-label {
-            font-size: 8px;
-            font-weight: 700;
-            color: var(--color-text-muted);
-            width: 22px;
-            flex-shrink: 0;
-            text-align: right;
-            padding-right: 3px;
-            text-transform: uppercase;
-        }
-
         .picker-tile {
             cursor: pointer;
             position: relative;
@@ -219,6 +208,20 @@
         .picker-tile.at-limit  { opacity: 0.3; }
         .picker-tile.rack-full { opacity: 0.3; pointer-events: none; }
         .picker-tile.joker-disabled { opacity: 0.2; pointer-events: none; }
+
+        /* Picker tiles must fit 9 across — override shared.css clamp sizes */
+        #tilePicker .tile {
+            width: 32px;
+            height: 42px;
+            margin: 0;
+        }
+        #tilePicker .tile-number { font-size: 13px; }
+        #tilePicker .tile-label  { font-size: 6px; }
+
+        @media (max-width: 380px) {
+            #tilePicker .tile { width: 28px; height: 38px; }
+            #tilePicker .tile-number { font-size: 11px; }
+        }
 
         .tile-count-badge {
             position: absolute;
@@ -313,18 +316,10 @@
 
     <!-- ── Tile picker (fixed, above bottom bar) ── -->
     <div id="tilePicker">
-        <div class="picker-row" id="rowBam">
-            <span class="picker-row-label">Bam</span>
-        </div>
-        <div class="picker-row" id="rowCrak">
-            <span class="picker-row-label">Crk</span>
-        </div>
-        <div class="picker-row" id="rowDot">
-            <span class="picker-row-label">Dot</span>
-        </div>
-        <div class="picker-row" id="rowHonors">
-            <span class="picker-row-label">Hon</span>
-        </div>
+        <div class="picker-row" id="rowBam"></div>
+        <div class="picker-row" id="rowCrak"></div>
+        <div class="picker-row" id="rowDot"></div>
+        <div class="picker-row" id="rowHonors"></div>
     </div>
 
     <!-- ── Bottom bar ── -->
@@ -363,36 +358,41 @@ function tileLimit(tile) {
     return (tile === 'J' || tile === 'F') ? 8 : 4;
 }
 
-// ── Tile display helpers ──────────────────────────────────────
-function tileInfo(tile) {
-    if (tile.length === 2 && 'BCD'.includes(tile[1])) {
-        return {
-            number: tile[0],
-            label:  { B: 'BAM', C: 'CRK', D: 'DOT' }[tile[1]],
-            cls:    'tile-' + tile[1]
-        };
-    }
-    const honorMap = {
-        GD: { number: 'G', label: 'DRAG', cls: 'tile-GD' },
-        RD: { number: 'R', label: 'DRAG', cls: 'tile-RD' },
-        WD: { number: 'W', label: 'DRAG', cls: 'tile-WD' },
-        J:  { number: 'J', label: 'JKR',  cls: 'tile-J'  },
-        F:  { number: 'F', label: 'FLR',  cls: 'tile-WIND' },
-        N:  { number: 'N', label: 'WIND', cls: 'tile-WIND' },
-        E:  { number: 'E', label: 'WIND', cls: 'tile-WIND' },
-        W:  { number: 'W', label: 'WIND', cls: 'tile-WIND' },
-        S:  { number: 'S', label: 'WIND', cls: 'tile-WIND' },
-    };
-    return honorMap[tile] || { number: tile, label: '', cls: '' };
+// ── Tile display — matches game.html getTileDisplay exactly ──
+function getTileDisplay(tile) {
+    if (tile === 'WD') return { number: 'O', label: 'White',  color: '#BBDEFB', textColor: '#01579B', cls: 'tile-WD'   };
+    if (tile === 'GD') return { number: 'G', label: 'Green',  color: '#C8E6C9', textColor: '#1B5E20', cls: 'tile-GD'   };
+    if (tile === 'RD') return { number: 'R', label: 'Red',    color: '#FFCDD2', textColor: '#B71C1C', cls: 'tile-RD'   };
+    if (tile === 'N')  return { number: 'N', label: 'North',  color: '#ECEFF1', textColor: '#37474F', cls: 'tile-WIND' };
+    if (tile === 'E')  return { number: 'E', label: 'East',   color: '#ECEFF1', textColor: '#37474F', cls: 'tile-WIND' };
+    if (tile === 'W')  return { number: 'W', label: 'West',   color: '#ECEFF1', textColor: '#37474F', cls: 'tile-WIND' };
+    if (tile === 'S')  return { number: 'S', label: 'South',  color: '#ECEFF1', textColor: '#37474F', cls: 'tile-WIND' };
+    if (tile === 'F')  return { number: 'F', label: 'Flower', color: '#F3E5F5', textColor: '#6A1B9A', cls: 'tile-F'    };
+    if (tile === 'J')  return { number: 'J', label: 'Joker',  color: '#FFFDE7', textColor: '#F57F17', cls: 'tile-J'    };
+    if (tile.length === 2 && tile[1] === 'B') return { number: tile[0], label: 'Bam',   color: '#E8F5E9', textColor: '#1B5E20', cls: 'tile-B' };
+    if (tile.length === 2 && tile[1] === 'D') return { number: tile[0], label: 'Dot',   color: '#E3F2FD', textColor: '#01579B', cls: 'tile-D' };
+    if (tile.length === 2 && tile[1] === 'C') return { number: tile[0], label: 'Crack', color: '#FFEBEE', textColor: '#B71C1C', cls: 'tile-C' };
+    return { number: tile, label: '', color: '#f5f5f5', textColor: '#333333', cls: '' };
 }
 
 function buildTileEl(tile, extraClass = '') {
-    const { number, label, cls } = tileInfo(tile);
+    const d = getTileDisplay(tile);
     const div = document.createElement('div');
-    div.className = ['tile', cls, extraClass].filter(Boolean).join(' ');
-    div.innerHTML =
-        `<span class="tile-number">${number}</span>` +
-        `<span class="tile-label">${label}</span>`;
+    div.className = ['tile', d.cls, extraClass].filter(Boolean).join(' ');
+    div.style.backgroundColor = d.color;
+
+    const numDiv = document.createElement('div');
+    numDiv.className = 'tile-number';
+    numDiv.style.color = d.textColor;
+    numDiv.textContent = d.number;
+
+    const lblDiv = document.createElement('div');
+    lblDiv.className = 'tile-label';
+    lblDiv.style.color = d.textColor;
+    lblDiv.textContent = d.label;
+
+    div.appendChild(numDiv);
+    div.appendChild(lblDiv);
     return div;
 }
 
@@ -491,20 +491,30 @@ function buildPicker() {
 
     Object.entries(rows).forEach(([rowId, tiles]) => {
         const row = document.getElementById(rowId);
-        // Keep the label span (first child), remove rest
-        while (row.children.length > 1) row.removeChild(row.lastChild);
+        row.innerHTML = '';
         tiles.forEach(tile => row.appendChild(makePickerTile(tile)));
     });
 }
 
 function makePickerTile(tile) {
-    const { number, label, cls } = tileInfo(tile);
+    const d = getTileDisplay(tile);
     const div = document.createElement('div');
-    div.className = `tile ${cls} picker-tile`;
+    div.className = `tile ${d.cls} picker-tile`;
     div.dataset.tile = tile;
-    div.innerHTML =
-        `<span class="tile-number">${number}</span>` +
-        `<span class="tile-label">${label}</span>`;
+    div.style.backgroundColor = d.color;
+
+    const numDiv = document.createElement('div');
+    numDiv.className = 'tile-number';
+    numDiv.style.color = d.textColor;
+    numDiv.textContent = d.number;
+
+    const lblDiv = document.createElement('div');
+    lblDiv.className = 'tile-label';
+    lblDiv.style.color = d.textColor;
+    lblDiv.textContent = d.label;
+
+    div.appendChild(numDiv);
+    div.appendChild(lblDiv);
     div.addEventListener('click', () => onPickerClick(tile));
     return div;
 }
@@ -628,7 +638,10 @@ function updateHint() {
 
 // ── New / Try Again ──────────────────────────────────────────
 function newPattern() {
-    if (!ACTIVE_CARD || ACTIVE_CARD.length === 0) return;
+    if (typeof ACTIVE_CARD === 'undefined' || !ACTIVE_CARD || ACTIVE_CARD.length === 0) {
+        document.getElementById('patternTitle').textContent = 'No card loaded';
+        return;
+    }
     const idx = Math.floor(Math.random() * ACTIVE_CARD.length);
     loadPattern(ACTIVE_CARD[idx]);
 }
@@ -664,6 +677,10 @@ document.getElementById('newPatternBtn').addEventListener('click', newPattern);
 const cardSelect = document.getElementById('cardSelect');
 if (typeof populateCardSelect === 'function') {
     populateCardSelect(cardSelect);
+}
+// Load the default card immediately so ACTIVE_CARD is defined
+if (typeof loadCard === 'function' && cardSelect.value) {
+    loadCard(cardSelect.value);
 }
 cardSelect.addEventListener('change', () => {
     if (typeof loadCard === 'function') loadCard(cardSelect.value);
