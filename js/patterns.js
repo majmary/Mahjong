@@ -241,7 +241,11 @@ function fillGroup(group, handPool, numVarMap, suitVarMap, kLengthMap, rVarMap, 
             // - isNumericTile: resolves to [number][suit] — locks/checks groupNumSuit
             // - isDragonTile: resolves to GD/RD/WD — locks/checks groupDragonSuit
             // - Honor tiles (N/E/W/S/F): no group-suit participation
-            const isNumericTile = !isNaN(parseInt(tile)) || ['X', 'V', 'Y', 'M', 'Q', 'R'].includes(tile);
+            // NOTE: '0' is WD (White Dragon) and must be excluded from isNumericTile —
+            // parseInt('0') === 0 which is not NaN, so without the explicit exclusion
+            // '0' would be treated as a suited numeric tile and incorrectly filtered
+            // by groupNumSuit when mixed with numbered tiles in the same group.
+            const isNumericTile = (tile !== '0' && !isNaN(parseInt(tile))) || ['X', 'V', 'Y', 'M', 'Q', 'R'].includes(tile);
             const isDragonTile = tile === 'D' || tile === '0';
 
             // Special handling for R when we need to pick from K values
