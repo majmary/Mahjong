@@ -319,15 +319,11 @@ function pivotHandFitsTiles(tiles, handDef) {
     try { slots = parsePattern(handDef.code); } catch(e) { return false; }
     if (!slots || slots.length === 0) return false;
 
-    // Pass 1: cheap tile-identity filter (no drop loop)
+    // Pass 1: cheap tile-identity filter
     if (!pivotPass1(slots, tiles)) return false;
 
-    // Pass 2+3: try each of the 10 possible dropped tiles
-    for (let skip = 0; skip < tiles.length; skip++) {
-        const nine = tiles.filter((_, i) => i !== skip);
-        try { if (pivotFits(nine, slots)) return true; } catch(e) {}
-    }
-    return false;
+    // Pass 2+3: all 8 tiles must fit (no drop)
+    try { return pivotFits(tiles, slots); } catch(e) { return false; }
 }
 
 // ── Entry point ───────────────────────────────────────────────────────────────
