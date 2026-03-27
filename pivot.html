@@ -728,8 +728,10 @@ function generatePuzzle() {
     // ── Phase 1: random attempts ──────────────────────────────
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         const anchor = NUMBER_POOL[Math.floor(Math.random() * NUMBER_POOL.length)];
-        const companion = shuffle(COMPANION_POOL.filter(t => t !== anchor))[0];
-        const seed = [anchor, companion];
+        const use3 = Math.random() < 0.5;
+        const seed = use3
+            ? [anchor, ...shuffle(COMPANION_POOL.filter(t => t !== anchor)).slice(0, 2)]
+            : [anchor, shuffle(COMPANION_POOL.filter(t => t !== anchor))[0]];
 
         const result = analyzeConsensusExpansion(seed);
         if (result && result.survivingHands.length >= MIN_HANDS) {
@@ -1093,11 +1095,13 @@ function analyzeConsensusExpansion(seedTiles) {
         return null;
     }
 
-    // ── Step 2: greedy expansion — 5 picks, naturals or jokers ─
+    // ── Step 2: greedy expansion — picks to reach 8 tiles total ─
+    // 2-tile seed needs 6 picks, 3-tile seed needs 5 picks
+    const totalPicks = 8 - seedTiles.length;
     let currentTiles = [...seedTiles];
     const chosenTiles = [];
 
-    for (let pick = 0; pick < 6; pick++) {
+    for (let pick = 0; pick < totalPicks; pick++) {
         let bestTile = null, bestCount = 0;
         let bestNatural = null, bestNaturalCount = 0;
 
