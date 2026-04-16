@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Lesson 1 · Jokers · Mary on Mahjong</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif;background:#fafafa;color:#333;min-height:100vh;display:flex;flex-direction:column}
+.ph{background:#2c5f2d;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.15);position:sticky;top:0;z-index:100}
+.ph-left{min-width:0}
+.ph h1{margin:0;font-size:16px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph .sub{font-size:11px;opacity:.75;margin-top:1px}
+.back{color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:5px 10px;border:1px solid rgba(255,255,255,.35);border-radius:6px;white-space:nowrap;flex-shrink:0;margin-left:10px}
+.back:hover{background:rgba(255,255,255,.12)}
+.content{max-width:680px;width:100%;margin:0 auto;padding:24px 20px 80px;flex:1}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#999;margin-bottom:4px}
+.ltitle{font-size:26px;font-weight:700;color:#2c5f2d;margin:0 0 20px;line-height:1.2}
+.body p{font-size:15px;line-height:1.7;color:#333;margin:0 0 16px}
+.body p:last-child{margin-bottom:0}
+.body h2{font-size:18px;font-weight:700;color:#2c5f2d;margin:32px 0 12px;padding-bottom:6px;border-bottom:2px solid #f0f8f0}
+.body ul{margin:0 0 16px;padding-left:20px}
+.body ul li{font-size:15px;line-height:1.7;color:#333;margin-bottom:6px}
+.body strong{color:#2c5f2d}
+.img-ph{background:#f5f5f5;border:2px dashed #e0e0e0;border-radius:8px;height:140px;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px;margin:16px 0;text-align:center;padding:12px}
+.ex{background:#e8f4fd;border-left:4px solid #2196f3;border-radius:0 8px 8px 0;padding:16px 18px;margin:32px 0 8px}
+.ex .elabel{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#2196f3;margin-bottom:8px}
+.ex p{font-size:14px;line-height:1.6;color:#333;margin:0 0 12px}
+.ex p:last-child{margin-bottom:0}
+.ex-btn{display:inline-block;background:#2196f3;color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;margin-top:4px;margin-right:8px;margin-bottom:4px}
+.nav{display:flex;gap:10px;margin-top:40px;padding-top:24px;border-top:1px solid #e0e0e0}
+.nbtn{flex:1;display:flex;flex-direction:column;padding:14px 16px;background:#fff;border:1px solid #e0e0e0;border-radius:10px;text-decoration:none;color:#333;transition:box-shadow .15s}
+.nbtn:hover{box-shadow:0 3px 10px rgba(0,0,0,.08)}
+.nbtn.next{text-align:right}
+.nlabel{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#999;margin-bottom:3px}
+.ntitle{font-size:14px;font-weight:600;color:#2c5f2d}
+@media(max-width:480px){.content{padding:18px 16px 72px}.ltitle{font-size:22px}}
+</style>
+</head>
+<body>
+
+<header class="ph">
+    <div class="ph-left">
+        <h1>Lesson 1 · Tiles</h1>
+        <div class="sub">Part 5 of 5 · Mary on Mahjong</div>
+    </div>
+    <a href="learn.html" class="back">← All Lessons</a>
+</header>
+
+<div class="content">
+    <div class="eyebrow">Lesson 1 · Part 5 of 5</div>
+    <h1 class="ltitle">Jokers &amp; Other Tiles</h1>
+
+    <div class="body">
+        <h2>Jokers</h2>
+        <div class="img-ph">[ image: traditional joker tile ]</div>
+        <p>Jokers in American Mah Jong are wild cards — but wild cards with limits. Jokers cannot be used in sequences (like 1 2 3 4 5) or groups of non-identical tiles (like NEWS). They also cannot be used in a pair, or as a single tile. Jokers can only be used in sets of 3 or more identical tiles.</p>
+        <p>When we start exploring the legal hands in American Mah Jong, you will see that there are some hands that cannot use jokers at all!</p>
+        <p>In my game, jokers are <strong>yellow</strong>, with a J to denote their rank.</p>
+        <div class="img-ph">[ image: app joker tile ]</div>
+
+        <h2>Tiles Not Used in American Mah Jong</h2>
+        <ul>
+            <li><strong>Blanks</strong> — these are there to replace any lost tiles, or to be converted into tiles needed for other variations of Mah Jong.</li>
+            <li><strong>Animals</strong> — needed for Singapore Mah Jong. They are typically a rooster, a centipede, a cat and a rat.</li>
+            <li><strong>Red Fives</strong> — needed for Richi Mah Jong, a Japanese variation.</li>
+        </ul>
+    </div>
+
+    <div class="ex">
+        <div class="elabel">Exercises</div>
+        <p>Practice identifying tiles and understanding joker rules with these three exercises.</p>
+        <a href="#" class="ex-btn">Tile ID →</a>
+        <a href="#" class="ex-btn">Dragon Match →</a>
+        <a href="#" class="ex-btn">Joker Rules →</a>
+    </div>
+
+    <div class="nav">
+        <a href="lesson-1-4.html" class="nbtn prev">
+            <div class="nlabel">← Previous</div>
+            <div class="ntitle">Winds &amp; Flowers</div>
+        </a>
+        <a href="lesson-2-1.html" class="nbtn next">
+            <div class="nlabel">Next Lesson →</div>
+            <div class="ntitle">Reading the Card</div>
+        </a>
+    </div>
+</div>
+
+</body>
+</html>
