@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Lesson 2 · Non-Suited Tiles · Mary on Mahjong</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif;background:#fafafa;color:#333;min-height:100vh;display:flex;flex-direction:column}
+.ph{background:#2c5f2d;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.15);position:sticky;top:0;z-index:100}
+.ph-left{min-width:0}
+.ph h1{margin:0;font-size:16px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph .sub{font-size:11px;opacity:.75;margin-top:1px}
+.back{color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:5px 10px;border:1px solid rgba(255,255,255,.35);border-radius:6px;white-space:nowrap;flex-shrink:0;margin-left:10px}
+.back:hover{background:rgba(255,255,255,.12)}
+.content{max-width:680px;width:100%;margin:0 auto;padding:24px 20px 80px;flex:1}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#999;margin-bottom:4px}
+.ltitle{font-size:26px;font-weight:700;color:#2c5f2d;margin:0 0 20px;line-height:1.2}
+.body p{font-size:15px;line-height:1.7;color:#333;margin:0 0 16px}
+.body p:last-child{margin-bottom:0}
+.body h2{font-size:18px;font-weight:700;color:#2c5f2d;margin:32px 0 12px;padding-bottom:6px;border-bottom:2px solid #f0f8f0}
+.body strong{color:#2c5f2d}
+.body ul{margin:0 0 16px;padding-left:20px}
+.body ul li{font-size:15px;line-height:1.7;color:#333;margin-bottom:6px}
+.callout{background:#f0f8f0;border:1px solid #c8e6c9;border-radius:8px;padding:14px 16px;margin:16px 0}
+.callout p{font-size:14px;line-height:1.65;color:#333;margin:0}
+.nav{display:flex;gap:10px;margin-top:40px;padding-top:24px;border-top:1px solid #e0e0e0}
+.nbtn{flex:1;display:flex;flex-direction:column;padding:14px 16px;background:#fff;border:1px solid #e0e0e0;border-radius:10px;text-decoration:none;color:#333;transition:box-shadow .15s}
+.nbtn:hover{box-shadow:0 3px 10px rgba(0,0,0,.08)}
+.nbtn.next{text-align:right}
+.nlabel{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#999;margin-bottom:3px}
+.ntitle{font-size:14px;font-weight:600;color:#2c5f2d}
+@media(max-width:480px){.content{padding:18px 16px 72px}.ltitle{font-size:22px}}
+</style>
+</head>
+<body>
+
+<header class="ph">
+    <div class="ph-left">
+        <h1>Lesson 2 · Reading the Card</h1>
+        <div class="sub">Part 4 of 5 · Mary on Mahjong</div>
+    </div>
+    <a href="learn.html" class="back">← All Lessons</a>
+</header>
+
+<div class="content">
+    <div class="eyebrow">Lesson 2 · Part 4 of 5</div>
+    <h1 class="ltitle">Non-Suited Tiles &amp; the White Dragon</h1>
+
+    <div class="body">
+        <p>So far we've covered suited tiles — numbers and dragons. Now let's look at how the card represents tiles that don't belong to a suit.</p>
+
+        <h2>Non-Suited Tile Notation</h2>
+        <p>The non-suited tiles are represented on the card by these letters:</p>
+        <ul>
+            <li><strong>F</strong> — Flower</li>
+            <li><strong>N, E, W, S</strong> — North, East, West, South winds</li>
+            <li><strong>0</strong> — White Dragon (acting as a zero)</li>
+        </ul>
+
+        <h2>The White Dragon's Dual Role</h2>
+        <p>The white dragon is uniquely versatile. It can act as either a suited dragon or a suitless zero, depending on what a hand needs.</p>
+
+        <div class="callout">
+            <p><strong>When the card shows a 0</strong>, that is a white dragon acting as a zero. In this role it is suitless — it does not need to match the suit of the other tiles in the group. Any time you see a group like 2026, the suited tiles share a suit, and the white dragon fills the 0 position without a suit of its own.</p>
+        </div>
+
+        <div class="callout">
+            <p><strong>When the card shows a D</strong>, a white dragon can fill that spot — but in this role it is a suited dragon, associated with the Dots suit. It must obey the suit requirements of the hand.</p>
+        </div>
+
+        <p>This means the white dragon is the only tile in the game that can play two completely different roles depending on what the hand requires. When you see a 0 on the card, reach for your white dragon. When you see a D, remember the white dragon is only valid if the Dots suit works for that group.</p>
+    </div>
+
+    <div class="nav">
+        <a href="lesson-2-3.html" class="nbtn prev">
+            <div class="nlabel">← Previous</div>
+            <div class="ntitle">Second Hand Example</div>
+        </a>
+        <a href="lesson-2-5.html" class="nbtn next">
+            <div class="nlabel">Next →</div>
+            <div class="ntitle">White Dragon in Practice</div>
+        </a>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Lesson 2 · White Dragon in Practice · Mary on Mahjong</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif;background:#fafafa;color:#333;min-height:100vh;display:flex;flex-direction:column}
+.ph{background:#2c5f2d;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.15);position:sticky;top:0;z-index:100}
+.ph-left{min-width:0}
+.ph h1{margin:0;font-size:16px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph .sub{font-size:11px;opacity:.75;margin-top:1px}
+.back{color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:5px 10px;border:1px solid rgba(255,255,255,.35);border-radius:6px;white-space:nowrap;flex-shrink:0;margin-left:10px}
+.back:hover{background:rgba(255,255,255,.12)}
+.content{max-width:680px;width:100%;margin:0 auto;padding:24px 20px 80px;flex:1}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#999;margin-bottom:4px}
+.ltitle{font-size:26px;font-weight:700;color:#2c5f2d;margin:0 0 20px;line-height:1.2}
+.body p{font-size:15px;line-height:1.7;color:#333;margin:0 0 16px}
+.body p:last-child{margin-bottom:0}
+.body h2{font-size:18px;font-weight:700;color:#2c5f2d;margin:32px 0 12px;padding-bottom:6px;border-bottom:2px solid #f0f8f0}
+.body strong{color:#2c5f2d}
+.hand-notation{background:#1f4420;color:#fff;border-radius:8px;padding:14px 18px;font-family:monospace;font-size:15px;margin:16px 0;line-height:1.8;word-break:break-word}
+.hand-notation .hn-blue{color:#90caf9}
+.hand-notation .hn-green{color:#a5d6a7}
+.hand-notation .hn-red{color:#ef9a9a}
+.hand-notation .hn-navy{color:#b0bec5;font-size:13px}
+.img-ph{background:#f5f5f5;border:2px dashed #e0e0e0;border-radius:8px;height:100px;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px;margin:16px 0;text-align:center;padding:12px}
+.ex{background:#e8f4fd;border-left:4px solid #2196f3;border-radius:0 8px 8px 0;padding:16px 18px;margin:32px 0 8px}
+.ex .elabel{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#2196f3;margin-bottom:8px}
+.ex p{font-size:14px;line-height:1.6;color:#333;margin:0 0 12px}
+.ex p:last-child{margin-bottom:0}
+.ex-btn{display:inline-block;background:#2196f3;color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;margin-top:4px}
+.nav{display:flex;gap:10px;margin-top:40px;padding-top:24px;border-top:1px solid #e0e0e0}
+.nbtn{flex:1;display:flex;flex-direction:column;padding:14px 16px;background:#fff;border:1px solid #e0e0e0;border-radius:10px;text-decoration:none;color:#333;transition:box-shadow .15s}
+.nbtn:hover{box-shadow:0 3px 10px rgba(0,0,0,.08)}
+.nbtn.next{text-align:right}
+.nlabel{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#999;margin-bottom:3px}
+.ntitle{font-size:14px;font-weight:600;color:#2c5f2d}
+@media(max-width:480px){.content{padding:18px 16px 72px}.ltitle{font-size:22px}}
+</style>
+</head>
+<body>
+
+<header class="ph">
+    <div class="ph-left">
+        <h1>Lesson 2 · Reading the Card</h1>
+        <div class="sub">Part 5 of 5 · Mary on Mahjong</div>
+    </div>
+    <a href="learn.html" class="back">← All Lessons</a>
+</header>
+
+<div class="content">
+    <div class="eyebrow">Lesson 2 · Part 5 of 5</div>
+    <h1 class="ltitle">White Dragon in Practice</h1>
+
+    <div class="body">
+        <p>Let's put the white dragon's dual role to work with a real hand example:</p>
+
+        <div class="hand-notation">
+            <span class="hn-green">2026</span>&nbsp;
+            <span class="hn-red">222</span>&nbsp;
+            <span class="hn-red">666</span>&nbsp;
+            <span class="hn-blue">DDDD</span>&nbsp;
+            <span class="hn-navy">(Any 3 suits)</span>
+        </div>
+
+        <p>The 2026 group is in green. The 2, 0, 2, and 6 are in Suit 1 — with the white dragon filling the 0 position as a suitless tile. The suited 2s and 6 all share Suit 1, and the white dragon sits among them without a suit.</p>
+        <p>The 222 and 666 groups are both red — Suit 2.</p>
+        <p>The DDDD group is blue — a third distinct suit (Suit 3), since D represents a suited dragon.</p>
+
+        <p>Here are two valid fills of this hand:</p>
+        <div class="img-ph">[ image: 2b WD 2b 6b  2c2c2c  6c6c6c  WD WD WD WD ]</div>
+        <div class="img-ph">[ image: 2c WD 2c 6c  2d2d2d  6d6d6d  GD GD GD GD ]</div>
+
+        <p>Notice that in the first example, one white dragon fills the suitless 0 role in the 2026 group, while four more white dragons fill the suited Dots dragon role in the DDDD group. Two different white dragon tiles, two different jobs — that's the dual role in action.</p>
+    </div>
+
+    <div class="ex">
+        <div class="elabel">Exercise · Build a Hand</div>
+        <p>You'll be given a hand pattern just like the ones on the NMJL card, and challenged to fill it with tiles. There are millions of valid combinations — try several for each hand presented.</p>
+        <a href="build.html" class="ex-btn">Launch Build a Hand →</a>
+    </div>
+
+    <div class="nav">
+        <a href="lesson-2-4.html" class="nbtn prev">
+            <div class="nlabel">← Previous</div>
+            <div class="ntitle">Non-Suited Tiles</div>
+        </a>
+        <a href="lesson-3-1.html" class="nbtn next">
+            <div class="nlabel">Next Lesson →</div>
+            <div class="ntitle">Set Up and Dealing</div>
+        </a>
+    </div>
+</div>
+
+</body>
+</html>
