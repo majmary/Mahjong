@@ -29,6 +29,15 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .nlabel{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#999;margin-bottom:3px}
 .ntitle{font-size:14px;font-weight:600;color:#2c5f2d}
 @media(max-width:480px){.content{padding:18px 16px 72px}.ltitle{font-size:22px}}
+
+/* Game tiles */
+.tile-row{display:flex;flex-wrap:wrap;gap:4px;padding:16px;background:#f5f5f5;border-radius:8px;margin:16px 0}
+.tile{width:44px;height:56px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,0.15);border-radius:6px;background:white;font-weight:600;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.6);position:relative;overflow:hidden;user-select:none}
+.tile::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(255,255,255,0.3) 0%,rgba(255,255,255,0) 50%);pointer-events:none}
+.tile-WIND{background:#ECEFF1;color:#37474F}
+.tile-F{background:#F3E5F5;color:#6A1B9A}
+.tile-number{font-size:22px;font-weight:700;line-height:1}
+.tile-label{font-size:9px;margin-top:2px}
 </style>
 </head>
 <body>
@@ -52,14 +61,21 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
         <p>The first is as tiles to be part of hands. Winds don't have suits, so a North wind tile is just as likely to appear in a hand containing Bams, Cracks, or Dots.</p>
         <p>Wind also comes into play at the start of the game. The first dealer is called East. As the game progresses, the deal rotates to the right. These names are just a way to keep track of seats at the table — they don't affect game play or scoring.</p>
         <p>In my game, winds are represented by their initial — N, E, W, or S — and the tiles are <strong>gray</strong>.</p>
-        <div class="img-ph">[ image: app wind tiles ]</div>
+        <div class="tile-row">
+            <div class="tile tile-WIND"><div class="tile-number" style="color:#37474F">N</div><div class="tile-label" style="color:#37474F">North</div></div>
+            <div class="tile tile-WIND"><div class="tile-number" style="color:#37474F">E</div><div class="tile-label" style="color:#37474F">East</div></div>
+            <div class="tile tile-WIND"><div class="tile-number" style="color:#37474F">W</div><div class="tile-label" style="color:#37474F">West</div></div>
+            <div class="tile tile-WIND"><div class="tile-number" style="color:#37474F">S</div><div class="tile-label" style="color:#37474F">South</div></div>
+        </div>
 
         <h2>Flowers</h2>
         <div class="img-ph">[ image: traditional flower tiles ]</div>
         <p>Flowers are often the prettiest tiles in the set. They can be stylized renditions of individual flowers, bouquets, or even compose a scene when placed next to each other. Many sets have 4 flowers and 4 seasons — American Mah Jong counts all of these as flowers, and all flowers are the same in the game.</p>
         <p>Flowers often get confused with 1 bam (because that's the bird tile, and one of the prettiest) or jokers, possibly because flowers can be used as wild cards in some variations of Mah Jong. Flowers are one of the most versatile tiles in American Mah Jong — about half of the legal hands in any given year use them.</p>
         <p>In my game, they are all <strong>violet</strong>, with an F as their icon.</p>
-        <div class="img-ph">[ image: app flower tiles ]</div>
+        <div class="tile-row">
+            <div class="tile tile-F"><div class="tile-number" style="color:#6A1B9A">F</div><div class="tile-label" style="color:#6A1B9A">Flower</div></div>
+        </div>
     </div>
 
     <div class="nav">
