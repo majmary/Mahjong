@@ -29,6 +29,17 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .nlabel{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#999;margin-bottom:3px}
 .ntitle{font-size:14px;font-weight:600;color:#2c5f2d}
 @media(max-width:480px){.content{padding:18px 16px 72px}.ltitle{font-size:22px}}
+
+/* Game tiles */
+.tile-row{display:flex;flex-wrap:wrap;gap:4px;padding:16px;background:#f5f5f5;border-radius:8px;margin:16px 0}
+.tile{width:44px;height:56px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,0.15);border-radius:6px;background:white;font-weight:600;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.6);position:relative;overflow:hidden;user-select:none}
+.tile::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(255,255,255,0.3) 0%,rgba(255,255,255,0) 50%);pointer-events:none}
+.tile-D{background:#E3F2FD;color:#01579B}
+.tile-GD{background:#C8E6C9;color:#1B5E20}
+.tile-RD{background:#FFCDD2;color:#B71C1C}
+.tile-WD{background:#BBDEFB;color:#01579B}
+.tile-number{font-size:22px;font-weight:700;line-height:1}
+.tile-label{font-size:9px;margin-top:2px}
 </style>
 </head>
 <body>
@@ -50,14 +61,28 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
         <div class="img-ph">[ image: traditional 1–9 dot tiles ]</div>
         <p>Dots are dots because, well, they have dots on their faces. In this suit, the dots are often multicolored, and the 1 dot often has a large circular icon. It can be easily confused with a joker in one of the most common tile face designs. If you end up with a set that has no Western numbers, just count the dots on the tile to figure out its value.</p>
         <p>In my game, dots are <strong>blue</strong> — because the traditional Mah Jong colors are red, green and blue, and red and green were already taken.</p>
-        <div class="img-ph">[ image: app dot tiles ]</div>
+        <div class="tile-row">
+            <div class="tile tile-D"><div class="tile-number" style="color:#01579B">1</div><div class="tile-label" style="color:#01579B">Dot</div></div>
+            <div class="tile tile-D"><div class="tile-number" style="color:#01579B">2</div><div class="tile-label" style="color:#01579B">Dot</div></div>
+            <div class="tile tile-D"><div class="tile-number" style="color:#01579B">3</div><div class="tile-label" style="color:#01579B">Dot</div></div>
+            <div class="tile tile-D"><div class="tile-number" style="color:#01579B">4</div><div class="tile-label" style="color:#01579B">Dot</div></div>
+            <div class="tile tile-D"><div class="tile-number" style="color:#01579B">5</div><div class="tile-label" style="color:#01579B">Dot</div></div>
+            <div class="tile tile-D"><div class="tile-number" style="color:#01579B">6</div><div class="tile-label" style="color:#01579B">Dot</div></div>
+            <div class="tile tile-D"><div class="tile-number" style="color:#01579B">7</div><div class="tile-label" style="color:#01579B">Dot</div></div>
+            <div class="tile tile-D"><div class="tile-number" style="color:#01579B">8</div><div class="tile-label" style="color:#01579B">Dot</div></div>
+            <div class="tile tile-D"><div class="tile-number" style="color:#01579B">9</div><div class="tile-label" style="color:#01579B">Dot</div></div>
+        </div>
 
         <h2>Dragons</h2>
         <div class="img-ph">[ image: traditional red, green and white dragon tiles ]</div>
         <p>There are three dragons in American Mah Jong: red, green and white. Traditionally the red and green dragons are depicted as a stylized dragon, while the white dragon is an open frame. That open frame is the inspiration behind its alternate name, <strong>soap</strong> — it looks like a bar of soap. It's also why this tile is used as a 0 in NMJL notation, which we'll cover in the next lesson.</p>
         <p>Each dragon is associated with a suit: the <strong>red dragon</strong> goes with Cracks, the <strong>green dragon</strong> with Bams, and the <strong>white dragon</strong> with Dots.</p>
         <p>In my game, the dragons are a darker version of their suit color, with their initial displayed. The white dragon shows a 0 instead of a W — that helps distinguish it from the West wind tile, and reminds us of its role as a 0 on the card.</p>
-        <div class="img-ph">[ image: app dragon tiles ]</div>
+        <div class="tile-row">
+            <div class="tile tile-GD"><div class="tile-number" style="color:#1B5E20">G</div><div class="tile-label" style="color:#1B5E20">Green</div></div>
+            <div class="tile tile-RD"><div class="tile-number" style="color:#B71C1C">R</div><div class="tile-label" style="color:#B71C1C">Red</div></div>
+            <div class="tile tile-WD"><div class="tile-number" style="color:#01579B">O</div><div class="tile-label" style="color:#01579B">White</div></div>
+        </div>
     </div>
 
     <div class="nav">
