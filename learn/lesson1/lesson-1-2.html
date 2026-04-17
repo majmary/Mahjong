@@ -29,6 +29,15 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .nlabel{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#999;margin-bottom:3px}
 .ntitle{font-size:14px;font-weight:600;color:#2c5f2d}
 @media(max-width:480px){.content{padding:18px 16px 72px}.ltitle{font-size:22px}}
+
+/* Game tiles */
+.tile-row{display:flex;flex-wrap:wrap;gap:4px;padding:16px;background:#f5f5f5;border-radius:8px;margin:16px 0}
+.tile{width:44px;height:56px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,0.15);border-radius:6px;background:white;font-weight:600;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.6);position:relative;overflow:hidden;user-select:none}
+.tile::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(255,255,255,0.3) 0%,rgba(255,255,255,0) 50%);pointer-events:none}
+.tile-B{background:#E8F5E9;color:#1B5E20}
+.tile-C{background:#FFEBEE;color:#B71C1C}
+.tile-number{font-size:22px;font-weight:700;line-height:1}
+.tile-label{font-size:9px;margin-top:2px}
 </style>
 </head>
 <body>
@@ -50,13 +59,33 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
         <div class="img-ph">[ image: traditional 1–9 bam tiles ]</div>
         <p>Bams are short for Bamboo, and usually feature a stylized bamboo graphic. The 1 bam is always a bird of some kind, which can be easily confused with a flower (it's stylized, remember!) or a joker, so be careful. It's just a 1 bamboo.</p>
         <p>In my game, the standard tiles are just numbers or letters paired with a color. The Bams are <strong>green</strong> — because bamboo.</p>
-        <div class="img-ph">[ image: app bam tiles ]</div>
+        <div class="tile-row">
+            <div class="tile tile-B"><div class="tile-number" style="color:#1B5E20">1</div><div class="tile-label" style="color:#1B5E20">Bam</div></div>
+            <div class="tile tile-B"><div class="tile-number" style="color:#1B5E20">2</div><div class="tile-label" style="color:#1B5E20">Bam</div></div>
+            <div class="tile tile-B"><div class="tile-number" style="color:#1B5E20">3</div><div class="tile-label" style="color:#1B5E20">Bam</div></div>
+            <div class="tile tile-B"><div class="tile-number" style="color:#1B5E20">4</div><div class="tile-label" style="color:#1B5E20">Bam</div></div>
+            <div class="tile tile-B"><div class="tile-number" style="color:#1B5E20">5</div><div class="tile-label" style="color:#1B5E20">Bam</div></div>
+            <div class="tile tile-B"><div class="tile-number" style="color:#1B5E20">6</div><div class="tile-label" style="color:#1B5E20">Bam</div></div>
+            <div class="tile tile-B"><div class="tile-number" style="color:#1B5E20">7</div><div class="tile-label" style="color:#1B5E20">Bam</div></div>
+            <div class="tile tile-B"><div class="tile-number" style="color:#1B5E20">8</div><div class="tile-label" style="color:#1B5E20">Bam</div></div>
+            <div class="tile tile-B"><div class="tile-number" style="color:#1B5E20">9</div><div class="tile-label" style="color:#1B5E20">Bam</div></div>
+        </div>
 
         <h2>Cracks</h2>
         <div class="img-ph">[ image: traditional 1–9 crack tiles ]</div>
         <p>Crack is short for character, a reference to the black and red Chinese character illustration on the face of the tiles. These are the most straightforward to identify — there are no tricky confusions with other suits. They are, however, the hardest to differentiate within their suit, especially if you end up playing with a set that does not have Western numbers on it.</p>
         <p>In my game, cracks are <strong>red</strong> — because of the red and black color scheme of the traditional tiles.</p>
-        <div class="img-ph">[ image: app crack tiles ]</div>
+        <div class="tile-row">
+            <div class="tile tile-C"><div class="tile-number" style="color:#B71C1C">1</div><div class="tile-label" style="color:#B71C1C">Crack</div></div>
+            <div class="tile tile-C"><div class="tile-number" style="color:#B71C1C">2</div><div class="tile-label" style="color:#B71C1C">Crack</div></div>
+            <div class="tile tile-C"><div class="tile-number" style="color:#B71C1C">3</div><div class="tile-label" style="color:#B71C1C">Crack</div></div>
+            <div class="tile tile-C"><div class="tile-number" style="color:#B71C1C">4</div><div class="tile-label" style="color:#B71C1C">Crack</div></div>
+            <div class="tile tile-C"><div class="tile-number" style="color:#B71C1C">5</div><div class="tile-label" style="color:#B71C1C">Crack</div></div>
+            <div class="tile tile-C"><div class="tile-number" style="color:#B71C1C">6</div><div class="tile-label" style="color:#B71C1C">Crack</div></div>
+            <div class="tile tile-C"><div class="tile-number" style="color:#B71C1C">7</div><div class="tile-label" style="color:#B71C1C">Crack</div></div>
+            <div class="tile tile-C"><div class="tile-number" style="color:#B71C1C">8</div><div class="tile-label" style="color:#B71C1C">Crack</div></div>
+            <div class="tile tile-C"><div class="tile-number" style="color:#B71C1C">9</div><div class="tile-label" style="color:#B71C1C">Crack</div></div>
+        </div>
     </div>
 
     <div class="nav">
