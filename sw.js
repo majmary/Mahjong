@@ -21,6 +21,36 @@ const ASSETS = [
   '/mahjong/data/card-2024.js',
   '/mahjong/data/card-2025.js',
   '/mahjong/data/card-2026.js',
+  '/mahjong/learn/learn.html',
+  '/mahjong/learn/lesson1/lesson-1-1.html',
+  '/mahjong/learn/lesson1/lesson-1-2.html',
+  '/mahjong/learn/lesson1/lesson-1-3.html',
+  '/mahjong/learn/lesson1/lesson-1-4.html',
+  '/mahjong/learn/lesson1/lesson-1-5.html',
+  '/mahjong/learn/lesson2/lesson-2-1.html',
+   '/mahjong/learn/lesson2/lesson-2-2.html',
+   '/mahjong/learn/lesson2/lesson-2-3.html',
+   '/mahjong/learn/lesson2/lesson-2-4.html',
+   '/mahjong/learn/lesson2/lesson-2-5.html',
+   '/mahjong/learn/lesson3/lesson-3-1.html',
+     '/mahjong/learn/lesson3/lesson-3-2.html',
+     '/mahjong/learn/lesson3/lesson-3-3.html',
+     '/mahjong/learn/lesson3/lesson-3-4.html',
+       '/mahjong/learn/lesson4/lesson-4-1.html',
+   '/mahjong/learn/lesson4/lesson-4-2.html',
+   '/mahjong/learn/lesson4/lesson-4-3.html',
+   '/mahjong/learn/lesson4/lesson-4-4.html',
+   '/mahjong/learn/lesson4/lesson-4-5.html',
+   '/mahjong/learn/lesson4/lesson-4-6.html',
+   '/mahjong/learn/lesson6/lesson-6-1.html',
+  '/mahjong/learn/lesson6/lesson-6-2.html',
+  '/mahjong/learn/lesson6/lesson-6-3.html',
+  '/mahjong/learn/lesson6/lesson-6-4.html',
+  '/mahjong/learn/lesson6/lesson-6-5.html',
+
+
+
+
 ];
 
 // ── Install: cache all assets ──
