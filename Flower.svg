@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" width="300" height="400">
+  <rect width="300" height="400" fill="#fefefe"/>
+
+  <defs>
+    <path id="lf" d="M 0,-22 C 14,-10 14,10 0,22 C -14,10 -14,-10 0,-22 Z"/>
+  </defs>
+
+  <!-- ── STEMS & BRANCHES ── -->
+  <!-- Main stem from base — slight lean gives organic feel -->
+  <path d="M 118,396 C 112,358 122,324 144,292"
+        stroke="#7B2020" stroke-width="9" fill="none" stroke-linecap="round"/>
+
+  <!-- Continue stem upward past bloom -->
+  <path d="M 144,292 C 152,268 158,248 162,218"
+        stroke="#7B2020" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- Left branch — arcs upward then sweeps back, confined to ~x40 -->
+  <path d="M 146,278 C 120,254 82,238 56,244 C 44,248 38,248 40,240"
+        stroke="#7B2020" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Right branch — arcs sharply upward, confined to ~x260 -->
+  <path d="M 152,258 C 182,222 218,196 248,184 C 260,180 266,182 264,172"
+        stroke="#7B2020" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Short top continuation — gentle S-curve -->
+  <path d="M 164,216 C 174,192 178,168 172,146"
+        stroke="#7B2020" stroke-width="4" fill="none" stroke-linecap="round"/>
+
+  <!-- ── LEAVES ── -->
+  <!-- Left branch — 4 leaves tracking the curve -->
+  <g transform="translate(116,256) rotate(-34)">
+    <use href="#lf" fill="#1B5E20"/>
+    <line x1="0" y1="-18" x2="0" y2="18" stroke="#4CAF50" stroke-width="1.3" opacity="0.5"/>
+  </g>
+  <g transform="translate(88,244) rotate(-40)">
+    <use href="#lf" fill="#1B5E20"/>
+    <line x1="0" y1="-18" x2="0" y2="18" stroke="#4CAF50" stroke-width="1.3" opacity="0.5"/>
+  </g>
+  <g transform="translate(62,242) rotate(-48)">
+    <use href="#lf" fill="#1B5E20"/>
+    <line x1="0" y1="-18" x2="0" y2="18" stroke="#4CAF50" stroke-width="1.3" opacity="0.5"/>
+  </g>
+  <g transform="translate(42,242) rotate(-55)">
+    <use href="#lf" fill="#1B5E20"/>
+    <line x1="0" y1="-18" x2="0" y2="18" stroke="#4CAF50" stroke-width="1.3" opacity="0.5"/>
+  </g>
+
+  <!-- Right branch — 4 leaves -->
+  <g transform="translate(184,224) rotate(38)">
+    <use href="#lf" fill="#1B5E20"/>
+    <line x1="0" y1="-18" x2="0" y2="18" stroke="#4CAF50" stroke-width="1.3" opacity="0.5"/>
+  </g>
+  <g transform="translate(216,200) rotate(32)">
+    <use href="#lf" fill="#1B5E20"/>
+    <line x1="0" y1="-18" x2="0" y2="18" stroke="#4CAF50" stroke-width="1.3" opacity="0.5"/>
+  </g>
+  <g transform="translate(246,184) rotate(26)">
+    <use href="#lf" fill="#1B5E20"/>
+    <line x1="0" y1="-18" x2="0" y2="18" stroke="#4CAF50" stroke-width="1.3" opacity="0.5"/>
+  </g>
+
+  <!-- Top stem — 3 leaves -->
+  <g transform="translate(174,194) rotate(8)">
+    <use href="#lf" fill="#1B5E20"/>
+    <line x1="0" y1="-18" x2="0" y2="18" stroke="#4CAF50" stroke-width="1.3" opacity="0.5"/>
+  </g>
+  <g transform="translate(172,166) rotate(4)">
+    <use href="#lf" fill="#1B5E20"/>
+    <line x1="0" y1="-18" x2="0" y2="18" stroke="#4CAF50" stroke-width="1.3" opacity="0.5"/>
+  </g>
+
+  <!-- ── CAMELLIA FLOWER — large, centered at (144, 300) ── -->
+  <g transform="translate(144,300)">
+    <path d="M 0,-62 C 30,-44 30,-8 0,6 C -30,-8 -30,-44 0,-62 Z" fill="#CC2222" transform="rotate(0)"/>
+    <path d="M 0,-62 C 30,-44 30,-8 0,6 C -30,-8 -30,-44 0,-62 Z" fill="#CC2222" transform="rotate(60)"/>
+    <path d="M 0,-62 C 30,-44 30,-8 0,6 C -30,-8 -30,-44 0,-62 Z" fill="#CC2222" transform="rotate(120)"/>
+    <path d="M 0,-62 C 30,-44 30,-8 0,6 C -30,-8 -30,-44 0,-62 Z" fill="#B71C1C" transform="rotate(180)"/>
+    <path d="M 0,-62 C 30,-44 30,-8 0,6 C -30,-8 -30,-44 0,-62 Z" fill="#B71C1C" transform="rotate(240)"/>
+    <path d="M 0,-62 C 30,-44 30,-8 0,6 C -30,-8 -30,-44 0,-62 Z" fill="#CC2222" transform="rotate(300)"/>
+    <!-- Petal highlights -->
+    <path d="M 0,-60 C 10,-48 12,-24 5,-8" stroke="rgba(255,255,255,0.28)" stroke-width="3" fill="none" stroke-linecap="round" transform="rotate(0)"/>
+    <path d="M 0,-60 C 10,-48 12,-24 5,-8" stroke="rgba(255,255,255,0.28)" stroke-width="3" fill="none" stroke-linecap="round" transform="rotate(120)"/>
+    <path d="M 0,-60 C 10,-48 12,-24 5,-8" stroke="rgba(255,255,255,0.28)" stroke-width="3" fill="none" stroke-linecap="round" transform="rotate(240)"/>
+    <!-- Center disc -->
+    <circle cx="0" cy="0" r="17" fill="#8B0000"/>
+    <!-- Stamens -->
+    <circle cx="0"     cy="-12"  r="3.8" fill="white" opacity="0.93"/>
+    <circle cx="10.4"  cy="-6"   r="3.8" fill="white" opacity="0.93"/>
+    <circle cx="10.4"  cy="6"    r="3.8" fill="white" opacity="0.93"/>
+    <circle cx="0"     cy="12"   r="3.8" fill="white" opacity="0.93"/>
+    <circle cx="-10.4" cy="6"    r="3.8" fill="white" opacity="0.93"/>
+    <circle cx="-10.4" cy="-6"   r="3.8" fill="white" opacity="0.93"/>
+    <circle cx="0"     cy="0"    r="3"   fill="white" opacity="0.93"/>
+  </g>
+</svg>
