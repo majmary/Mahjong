@@ -22,8 +22,9 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .body h2{font-size:18px;font-weight:700;color:#2c5f2d;margin:32px 0 12px;padding-bottom:6px;border-bottom:2px solid #f0f8f0}
 .body strong{color:#2c5f2d}
 .img-ph{background:#f5f5f5;border:2px dashed #e0e0e0;border-radius:8px;height:140px;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px;margin:16px 0;text-align:center;padding:12px}
-.trad-row{display:flex;flex-wrap:nowrap;gap:4px;padding:12px 16px;background:#f5f5f5;border-radius:8px;margin:16px 0;overflow-x:auto}
-.trad-row img{width:clamp(30px,8vw,44px);height:auto;flex-shrink:0;display:block}
+.trad-row{display:flex;flex-wrap:nowrap;gap:4px;padding:16px;background:#f5f5f5;border-radius:8px;margin:16px 0}
+.trad-tile{position:relative;flex-shrink:0;width:clamp(30px,8vw,44px);height:clamp(38px,10.2vw,56px);border-radius:6px;border:1px solid rgba(0,0,0,0.15);box-shadow:0 2px 8px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.6);overflow:hidden}
+.trad-tile img{position:absolute;top:0;left:0;width:100%;height:100%}
 .nav{display:flex;gap:10px;margin-top:40px;padding-top:24px;border-top:1px solid #e0e0e0}
 .nbtn{flex:1;display:flex;flex-direction:column;padding:14px 16px;background:#fff;border:1px solid #e0e0e0;border-radius:10px;text-decoration:none;color:#333;transition:box-shadow .15s}
 .nbtn:hover{box-shadow:0 3px 10px rgba(0,0,0,.08)}
@@ -59,15 +60,15 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
     <div class="body">
         <h2>Bams</h2>
         <div class="trad-row">
-            <img src="../../tiles/traditional/1bam.svg" alt="1 Bam">
-            <img src="../../tiles/traditional/2bam.svg" alt="2 Bam">
-            <img src="../../tiles/traditional/3bam.svg" alt="3 Bam">
-            <img src="../../tiles/traditional/4bam.svg" alt="4 Bam">
-            <img src="../../tiles/traditional/5bam.svg" alt="5 Bam">
-            <img src="../../tiles/traditional/6bam.svg" alt="6 Bam">
-            <img src="../../tiles/traditional/7bam.svg" alt="7 Bam">
-            <img src="../../tiles/traditional/8bam.svg" alt="8 Bam">
-            <img src="../../tiles/traditional/9bam.svg" alt="9 Bam">
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/1bam.svg" alt="1 Bam"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/2bam.svg" alt="2 Bam"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/3bam.svg" alt="3 Bam"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/4bam.svg" alt="4 Bam"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/5bam.svg" alt="5 Bam"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/6bam.svg" alt="6 Bam"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/7bam.svg" alt="7 Bam"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/8bam.svg" alt="8 Bam"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/9bam.svg" alt="9 Bam"></div>
         </div>
         <p>Bams are short for Bamboo, and usually feature a stylized bamboo graphic. The 1 bam is always a bird of some kind, which can be easily confused with a flower (it's stylized, remember!) or a joker, so be careful. It's just a 1 bamboo.</p>
         <p>In my game, the standard tiles are just numbers or letters paired with a color. The Bams are <strong>green</strong> — because bamboo.</p>
@@ -85,15 +86,15 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 
         <h2>Cracks</h2>
         <div class="trad-row">
-            <img src="../../tiles/traditional/1crak.svg" alt="1 Crack">
-            <img src="../../tiles/traditional/2crak.svg" alt="2 Crack">
-            <img src="../../tiles/traditional/3crak.svg" alt="3 Crack">
-            <img src="../../tiles/traditional/4crak.svg" alt="4 Crack">
-            <img src="../../tiles/traditional/5crak.svg" alt="5 Crack">
-            <img src="../../tiles/traditional/6crak.svg" alt="6 Crack">
-            <img src="../../tiles/traditional/7crak.svg" alt="7 Crack">
-            <img src="../../tiles/traditional/8crak.svg" alt="8 Crack">
-            <img src="../../tiles/traditional/9crak.svg" alt="9 Crack">
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/1crak.svg" alt="1 Crack"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/2crak.svg" alt="2 Crack"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/3crak.svg" alt="3 Crack"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/4crak.svg" alt="4 Crack"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/5crak.svg" alt="5 Crack"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/6crak.svg" alt="6 Crack"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/7crak.svg" alt="7 Crack"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/8crak.svg" alt="8 Crack"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/9crak.svg" alt="9 Crack"></div>
         </div>
         <p>Crack is short for character, a reference to the black and red Chinese character illustration on the face of the tiles. These are the most straightforward to identify — there are no tricky confusions with other suits. They are, however, the hardest to differentiate within their suit, especially if you end up playing with a set that does not have Western numbers on it.</p>
         <p>In my game, cracks are <strong>red</strong> — because of the red and black color scheme of the traditional tiles.</p>
