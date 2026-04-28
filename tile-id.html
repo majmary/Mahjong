@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Tile ID · Mary on Mahjong</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif;background:#fafafa;color:#333;min-height:100vh;display:flex;flex-direction:column}
+
+/* ── Header ── */
+.ph{background:#2c5f2d;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.15);position:sticky;top:0;z-index:100}
+.ph-left{min-width:0}
+.ph h1{margin:0;font-size:16px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph .sub{font-size:11px;opacity:.75;margin-top:1px}
+.back{color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:5px 10px;border:1px solid rgba(255,255,255,.35);border-radius:6px;white-space:nowrap;flex-shrink:0;margin-left:10px}
+.back:hover{background:rgba(255,255,255,.12)}
+
+/* ── Content ── */
+.content{max-width:480px;width:100%;margin:0 auto;padding:28px 20px 80px;flex:1;display:flex;flex-direction:column;align-items:center;gap:18px}
+
+/* ── Progress ── */
+.progress{font-size:13px;color:#999;font-weight:600;align-self:stretch;text-align:right}
+.progress .hi{color:#2c5f2d;font-weight:700}
+
+/* ── Tile display ── */
+.tile-stage{display:flex;justify-content:center;padding:8px 0}
+.trad-tile{position:relative;flex-shrink:0;width:90px;height:115px;border-radius:10px;border:2px solid rgba(0,0,0,0.12);box-shadow:0 4px 18px rgba(0,0,0,0.14),inset 0 1px 0 rgba(255,255,255,0.6);overflow:hidden;transition:border-color 0.25s,box-shadow 0.25s}
+.trad-tile img{position:absolute;top:0;left:0;width:100%;height:100%}
+.trad-tile.correct{border-color:#2c5f2d;box-shadow:0 0 0 3px #2c5f2d,0 4px 18px rgba(44,95,45,0.25)}
+
+/* ── Feedback & prompt ── */
+.feedback{min-height:24px;font-size:15px;font-weight:700;text-align:center;letter-spacing:0.01em}
+.feedback.correct{color:#2c5f2d}
+.feedback.wrong{color:#c62828}
+.prompt{font-size:14px;color:#666;text-align:center;margin:0}
+
+/* ── Button groups ── */
+.btn-group{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;width:100%}
+
+.suit-btn,.val-btn{
+  padding:10px 14px;
+  font-size:14px;font-weight:600;
+  border:2px solid #ddd;border-radius:10px;
+  background:#fff;color:#444;
+  cursor:pointer;
+  transition:border-color 0.12s,background 0.12s,color 0.12s;
+  min-width:72px;
+}
+.suit-btn:hover,.val-btn:hover{border-color:#2c5f2d;color:#2c5f2d;background:#f0f8f0}
+.suit-btn.selected{border-color:#2c5f2d;background:#e8f5e9;color:#1b5e20;font-weight:700}
+.suit-btn.wrong-pick,.val-btn.wrong-pick{border-color:#c62828;background:#fff5f5;color:#c62828}
+
+/* ── Next button ── */
+.next-btn{
+  background:#2c5f2d;color:#fff;
+  border:none;border-radius:10px;
+  padding:14px 36px;font-size:16px;font-weight:700;
+  cursor:pointer;
+  box-shadow:0 3px 12px rgba(44,95,45,0.3);
+  transition:background 0.15s,transform 0.1s;
+  display:none
+}
+.next-btn.visible{display:block}
+.next-btn:hover{background:#1e4220;transform:translateY(-1px)}
+.next-btn:active{transform:translateY(0)}
+
+@media(max-width:400px){
+  .content{padding:20px 14px 72px}
+  .trad-tile{width:76px;height:97px}
+  .suit-btn,.val-btn{font-size:13px;padding:9px 10px;min-width:60px}
+}
+</style>
+</head>
+<body>
+
+<header class="ph">
+  <div class="ph-left">
+    <h1>Tile ID</h1>
+    <div class="sub">Exercises · Mary on Mahjong</div>
+  </div>
+  <a href="learn.html" class="back">← All Lessons</a>
+</header>
+
+<div class="content">
+
+  <div class="progress" id="progress">Tile <span class="hi">1</span></div>
+
+  <div class="tile-stage">
+    <div class="trad-tile" id="tileEl">
+      <img src="../../tiles/background/bone.svg" alt="">
+      <img id="tileImg" src="" alt="mystery tile">
+    </div>
+  </div>
+
+  <div class="feedback" id="feedback"></div>
+  <p class="prompt" id="prompt">What suit is this tile?</p>
+
+  <div class="btn-group" id="suitBtns">
+    <button class="suit-btn" data-suit="bam">Bam</button>
+    <button class="suit-btn" data-suit="crak">Crack</button>
+    <button class="suit-btn" data-suit="dot">Dot</button>
+    <button class="suit-btn" data-suit="dragon">Dragon</button>
+    <button class="suit-btn" data-suit="wind">Wind</button>
+    <button class="suit-btn" data-suit="flower">Flower</button>
+    <button class="suit-btn" data-suit="joker">Joker</button>
+  </div>
+
+  <div class="btn-group" id="valueBtns" style="display:none"></div>
+
+  <button class="next-btn" id="nextBtn">Next Tile →</button>
+
+</div>
+
+<script>
+// ── Tile definitions ────────────────────────────────────────────
+const SUITS = {
+  bam:    { label:'Bam',    values:['1','2','3','4','5','6','7','8','9'],
+            valueLabels:['1','2','3','4','5','6','7','8','9'],
+            fileFor: v => `${v}bam.svg` },
+  crak:   { label:'Crack',  values:['1','2','3','4','5','6','7','8','9'],
+            valueLabels:['1','2','3','4','5','6','7','8','9'],
+            fileFor: v => `${v}crak.svg` },
+  dot:    { label:'Dot',    values:['1','2','3','4','5','6','7','8','9'],
+            valueLabels:['1','2','3','4','5','6','7','8','9'],
+            fileFor: v => `${v}dot.svg` },
+  dragon: { label:'Dragon', values:['green','red','white'],
+            valueLabels:['Green','Red','White'],
+            fileFor: v => `${v}.svg` },
+  wind:   { label:'Wind',   values:['north','east','west','south'],
+            valueLabels:['North','East','West','South'],
+            fileFor: v => `${v}.svg` },
+  flower: { label:'Flower', values:['flower'], valueLabels:[],
+            fileFor: () => 'flower.svg' },
+  joker:  { label:'Joker',  values:['joker'],  valueLabels:[],
+            fileFor: () => 'joker.svg' },
+};
+const SUIT_KEYS = Object.keys(SUITS);  // preserves insertion order → 7 suits
+
+// ── State ────────────────────────────────────────────────────────
+let currentSuit, currentValue;
+let tileCount = 0, correctCount = 0;
+let state = 'PICKING_SUIT';  // PICKING_SUIT | PICKING_VALUE | CORRECT
+
+// ── Random selection: suit first (1/7), then value within suit ──
+function pickTile() {
+  const suitKey = SUIT_KEYS[Math.floor(Math.random() * SUIT_KEYS.length)];
+  const suit    = SUITS[suitKey];
+  const value   = suit.values[Math.floor(Math.random() * suit.values.length)];
+  currentSuit  = suitKey;
+  currentValue = value;
+  return suit.fileFor(value);
+}
+
+// ── Triumphant arpeggio ─────────────────────────────────────────
+function playTriumph() {
+  try {
+    const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+    const freqs = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6
+    freqs.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      const t = ctx.currentTime + i * 0.13;
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.28, t + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+      osc.start(t);
+      osc.stop(t + 0.4);
+    });
+  } catch(e) { /* audio not available */ }
+}
+
+// ── UI helpers ───────────────────────────────────────────────────
+function setFeedback(text, type) {
+  const el = document.getElementById('feedback');
+  el.textContent = text;
+  el.className   = 'feedback' + (type ? ' ' + type : '');
+}
+
+function updateProgress() {
+  document.getElementById('progress').innerHTML =
+    `Tile <span class="hi">${tileCount}</span>` +
+    (tileCount > 1 ? ` &nbsp;·&nbsp; <span class="hi">${correctCount}</span> correct` : '');
+}
+
+// ── Advance to next tile ─────────────────────────────────────────
+function nextTile() {
+  // Reset tile border
+  document.getElementById('tileEl').className = 'trad-tile';
+
+  // Reset feedback & prompt
+  setFeedback('');
+  document.getElementById('prompt').textContent = 'What suit is this tile?';
+
+  // Reset suit buttons
+  document.querySelectorAll('.suit-btn').forEach(b => {
+    b.className = 'suit-btn';
+    b.disabled  = false;
+  });
+  document.getElementById('suitBtns').style.display = 'flex';
+
+  // Clear value buttons
+  const vg = document.getElementById('valueBtns');
+  vg.innerHTML = '';
+  vg.style.display = 'none';
+
+  // Hide next button
+  document.getElementById('nextBtn').classList.remove('visible');
+
+  state = 'PICKING_SUIT';
+  tileCount++;
+  updateProgress();
+
+  const file = pickTile();
+  document.getElementById('tileImg').src = `../../tiles/traditional/${file}`;
+}
+
+// ── Suit selected ────────────────────────────────────────────────
+function handleSuitSelect(suitKey) {
+  if (state !== 'PICKING_SUIT') return;
+
+  const btn = document.querySelector(`.suit-btn[data-suit="${suitKey}"]`);
+
+  if (suitKey !== currentSuit) {
+    // Wrong suit — mark it, leave all buttons live
+    document.querySelectorAll('.suit-btn').forEach(b => b.classList.remove('wrong-pick'));
+    btn.classList.add('wrong-pick');
+    setFeedback('Try again!', 'wrong');
+    return;
+  }
+
+  // Correct suit
+  document.querySelectorAll('.suit-btn').forEach(b => b.classList.remove('wrong-pick'));
+  btn.classList.add('selected');
+  setFeedback('');
+
+  const suit = SUITS[suitKey];
+
+  // Flower / Joker: no value step needed
+  if (suit.valueLabels.length === 0) {
+    markCorrect();
+    return;
+  }
+
+  // Show value buttons
+  state = 'PICKING_VALUE';
+  document.getElementById('prompt').textContent = `Which ${suit.label}?`;
+
+  const vg = document.getElementById('valueBtns');
+  vg.innerHTML = '';
+  suit.values.forEach((v, i) => {
+    const b       = document.createElement('button');
+    b.className   = 'val-btn';
+    b.textContent = suit.valueLabels[i];
+    b.dataset.value = v;
+    b.addEventListener('click', () => handleValueSelect(v, b));
+    vg.appendChild(b);
+  });
+  vg.style.display = 'flex';
+}
+
+// ── Value selected ───────────────────────────────────────────────
+function handleValueSelect(value, btn) {
+  if (state !== 'PICKING_VALUE') return;
+
+  if (value !== currentValue) {
+    // Wrong value — flash it red, stay on value step
+    document.querySelectorAll('.val-btn').forEach(b => b.classList.remove('wrong-pick'));
+    btn.classList.add('wrong-pick');
+    setFeedback('Try again!', 'wrong');
+    return;
+  }
+
+  markCorrect();
+}
+
+// ── Correct answer ───────────────────────────────────────────────
+function markCorrect() {
+  state = 'CORRECT';
+  correctCount++;
+  updateProgress();
+
+  document.getElementById('tileEl').classList.add('correct');
+  setFeedback('✓ Correct!', 'correct');
+  document.getElementById('prompt').textContent = '';
+  document.getElementById('suitBtns').style.display  = 'none';
+  document.getElementById('valueBtns').style.display = 'none';
+  document.getElementById('nextBtn').classList.add('visible');
+
+  playTriumph();
+}
+
+// ── Wire up suit buttons & next button ───────────────────────────
+document.querySelectorAll('.suit-btn').forEach(b => {
+  b.addEventListener('click', () => handleSuitSelect(b.dataset.suit));
+});
+document.getElementById('nextBtn').addEventListener('click', nextTile);
+
+// ── Start ────────────────────────────────────────────────────────
+nextTile();
+</script>
+</body>
+</html>
