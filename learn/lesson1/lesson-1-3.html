@@ -22,8 +22,9 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .body h2{font-size:18px;font-weight:700;color:#2c5f2d;margin:32px 0 12px;padding-bottom:6px;border-bottom:2px solid #f0f8f0}
 .body strong{color:#2c5f2d}
 .img-ph{background:#f5f5f5;border:2px dashed #e0e0e0;border-radius:8px;height:140px;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px;margin:16px 0;text-align:center;padding:12px}
-.trad-row{display:flex;flex-wrap:nowrap;gap:4px;padding:12px 16px;background:#f5f5f5;border-radius:8px;margin:16px 0;overflow-x:auto}
-.trad-row img{width:clamp(30px,8vw,44px);height:auto;flex-shrink:0;display:block}
+.trad-row{display:flex;flex-wrap:nowrap;gap:4px;padding:16px;background:#f5f5f5;border-radius:8px;margin:16px 0}
+.trad-tile{position:relative;flex-shrink:0;width:clamp(30px,8vw,44px);height:clamp(38px,10.2vw,56px);border-radius:6px;border:1px solid rgba(0,0,0,0.15);box-shadow:0 2px 8px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.6);overflow:hidden}
+.trad-tile img{position:absolute;top:0;left:0;width:100%;height:100%}
 .nav{display:flex;gap:10px;margin-top:40px;padding-top:24px;border-top:1px solid #e0e0e0}
 .nbtn{flex:1;display:flex;flex-direction:column;padding:14px 16px;background:#fff;border:1px solid #e0e0e0;border-radius:10px;text-decoration:none;color:#333;transition:box-shadow .15s}
 .nbtn:hover{box-shadow:0 3px 10px rgba(0,0,0,.08)}
@@ -61,15 +62,15 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
     <div class="body">
         <h2>Dots</h2>
         <div class="trad-row">
-            <img src="../../tiles/traditional/1dot.svg" alt="1 Dot">
-            <img src="../../tiles/traditional/2dot.svg" alt="2 Dot">
-            <img src="../../tiles/traditional/3dot.svg" alt="3 Dot">
-            <img src="../../tiles/traditional/4dot.svg" alt="4 Dot">
-            <img src="../../tiles/traditional/5dot.svg" alt="5 Dot">
-            <img src="../../tiles/traditional/6dot.svg" alt="6 Dot">
-            <img src="../../tiles/traditional/7dot.svg" alt="7 Dot">
-            <img src="../../tiles/traditional/8dot.svg" alt="8 Dot">
-            <img src="../../tiles/traditional/9dot.svg" alt="9 Dot">
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/1dot.svg" alt="1 Dot"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/2dot.svg" alt="2 Dot"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/3dot.svg" alt="3 Dot"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/4dot.svg" alt="4 Dot"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/5dot.svg" alt="5 Dot"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/6dot.svg" alt="6 Dot"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/7dot.svg" alt="7 Dot"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/8dot.svg" alt="8 Dot"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/9dot.svg" alt="9 Dot"></div>
         </div>
         <p>Dots are dots because, well, they have dots on their faces. In this suit, the dots are often multicolored, and the 1 dot often has a large circular icon. It can be easily confused with a joker in one of the most common tile face designs. If you end up with a set that has no Western numbers, just count the dots on the tile to figure out its value.</p>
         <p>In my game, dots are <strong>blue</strong> — because the traditional Mah Jong colors are red, green and blue, and red and green were already taken.</p>
@@ -87,9 +88,9 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 
         <h2>Dragons</h2>
         <div class="trad-row">
-            <img src="../../tiles/traditional/green.svg" alt="Green Dragon">
-            <img src="../../tiles/traditional/red.svg" alt="Red Dragon">
-            <img src="../../tiles/traditional/white.svg" alt="White Dragon">
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/green.svg" alt="Green Dragon"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/red.svg" alt="Red Dragon"></div>
+            <div class="trad-tile"><img src="../../tiles/background/bone.svg" alt=""><img src="../../tiles/traditional/white.svg" alt="White Dragon"></div>
         </div>
         <p>There are three dragons in American Mah Jong: red, green and white. Traditionally the red and green dragons are depicted as a stylized dragon, while the white dragon is an open frame. That open frame is the inspiration behind its alternate name, <strong>soap</strong> — it looks like a bar of soap. It's also why this tile is used as a 0 in NMJL notation, which we'll cover in the next lesson.</p>
         <p>Each dragon is associated with a suit: the <strong>red dragon</strong> goes with Cracks, the <strong>green dragon</strong> with Bams, and the <strong>white dragon</strong> with Dots.</p>
