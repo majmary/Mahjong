@@ -193,46 +193,20 @@
             color: #c9a84c;
         }
 
-        /* ── Spin button ── */
-        .spin-btn {
-            background: linear-gradient(175deg, #d9b43a 0%, #c9a84c 45%, #a0832a 100%);
-            color: #1a0e00;
-            border: none;
-            border-radius: 14px;
-            padding: 14px 52px;
-            font-size: 18px;
-            font-weight: 900;
-            letter-spacing: 0.18em;
-            cursor: pointer;
-            box-shadow:
-                0 4px 14px rgba(0,0,0,0.3),
-                0 1px 0 rgba(255,255,255,0.35) inset,
-                0 -2px 0 rgba(0,0,0,0.2) inset;
-            transition: transform 0.1s, box-shadow 0.1s, opacity 0.15s;
-            text-shadow: 0 1px 0 rgba(255,255,255,0.2);
-        }
-
-        .spin-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 7px 18px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.35) inset, 0 -2px 0 rgba(0,0,0,0.2) inset;
-        }
-
-        .spin-btn:active:not(:disabled) {
-            transform: translateY(1px);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.2) inset;
-        }
-
-        .spin-btn:disabled {
-            opacity: 0.45;
-            cursor: default;
-        }
-
-        /* ── Action buttons (Bank / Spin Again) ── */
-        .answer-row {
+        /* ── Action buttons (Bank / Spin) ── */
+        .action-btns {
             display: flex;
             gap: 12px;
             width: 100%;
             max-width: 420px;
+        }
+
+        .bank-display {
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--color-primary);
+            letter-spacing: 0.02em;
+            text-align: center;
         }
 
         .answer-btn {
@@ -431,12 +405,13 @@
             </div>
         </div>
 
-        <button class="spin-btn" id="spinBtn" onclick="doFirstSpin()">SPIN</button>
     </div>
 
-    <div class="answer-row" id="answerRow" style="display:none;">
-        <button class="answer-btn btn-bank"      id="btnBank"     onclick="doBank()">Bank it</button>
-        <button class="answer-btn btn-spin-away" id="btnSpinAway" onclick="doSpin()">Spin again (−5)</button>
+    <div class="bank-display" id="bankDisplay">🪙 <span id="bankAmount">100</span></div>
+
+    <div class="action-btns">
+        <button class="answer-btn btn-bank"      id="btnBank"     onclick="doBank()" disabled>Bank it</button>
+        <button class="answer-btn btn-spin-away" id="btnSpinAway" onclick="doSpin()">Spin (−5)</button>
     </div>
 
     <div class="feedback" id="feedback">
@@ -783,6 +758,8 @@ function groupValue(tiles) {
 
 function updateCoinDisplay() {
     document.getElementById('coinDisplay').textContent = '🪙 ' + bank;
+    const ba = document.getElementById('bankAmount');
+    if (ba) ba.textContent = bank;
 }
 
 function showFeedback(text, style) {
@@ -822,20 +799,8 @@ function resetReels() {
 
 // ── Spin animation ────────────────────────────────────────────────────────────
 
-function doFirstSpin() {
-    // Initial spin from idle — no coin deduction yet, first spin is free entry
-    // Actually per spec: user starts with 100, first spin costs 5 → 95
-    bank -= SPIN_COST;
-    updateCoinDisplay();
-    hideFeedback();
-    document.getElementById('spinBtn').style.display = 'none';
-    triggerSpin();
-}
-
 function triggerSpin(awManMsg) {
-    // awManMsg: optional string to show while reels spin
     gameState = 'spinning';
-    document.getElementById('answerRow').style.display = 'none';
     document.getElementById('btnBank').disabled     = true;
     document.getElementById('btnSpinAway').disabled = true;
     resetReels();
@@ -874,7 +839,6 @@ function stopReel(i) {
         setTimeout(() => {
             gameState = 'landed';
             hideFeedback();
-            document.getElementById('answerRow').style.display = 'flex';
             document.getElementById('btnBank').disabled     = false;
             document.getElementById('btnSpinAway').disabled = false;
         }, 300);
@@ -885,32 +849,30 @@ function stopReel(i) {
 
 function doBank() {
     if (gameState !== 'landed') return;
-    document.getElementById('answerRow').style.display = 'none';
+    document.getElementById('btnBank').disabled = true;
 
     if (currentScenario.legal) {
         const val = groupValue(currentScenario.tiles);
         bank += val;
         updateCoinDisplay();
         showFeedback('✓ Banked ' + val + ' coins!', 'earned');
-        checkWin();
+        if (checkWin()) return;
     } else {
         const lost = Math.floor(bank * 0.5);
         bank = bank - lost;
         updateCoinDisplay();
-        showFeedback('Yow! That illegal group cost you ' + lost + ' coins!', 'penalty');
-        checkBankrupt();
+        showFeedback('Oh Snap! That illegal group cost you ' + lost + ' coins!', 'penalty');
+        if (checkBankrupt()) return;
     }
 
-    // Re-enable spin for next group
     gameState = 'idle';
-    document.getElementById('spinBtn').style.display = '';
-    document.getElementById('spinBtn').disabled = false;
+    // Bank It stays disabled until next spin lands; Spin stays enabled
 }
 
 function doSpin() {
-    if (gameState !== 'landed') return;
-    const wasLegal = currentScenario.legal;
-    const wasWorth = groupValue(currentScenario.tiles);
+    if (gameState !== 'landed' && gameState !== 'idle') return;
+    const wasLegal = gameState === 'landed' ? currentScenario.legal : false;
+    const wasWorth = gameState === 'landed' ? groupValue(currentScenario.tiles) : 0;
 
     bank -= SPIN_COST;
     updateCoinDisplay();
@@ -960,10 +922,9 @@ function startGame() {
     updateCoinDisplay();
     hideFeedback();
     resetReels();
-    document.getElementById('answerRow').style.display = 'none';
-    document.getElementById('spinBtn').style.display   = '';
-    document.getElementById('spinBtn').disabled        = false;
-    document.getElementById('endOverlay').className    = 'end-overlay';
+    document.getElementById('btnBank').disabled     = true;
+    document.getElementById('btnSpinAway').disabled = false;
+    document.getElementById('endOverlay').className = 'end-overlay';
 }
 
 window.addEventListener('load', () => startGame());
