@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Joker Jackpot – Mary on Mahjong</title>
+    <link rel="stylesheet" href="/mahjong/css/shared.css">
+    <style>
+        /* ── Layout ── */
+        .main {
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 20px 16px 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .instructions {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 14px;
+            color: #5d4037;
+            line-height: 1.5;
+            width: 100%;
+        }
+
+        /* ── Slot machine housing ── */
+        .slot-machine {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+        }
+
+        .slot-housing {
+            background: linear-gradient(160deg, #162e17 0%, #2c5f2d 55%, #162e17 100%);
+            border: 3px solid #c9a84c;
+            border-radius: 20px;
+            padding: 18px 16px 18px;
+            box-shadow:
+                0 8px 28px rgba(0,0,0,0.35),
+                inset 0 1px 0 rgba(255,255,255,0.08),
+                inset 0 -1px 0 rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .slot-title {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: #c9a84c;
+            margin-bottom: 14px;
+            text-shadow: 0 0 8px rgba(201,168,76,0.5), 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        /* ── Reels ── */
+        .reels-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .reel-window {
+            width: 66px;
+            height: 82px;
+            background: #0c1a0d;
+            border: 2px solid #c9a84c;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow:
+                inset 0 3px 10px rgba(0,0,0,0.6),
+                inset 0 0 0 1px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        /* Sheen lines across reel windows */
+        .reel-window::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 40%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .reel-window.blank {
+            opacity: 0.25;
+        }
+
+        .reel-window.bounce {
+            animation: reelBounce 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+        }
+
+        @keyframes reelBounce {
+            0%   { transform: scaleY(1.00); }
+            20%  { transform: scaleY(1.10); }
+            50%  { transform: scaleY(0.94); }
+            75%  { transform: scaleY(1.04); }
+            100% { transform: scaleY(1.00); }
+        }
+
+        /* Decorative lights below each reel */
+        .reel-light {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #3a3a3a;
+            border: 1px solid #555;
+            margin-top: 6px;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+
+        .reel-light.lit {
+            background: #c9a84c;
+            box-shadow: 0 0 6px #c9a84c, 0 0 12px rgba(201,168,76,0.4);
+        }
+
+        .reel-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ── Tiles inside reels ── */
+        .reel-window .tile {
+            width: 46px;
+            height: 58px;
+            margin: 0;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .reel-window .tile-number { font-size: 18px; }
+        .reel-window .tile-label  { font-size: 8px; }
+
+        /* SVG tile inside reel */
+        .trad-tile {
+            position: relative;
+            width: 46px;
+            height: 58px;
+            border-radius: 6px;
+            border: 1px solid rgba(0,0,0,0.15);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.6);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .trad-tile img {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+
+        /* ── Tile style toggle ── */
+        .tile-toggle {
+            display: flex;
+            border: 1.5px solid rgba(201,168,76,0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 2px;
+            align-self: center;
+        }
+
+        .tile-toggle button {
+            padding: 5px 14px;
+            border: none;
+            background: transparent;
+            color: rgba(201,168,76,0.6);
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .tile-toggle button + button {
+            border-left: 1.5px solid rgba(201,168,76,0.5);
+        }
+
+        .tile-toggle button.active {
+            background: rgba(201,168,76,0.18);
+            color: #c9a84c;
+        }
+
+        /* ── Spin button ── */
+        .spin-btn {
+            background: linear-gradient(175deg, #d9b43a 0%, #c9a84c 45%, #a0832a 100%);
+            color: #1a0e00;
+            border: none;
+            border-radius: 14px;
+            padding: 14px 52px;
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 0.18em;
+            cursor: pointer;
+            box-shadow:
+                0 4px 14px rgba(0,0,0,0.3),
+                0 1px 0 rgba(255,255,255,0.35) inset,
+                0 -2px 0 rgba(0,0,0,0.2) inset;
+            transition: transform 0.1s, box-shadow 0.1s, opacity 0.15s;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.2);
+        }
+
+        .spin-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 18px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.35) inset, 0 -2px 0 rgba(0,0,0,0.2) inset;
+        }
+
+        .spin-btn:active:not(:disabled) {
+            transform: translateY(1px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.2) inset;
+        }
+
+        .spin-btn:disabled {
+            opacity: 0.45;
+            cursor: default;
+        }
+
+        /* ── Answer buttons ── */
+        .answer-row {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .answer-btn {
+            flex: 1;
+            padding: 14px 10px;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            letter-spacing: 0.02em;
+        }
+
+        .answer-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 14px rgba(0,0,0,0.15);
+        }
+
+        .answer-btn:active:not(:disabled) { transform: translateY(0); }
+        .answer-btn:disabled { opacity: 0.5; cursor: default; }
+
+        .btn-legal {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-color: #2e7d32;
+        }
+
+        .btn-illegal {
+            background: #ffebee;
+            color: #c62828;
+            border-color: #c62828;
+        }
+
+        /* ── Feedback card ── */
+        .feedback {
+            width: 100%;
+            max-width: 420px;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 14px;
+            line-height: 1.6;
+            display: none;
+        }
+
+        .feedback.correct {
+            background: #f1f8f1;
+            border: 2px solid #2e7d32;
+            color: #1b5e20;
+            display: block;
+        }
+
+        .feedback.wrong {
+            background: #fff5f5;
+            border: 2px solid #c62828;
+            color: #b71c1c;
+            display: block;
+        }
+
+        .feedback-verdict {
+            font-weight: 700;
+            font-size: 15px;
+            margin-bottom: 5px;
+        }
+
+        .feedback-explain {
+            font-weight: 400;
+        }
+    </style>
+</head>
+<body>
+
+<header class="page-header">
+    <div>
+        <h1>Joker Jackpot</h1>
+        <div class="subtitle">Are the jokers legal?</div>
+    </div>
+    <div class="header-right">
+        <span id="scoreDisplay" style="color:rgba(255,255,255,0.85);font-size:14px;font-weight:700;letter-spacing:0.05em;">0 / 0</span>
+        <a href="/mahjong/index.html" class="back-link">← Home</a>
+    </div>
+</header>
+
+<div class="main">
+
+    <div class="instructions">
+        Spin the reels, then decide: are the jokers used <strong>legally</strong> or <strong>illegally</strong>?
+        Jokers are legal only in groups of 3 or more identical tiles (pungs and kongs). They are never legal in pairs or sequences.
+    </div>
+
+    <div class="slot-machine">
+        <div class="slot-housing">
+            <div class="slot-title">✦ Joker Jackpot ✦</div>
+            <div class="reels-row" id="reelsRow">
+                <div class="reel-wrap">
+                    <div class="reel-window blank" id="reel0"></div>
+                    <div class="reel-light" id="light0"></div>
+                </div>
+                <div class="reel-wrap">
+                    <div class="reel-window blank" id="reel1"></div>
+                    <div class="reel-light" id="light1"></div>
+                </div>
+                <div class="reel-wrap">
+                    <div class="reel-window blank" id="reel2"></div>
+                    <div class="reel-light" id="light2"></div>
+                </div>
+                <div class="reel-wrap">
+                    <div class="reel-window blank" id="reel3"></div>
+                    <div class="reel-light" id="light3"></div>
+                </div>
+            </div>
+            <div class="tile-toggle" style="margin-top:12px;">
+                <button id="btnText" class="active" onclick="setTileMode('text')">ABC</button>
+                <button id="btnSvg" onclick="setTileMode('svg')">🀄 ART</button>
+            </div>
+        </div>
+
+        <button class="spin-btn" id="spinBtn" onclick="spin()">SPIN</button>
+    </div>
+
+    <div class="answer-row" id="answerRow" style="display:none;">
+        <button class="answer-btn btn-legal"   id="btnLegal"   onclick="answer(true)">✓ Legal</button>
+        <button class="answer-btn btn-illegal" id="btnIllegal" onclick="answer(false)">✗ Illegal</button>
+    </div>
+
+    <div class="feedback" id="feedback">
+        <div class="feedback-verdict" id="feedbackVerdict"></div>
+        <div class="feedback-explain" id="feedbackExplain"></div>
+    </div>
+
+</div>
+
+<div class="page-bottom-bar" id="bottomBar" style="display:none;">
+    <span class="bar-hint-text" id="barHint"></span>
+    <button class="bar-action-btn" id="barBtn" onclick="nextScenario()">Next →</button>
+</div>
+
+<script>
+// ── Tile display helpers ──────────────────────────────────────────────────────
+
+let tileMode = 'text'; // 'text' | 'svg'
+
+function setTileMode(mode) {
+    tileMode = mode;
+    document.getElementById('btnText').classList.toggle('active', mode === 'text');
+    document.getElementById('btnSvg').classList.toggle('active', mode === 'svg');
+    if ((gameState === 'landed' || gameState === 'answered') && currentScenario) {
+        renderScenarioTiles(currentScenario);
+    }
+}
+
+function getTileDisplay(tile) {
+    if (tile === 'WD') return { number: 'O', label: 'White',  colorClass: 'tile-WD' };
+    if (tile === 'GD') return { number: 'G', label: 'Green',  colorClass: 'tile-GD' };
+    if (tile === 'RD') return { number: 'R', label: 'Red',    colorClass: 'tile-RD' };
+    if (tile === 'N')  return { number: 'N', label: 'North',  colorClass: 'tile-WIND' };
+    if (tile === 'E')  return { number: 'E', label: 'East',   colorClass: 'tile-WIND' };
+    if (tile === 'W')  return { number: 'W', label: 'West',   colorClass: 'tile-WIND' };
+    if (tile === 'S')  return { number: 'S', label: 'South',  colorClass: 'tile-WIND' };
+    if (tile === 'F')  return { number: 'F', label: 'Flower', colorClass: 'tile-F' };
+    if (tile === 'J')  return { number: 'J', label: 'Joker',  colorClass: 'tile-J' };
+    if (tile.length === 2 && tile[1] === 'B') return { number: tile[0], label: 'Bam',   colorClass: 'tile-B' };
+    if (tile.length === 2 && tile[1] === 'D') return { number: tile[0], label: 'Dot',   colorClass: 'tile-D' };
+    if (tile.length === 2 && tile[1] === 'C') return { number: tile[0], label: 'Crack', colorClass: 'tile-C' };
+    return { number: tile, label: '', colorClass: '' };
+}
+
+function getTileSvgName(tile) {
+    if (tile === 'J')  return 'joker.svg';
+    if (tile === 'F')  return 'flower.svg';
+    if (tile === 'N')  return 'north.svg';
+    if (tile === 'E')  return 'east.svg';
+    if (tile === 'W')  return 'west.svg';
+    if (tile === 'S')  return 'south.svg';
+    if (tile === 'WD') return 'white.svg';
+    if (tile === 'GD') return 'green.svg';
+    if (tile === 'RD') return 'red.svg';
+    if (tile.length === 2) {
+        const num = tile[0], suit = tile[1];
+        if (suit === 'B') return num + 'bam.svg';
+        if (suit === 'D') return num + 'dot.svg';
+        if (suit === 'C') return num + 'crak.svg';
+    }
+    return null;
+}
+
+function makeTileEl(tile) {
+    if (tileMode === 'svg') {
+        const name = getTileSvgName(tile);
+        if (name) {
+            const wrap = document.createElement('div');
+            wrap.className = 'trad-tile';
+            const bg = document.createElement('img');
+            bg.src = '/mahjong/tiles/background/bone.svg';
+            bg.alt = '';
+            const face = document.createElement('img');
+            face.src = '/mahjong/tiles/traditional/' + name;
+            face.alt = tile;
+            wrap.appendChild(bg);
+            wrap.appendChild(face);
+            return wrap;
+        }
+    }
+    return makeTextTileEl(tile);
+}
+
+function makeTextTileEl(tile) {
+    const d = getTileDisplay(tile);
+    const div = document.createElement('div');
+    div.className = 'tile ' + d.colorClass;
+    const numDiv = document.createElement('div');
+    numDiv.className = 'tile-number';
+    numDiv.textContent = d.number;
+    const lblDiv = document.createElement('div');
+    lblDiv.className = 'tile-label';
+    lblDiv.textContent = d.label;
+    div.appendChild(numDiv);
+    div.appendChild(lblDiv);
+    return div;
+}
+
+// ── Scenarios ─────────────────────────────────────────────────────────────────
+
+const SCENARIOS = [
+    // ── LEGAL: pung with joker ──
+    { tiles: ['5B', '5B', 'J', null], legal: true,
+      verdict: '✓ Legal!',
+      explain: 'A joker can substitute in a pung (3 identical tiles). Jokers are welcome in any group of 3 or more identical tiles.' },
+    { tiles: ['N', 'N', 'J', null], legal: true,
+      verdict: '✓ Legal!',
+      explain: 'Jokers can substitute in a pung — including wind pungs.' },
+    { tiles: ['GD', 'GD', 'J', null], legal: true,
+      verdict: '✓ Legal!',
+      explain: 'Jokers can substitute in a pung of dragons.' },
+    { tiles: ['F', 'F', 'J', null], legal: true,
+      verdict: '✓ Legal!',
+      explain: 'Jokers can substitute in a pung of flowers.' },
+
+    // ── LEGAL: kong with joker ──
+    { tiles: ['3D', '3D', '3D', 'J'], legal: true,
+      verdict: '✓ Legal!',
+      explain: 'A joker can substitute in a kong (4 identical tiles).' },
+    { tiles: ['E', 'E', 'E', 'J'], legal: true,
+      verdict: '✓ Legal!',
+      explain: 'Jokers can substitute in a kong of East Winds.' },
+    { tiles: ['7C', '7C', 'J', 'J'], legal: true,
+      verdict: '✓ Legal!',
+      explain: 'Two jokers can both substitute in a kong — as long as at least one natural tile anchors the group identity.' },
+    { tiles: ['RD', 'RD', 'J', 'J'], legal: true,
+      verdict: '✓ Legal!',
+      explain: 'Two jokers in a kong of Red Dragons — both legal.' },
+    { tiles: ['9B', 'J', 'J', 'J'], legal: true,
+      verdict: '✓ Legal — but tricky!',
+      explain: 'Three jokers in a kong is allowed. The one natural tile (9 Bam) anchors the group identity.' },
+
+    // ── ILLEGAL: joker in pair ──
+    { tiles: ['4B', 'J', null, null], legal: false,
+      verdict: '✗ Illegal!',
+      explain: 'Jokers cannot be used in pairs. A pair must be exactly two identical natural tiles — no substitutes.' },
+    { tiles: ['E', 'J', null, null], legal: false,
+      verdict: '✗ Illegal!',
+      explain: 'Even wind pairs must be two identical tiles. No jokers in pairs.' },
+    { tiles: ['WD', 'J', null, null], legal: false,
+      verdict: '✗ Illegal!',
+      explain: 'Dragon pairs cannot use jokers. Pairs always need to be two matching natural tiles.' },
+
+    // ── ILLEGAL: joker in NEWS ──
+    { tiles: ['N', 'J', 'W', 'S'], legal: false,
+      verdict: '✗ Illegal!',
+      explain: 'NEWS (North · East · West · South) is a sequence — each tile must be its specific wind. Jokers cannot substitute in any sequence.' },
+    { tiles: ['N', 'E', 'J', 'S'], legal: false,
+      verdict: '✗ Illegal!',
+      explain: 'Even one joker in NEWS makes it illegal. Sequences require every tile to be its natural value.' },
+
+    // ── ILLEGAL: joker in consecutive run ──
+    { tiles: ['1B', '2B', 'J', '4B'], legal: false,
+      verdict: '✗ Illegal!',
+      explain: 'A run (1·2·3·4) is a sequence of consecutive numbers. Jokers cannot substitute in runs.' },
+    { tiles: ['7C', '8C', 'J', null], legal: false,
+      verdict: '✗ Illegal!',
+      explain: 'A run (7·8·9) is a consecutive sequence. Jokers cannot substitute.' },
+
+    // ── ILLEGAL: joker in odd sequence ──
+    { tiles: ['1D', '3D', 'J', '7D'], legal: false,
+      verdict: '✗ Illegal!',
+      explain: '1·3·5·7 is a sequence of odd numbers. Every tile in a sequence must be its natural value.' },
+    { tiles: ['J', '5B', '7B', null], legal: false,
+      verdict: '✗ Illegal!',
+      explain: '3·5·7 is an odd-number sequence. Jokers cannot substitute in sequences.' },
+
+    // ── ILLEGAL: joker in even sequence ──
+    { tiles: ['2C', 'J', '6C', '8C'], legal: false,
+      verdict: '✗ Illegal!',
+      explain: '2·4·6·8 is a sequence of even numbers. Jokers cannot substitute in sequences.' },
+    { tiles: ['2D', 'J', '6D', null], legal: false,
+      verdict: '✗ Illegal!',
+      explain: '2·4·6 is an even-number sequence. Jokers cannot substitute.' },
+
+    // ── ILLEGAL: joker in 369 ──
+    { tiles: ['3C', 'J', '9C', null], legal: false,
+      verdict: '✗ Illegal!',
+      explain: '3·6·9 is a sequence. Jokers cannot take the place of any tile in a sequence — including the 6.' },
+
+    // ── ILLEGAL: joker in 2026 ──
+    { tiles: ['2B', 'J', 'WD', '6B'], legal: false,
+      verdict: '✗ Illegal!',
+      explain: '2·0·2·6 (where 0 = White Dragon/Soap) is a sequence. Jokers cannot substitute in it — not even for one of the 2s.' },
+];
+
+// ── Spin pool ─────────────────────────────────────────────────────────────────
+
+const SPIN_POOL = [
+    '1B','2B','3B','4B','5B','6B','7B','8B','9B',
+    '1C','2C','3C','4C','5C','6C','7C','8C','9C',
+    '1D','2D','3D','4D','5D','6D','7D','8D','9D',
+    'N','E','W','S','GD','RD','WD','F','J'
+];
+
+function randomTile() {
+    return SPIN_POOL[Math.floor(Math.random() * SPIN_POOL.length)];
+}
+
+// ── Game state ────────────────────────────────────────────────────────────────
+
+let gameState      = 'idle'; // 'idle' | 'spinning' | 'landed' | 'answered'
+let currentScenario = null;
+let scenarioQueue  = [];
+let correct        = 0;
+let total          = 0;
+const spinIntervals = [null, null, null, null];
+
+function buildQueue() {
+    const arr = [...SCENARIOS];
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function setReelTile(idx, tile) {
+    const win = document.getElementById('reel' + idx);
+    win.innerHTML = '';
+    if (!tile) {
+        win.classList.add('blank');
+        return;
+    }
+    win.classList.remove('blank');
+    win.appendChild(makeTileEl(tile));
+}
+
+function renderScenarioTiles(scenario) {
+    for (let i = 0; i < 4; i++) {
+        setReelTile(i, scenario.tiles[i]);
+    }
+}
+
+function nextScenario() {
+    if (scenarioQueue.length === 0) scenarioQueue = buildQueue();
+    currentScenario = scenarioQueue.shift();
+    gameState = 'idle';
+
+    // Reset UI
+    document.getElementById('answerRow').style.display = 'none';
+    document.getElementById('btnLegal').disabled   = false;
+    document.getElementById('btnIllegal').disabled = false;
+    document.getElementById('feedback').className  = 'feedback';
+    document.getElementById('feedbackVerdict').textContent = '';
+    document.getElementById('feedbackExplain').textContent = '';
+    document.getElementById('bottomBar').style.display = 'none';
+    document.getElementById('spinBtn').disabled    = false;
+    document.getElementById('spinBtn').textContent = 'SPIN';
+
+    // Dim all reels and lights
+    for (let i = 0; i < 4; i++) {
+        const win = document.getElementById('reel' + i);
+        win.innerHTML = '';
+        win.classList.remove('bounce');
+        win.classList.add('blank');
+        document.getElementById('light' + i).classList.remove('lit');
+    }
+}
+
+// ── Spin animation ────────────────────────────────────────────────────────────
+
+function spin() {
+    if (gameState !== 'idle') return;
+    gameState = 'spinning';
+    document.getElementById('spinBtn').disabled = true;
+    document.getElementById('answerRow').style.display = 'none';
+
+    // Start all 4 reels cycling
+    for (let i = 0; i < 4; i++) {
+        const win = document.getElementById('reel' + i);
+        win.classList.remove('blank');
+        spinIntervals[i] = setInterval(() => {
+            win.innerHTML = '';
+            win.appendChild(makeTileEl(randomTile()));
+        }, 80);
+    }
+
+    // Stop reels left-to-right, staggered
+    const stopDelays = [1100, 1550, 2000, 2450];
+    stopDelays.forEach((delay, i) => {
+        setTimeout(() => stopReel(i), delay);
+    });
+}
+
+function stopReel(i) {
+    clearInterval(spinIntervals[i]);
+    setReelTile(i, currentScenario.tiles[i]);
+
+    // Light up if this reel has a tile
+    if (currentScenario.tiles[i]) {
+        document.getElementById('light' + i).classList.add('lit');
+    }
+
+    // Bounce animation
+    const win = document.getElementById('reel' + i);
+    win.classList.remove('bounce');
+    void win.offsetWidth; // force reflow
+    win.classList.add('bounce');
+
+    // After last reel lands, reveal answer buttons
+    if (i === 3) {
+        setTimeout(() => {
+            gameState = 'landed';
+            document.getElementById('answerRow').style.display = 'flex';
+        }, 300);
+    }
+}
+
+// ── Answering ─────────────────────────────────────────────────────────────────
+
+function answer(playerSaysLegal) {
+    if (gameState !== 'landed') return;
+    gameState = 'answered';
+
+    const isCorrect = (playerSaysLegal === currentScenario.legal);
+    total++;
+    if (isCorrect) correct++;
+
+    document.getElementById('scoreDisplay').textContent = correct + ' / ' + total;
+    document.getElementById('btnLegal').disabled   = true;
+    document.getElementById('btnIllegal').disabled = true;
+
+    const fb = document.getElementById('feedback');
+    fb.className = 'feedback ' + (isCorrect ? 'correct' : 'wrong');
+    document.getElementById('feedbackVerdict').textContent = isCorrect
+        ? currentScenario.verdict
+        : (currentScenario.legal ? '✗ That was actually legal.' : '✗ That was actually illegal.');
+    document.getElementById('feedbackExplain').textContent = currentScenario.explain;
+
+    document.getElementById('bottomBar').style.display = 'flex';
+    document.getElementById('barHint').innerHTML =
+        'Score: <strong>' + correct + '</strong> / ' + total;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+window.addEventListener('load', () => {
+    scenarioQueue = buildQueue();
+    nextScenario();
+});
+</script>
+
+</body>
+</html>
