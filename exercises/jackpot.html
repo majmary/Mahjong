@@ -542,14 +542,14 @@ function tileName(tile) {
 }
 
 // Replace `count` randomly chosen positions with 'J', keeping at least 1 natural tile.
-function insertJokers(tiles, count) {
+function insertJokers(tiles, count, minNatural = 1) {
     const result = [...tiles];
     const indices = result.map((_,i) => i);
     for (let i = indices.length-1; i > 0; i--) {
         const j = Math.floor(Math.random()*(i+1));
         [indices[i], indices[j]] = [indices[j], indices[i]];
     }
-    indices.slice(0, Math.min(count, result.length - 1)).forEach(i => result[i] = 'J');
+    indices.slice(0, Math.min(count, result.length - minNatural)).forEach(i => result[i] = 'J');
     return result;
 }
 
@@ -612,7 +612,7 @@ function genNews(jokerCount) {
     if (jokerCount === 0) {
         return { tiles: [...base], legal: true, verdict: '✓ Legal!', rule: RULES.clean };
     }
-    return { tiles: insertJokers(base, jokerCount), legal: false, verdict: '✗ Illegal!', rule: seqRule() };
+    return { tiles: insertJokers(base, jokerCount, 2), legal: false, verdict: '✗ Illegal!', rule: seqRule() };
 }
 
 function genRun(size, jokerCount) {
@@ -622,7 +622,7 @@ function genRun(size, jokerCount) {
     if (jokerCount === 0) {
         return { tiles: size === 3 ? [...base, null] : base, legal: true, verdict: '✓ Legal!', rule: RULES.clean };
     }
-    const withJ = insertJokers(base, jokerCount);
+    const withJ = insertJokers(base, jokerCount, 2);
     return { tiles: size === 3 ? [...withJ, null] : withJ, legal: false, verdict: '✗ Illegal!', rule: seqRule() };
 }
 
@@ -634,7 +634,7 @@ function genOdds(size, jokerCount) {
     if (jokerCount === 0) {
         return { tiles: size === 3 ? [...base, null] : base, legal: true, verdict: '✓ Legal!', rule: RULES.clean };
     }
-    const withJ = insertJokers(base, jokerCount);
+    const withJ = insertJokers(base, jokerCount, 2);
     return { tiles: size === 3 ? [...withJ, null] : withJ, legal: false, verdict: '✗ Illegal!', rule: seqRule() };
 }
 
@@ -646,7 +646,7 @@ function genEvens(size, jokerCount) {
     if (jokerCount === 0) {
         return { tiles: size === 3 ? [...base, null] : base, legal: true, verdict: '✓ Legal!', rule: RULES.clean };
     }
-    const withJ = insertJokers(base, jokerCount);
+    const withJ = insertJokers(base, jokerCount, 2);
     return { tiles: size === 3 ? [...withJ, null] : withJ, legal: false, verdict: '✗ Illegal!', rule: seqRule() };
 }
 
@@ -656,7 +656,7 @@ function gen369(jokerCount) {
     if (jokerCount === 0) {
         return { tiles: [...base, null], legal: true, verdict: '✓ Legal!', rule: RULES.clean };
     }
-    return { tiles: [...insertJokers(base, jokerCount), null], legal: false, verdict: '✗ Illegal!', rule: seqRule() };
+    return { tiles: [...insertJokers(base, jokerCount, 2), null], legal: false, verdict: '✗ Illegal!', rule: seqRule() };
 }
 
 function gen2026(jokerCount) {
@@ -665,7 +665,7 @@ function gen2026(jokerCount) {
     if (jokerCount === 0) {
         return { tiles: [...base], legal: true, verdict: '✓ Legal!', rule: RULES.clean };
     }
-    return { tiles: insertJokers(base, jokerCount), legal: false, verdict: '✗ Illegal!', rule: seqRule() };
+    return { tiles: insertJokers(base, jokerCount, 2), legal: false, verdict: '✗ Illegal!', rule: seqRule() };
 }
 
 // ── Main generator ────────────────────────────────────────────────────────────
