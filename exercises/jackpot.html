@@ -739,7 +739,8 @@ function groupValue(tiles) {
 }
 
 function updateCoinDisplay() {
-    document.getElementById('coinDisplay').textContent = '🪙 ' + bank;
+    const cd = document.getElementById('coinDisplay');
+    if (cd) cd.textContent = '🪙 ' + bank;
     const ba = document.getElementById('bankAmount');
     if (ba) ba.textContent = bank;
 }
