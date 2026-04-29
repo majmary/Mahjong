@@ -227,7 +227,7 @@
             cursor: default;
         }
 
-        /* ── Answer buttons ── */
+        /* ── Action buttons (Bank / Spin Again) ── */
         .answer-row {
             display: flex;
             gap: 12px;
@@ -255,51 +255,131 @@
         .answer-btn:active:not(:disabled) { transform: translateY(0); }
         .answer-btn:disabled { opacity: 0.5; cursor: default; }
 
-        .btn-legal {
+        .btn-bank {
             background: #e8f5e9;
             color: #2e7d32;
             border-color: #2e7d32;
         }
 
-        .btn-illegal {
-            background: #ffebee;
-            color: #c62828;
-            border-color: #c62828;
+        .btn-spin-away {
+            background: #f5f5f5;
+            color: #555;
+            border-color: #bbb;
         }
 
-        /* ── Feedback card ── */
+        /* ── Instruction box ── */
+        .info-box {
+            width: 100%;
+            max-width: 420px;
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: #5d4037;
+            line-height: 1.7;
+        }
+
+        .info-box strong { color: #2c5f2d; }
+
+        /* ── Feedback ── */
         .feedback {
             width: 100%;
             max-width: 420px;
-            border-radius: 12px;
-            padding: 14px 16px;
-            font-size: 14px;
-            line-height: 1.6;
             display: none;
         }
 
-        .feedback.correct {
+        .feedback.visible { display: block; }
+
+        .feedback-badge {
+            display: block;
+            width: 100%;
+            border-radius: 8px;
+            padding: 9px 14px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .feedback-badge.earned {
             background: #f1f8f1;
             border: 2px solid #2e7d32;
             color: #1b5e20;
-            display: block;
         }
 
-        .feedback.wrong {
+        .feedback-badge.penalty {
             background: #fff5f5;
             border: 2px solid #c62828;
             color: #b71c1c;
-            display: block;
         }
 
-        .feedback-verdict {
-            font-weight: 700;
+        .feedback-badge.missed {
+            background: #fff8e1;
+            border: 2px solid #f9a825;
+            color: #5d4037;
+        }
+
+        /* ── End overlay ── */
+        .end-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 300;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .end-overlay.visible { display: flex; }
+
+        .end-card {
+            background: white;
+            border-radius: 20px;
+            padding: 36px 32px;
+            text-align: center;
+            max-width: 320px;
+            width: 90%;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+
+        .end-title {
+            font-size: 32px;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+
+        .end-title.win  { color: #2c5f2d; }
+        .end-title.lose { color: #c62828; }
+
+        .end-subtitle {
             font-size: 15px;
-            margin-bottom: 5px;
+            color: #666;
+            margin-bottom: 24px;
+            line-height: 1.5;
         }
 
-        .feedback-explain {
-            font-weight: 400;
+        .end-btn {
+            background: var(--color-primary, #2c5f2d);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 32px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .end-btn:hover { background: #1f4420; }
+
+        .jackpot-stars {
+            font-size: 28px;
+            margin-bottom: 8px;
+            animation: starPop 0.6s ease-out;
+        }
+
+        @keyframes starPop {
+            0%   { transform: scale(0.5); opacity: 0; }
+            70%  { transform: scale(1.2); }
+            100% { transform: scale(1.0); opacity: 1; }
         }
     </style>
 </head>
@@ -308,19 +388,20 @@
 <header class="page-header">
     <div>
         <h1>Joker Jackpot</h1>
-        <div class="subtitle">Are the jokers legal?</div>
+        <div class="subtitle">Bank or spin again?</div>
     </div>
     <div class="header-right">
-        <span id="scoreDisplay" style="color:rgba(255,255,255,0.85);font-size:14px;font-weight:700;letter-spacing:0.05em;">0 / 0</span>
+        <span id="coinDisplay" style="color:rgba(255,255,255,0.85);font-size:14px;font-weight:700;letter-spacing:0.05em;">🪙 100</span>
         <a href="/Mahjong/index.html" class="back-link">← Home</a>
     </div>
 </header>
 
 <div class="main">
 
-    <div class="instructions">
-        Spin the reels, then decide: are the jokers used <strong>legally</strong> or <strong>illegally</strong>?
-        Jokers are legal only in groups of 3 or more identical tiles (pungs and kongs). They are never legal in pairs or sequences.
+    <div class="info-box">
+        Start: <strong>100 🪙</strong> · Goal: <strong>500 🪙</strong> · Spin costs: <strong>5 🪙</strong><br>
+        Bank a legal group: pair <strong>+15</strong> · 3 tiles <strong>+25</strong> · 4 tiles <strong>+40</strong><br>
+        Bank an illegal group: lose <strong>50%</strong> of your bank
     </div>
 
     <div class="slot-machine">
@@ -350,24 +431,27 @@
             </div>
         </div>
 
-        <button class="spin-btn" id="spinBtn" onclick="spin()">SPIN</button>
+        <button class="spin-btn" id="spinBtn" onclick="doFirstSpin()">SPIN</button>
     </div>
 
     <div class="answer-row" id="answerRow" style="display:none;">
-        <button class="answer-btn btn-legal"   id="btnLegal"   onclick="answer(true)">✓ Legal</button>
-        <button class="answer-btn btn-illegal" id="btnIllegal" onclick="answer(false)">✗ Illegal</button>
+        <button class="answer-btn btn-bank"      id="btnBank"     onclick="doBank()">Bank it</button>
+        <button class="answer-btn btn-spin-away" id="btnSpinAway" onclick="doSpin()">Spin again (−5)</button>
     </div>
 
     <div class="feedback" id="feedback">
-        <div class="feedback-verdict" id="feedbackVerdict"></div>
-        <div class="feedback-explain" id="feedbackExplain"></div>
+        <span class="feedback-badge" id="feedbackBadge"></span>
     </div>
 
 </div>
 
-<div class="page-bottom-bar" id="bottomBar" style="display:none;">
-    <span class="bar-hint-text" id="barHint"></span>
-    <button class="bar-action-btn" id="barBtn" onclick="nextScenario()">Next →</button>
+<div class="end-overlay" id="endOverlay">
+    <div class="end-card">
+        <div class="jackpot-stars" id="endStars"></div>
+        <div class="end-title" id="endTitle"></div>
+        <div class="end-subtitle" id="endSubtitle"></div>
+        <button class="end-btn" onclick="startGame()">Play Again</button>
+    </div>
 </div>
 
 <script>
@@ -379,7 +463,7 @@ function setTileMode(mode) {
     tileMode = mode;
     document.getElementById('btnText').classList.toggle('active', mode === 'text');
     document.getElementById('btnSvg').classList.toggle('active', mode === 'svg');
-    if ((gameState === 'landed' || gameState === 'answered') && currentScenario) {
+    if (gameState === 'landed' && currentScenario) {
         renderScenarioTiles(currentScenario);
     }
 }
@@ -454,93 +538,215 @@ function makeTextTileEl(tile) {
     return div;
 }
 
-// ── Scenarios ─────────────────────────────────────────────────────────────────
+// ── Scenario generation ───────────────────────────────────────────────────────
 
-const SCENARIOS = [
-    // ── LEGAL: pung with joker ──
-    { tiles: ['5B', '5B', 'J', null], legal: true,
+const SUITS  = ['B', 'C', 'D'];
+const WINDS  = ['N', 'E', 'W', 'S'];
+const DRAGONS = ['GD', 'RD', 'WD'];
+
+function pick(arr)           { return arr[Math.floor(Math.random() * arr.length)]; }
+function pickSuit()          { return pick(SUITS); }
+function pickNum(min, max)   { return min + Math.floor(Math.random() * (max - min + 1)); }
+
+// Any tile usable as a pung/kong anchor (numbers, winds, dragons, flowers)
+function pickPungTile() {
+    const r = Math.random();
+    if (r < 0.60) return pickNum(1, 9) + pickSuit();
+    if (r < 0.80) return pick(WINDS);
+    if (r < 0.95) return pick(DRAGONS);
+    return 'F';
+}
+
+function tileName(tile) {
+    const map = { J:'Joker', F:'Flower', N:'North Wind', E:'East Wind',
+                  W:'West Wind', S:'South Wind',
+                  GD:'Green Dragon', RD:'Red Dragon', WD:'White Dragon (Soap)' };
+    if (map[tile]) return map[tile];
+    const suits = { B:'Bam', C:'Crack', D:'Dot' };
+    return tile[0] + ' ' + suits[tile[1]];
+}
+
+// Replace `count` randomly chosen positions with 'J', keeping at least 1 natural tile.
+function insertJokers(tiles, count) {
+    const result = [...tiles];
+    const indices = result.map((_,i) => i);
+    for (let i = indices.length-1; i > 0; i--) {
+        const j = Math.floor(Math.random()*(i+1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    indices.slice(0, Math.min(count, result.length - 1)).forEach(i => result[i] = 'J');
+    return result;
+}
+
+// Joker count distribution: 25% none, 50% one, 12.5% two, 12.5% three
+function pickJokerCount(max) {
+    const r = Math.random();
+    if (r < 0.25) return 0;
+    if (r < 0.75) return Math.min(1, max);
+    if (r < 0.875) return Math.min(2, max);
+    return Math.min(3, max);
+}
+
+// ── Group generators ──────────────────────────────────────────────────────────
+
+// ── Rule phrase pools ─────────────────────────────────────────────────────────
+
+const RULES = {
+    seq:        [ 'Jokers can never be used in a sequence.',
+                  'Jokers can only be used in groups of identical tiles.' ],
+    pair:       [ 'Jokers cannot be used in a pair.',
+                  'Pairs must be natural tiles only.' ],
+    legalJoker: [ 'Jokers CAN be used in groups of identical tiles.',
+                  'This is a group of identical tiles — jokers are valid.' ],
+    clean:      'No jokers here — nothing to judge!'
+};
+
+function seqRule()        { return pick(RULES.seq); }
+function pairRule()       { return pick(RULES.pair); }
+function legalJokerRule() { return pick(RULES.legalJoker); }
+
+// ── Group generators ──────────────────────────────────────────────────────────
+
+function genPair(withJoker) {
+    const tile = pickPungTile();
+    if (withJoker) {
+        const tiles = Math.random() < 0.5 ? [tile, 'J', null, null] : ['J', tile, null, null];
+        return { tiles, legal: false, verdict: '✗ Illegal!', rule: pairRule() };
+    }
+    return { tiles: [tile, tile, null, null], legal: true, verdict: '✓ Legal!', rule: RULES.clean };
+}
+
+function genPung(jokerCount) {
+    const tile = pickPungTile();
+    const tiles = insertJokers([tile, tile, tile], jokerCount);
+    return { tiles: [...tiles, null], legal: true,
       verdict: '✓ Legal!',
-      explain: 'A joker can substitute in a pung (3 identical tiles). Jokers are welcome in any group of 3 or more identical tiles.' },
-    { tiles: ['N', 'N', 'J', null], legal: true,
-      verdict: '✓ Legal!',
-      explain: 'Jokers can substitute in a pung — including wind pungs.' },
-    { tiles: ['GD', 'GD', 'J', null], legal: true,
-      verdict: '✓ Legal!',
-      explain: 'Jokers can substitute in a pung of dragons.' },
-    { tiles: ['F', 'F', 'J', null], legal: true,
-      verdict: '✓ Legal!',
-      explain: 'Jokers can substitute in a pung of flowers.' },
+      rule: jokerCount === 0 ? RULES.clean : legalJokerRule() };
+}
 
-    // ── LEGAL: kong with joker ──
-    { tiles: ['3D', '3D', '3D', 'J'], legal: true,
-      verdict: '✓ Legal!',
-      explain: 'A joker can substitute in a kong (4 identical tiles).' },
-    { tiles: ['E', 'E', 'E', 'J'], legal: true,
-      verdict: '✓ Legal!',
-      explain: 'Jokers can substitute in a kong of East Winds.' },
-    { tiles: ['7C', '7C', 'J', 'J'], legal: true,
-      verdict: '✓ Legal!',
-      explain: 'Two jokers can both substitute in a kong — as long as at least one natural tile anchors the group identity.' },
-    { tiles: ['RD', 'RD', 'J', 'J'], legal: true,
-      verdict: '✓ Legal!',
-      explain: 'Two jokers in a kong of Red Dragons — both legal.' },
-    { tiles: ['9B', 'J', 'J', 'J'], legal: true,
-      verdict: '✓ Legal — but tricky!',
-      explain: 'Three jokers in a kong is allowed. The one natural tile (9 Bam) anchors the group identity.' },
+function genKong(jokerCount) {
+    const tile = pickPungTile();
+    const tiles = insertJokers([tile, tile, tile, tile], jokerCount);
+    return { tiles, legal: true,
+      verdict: jokerCount === 3 ? '✓ Legal — but tricky!' : '✓ Legal!',
+      rule: jokerCount === 0 ? RULES.clean : legalJokerRule() };
+}
 
-    // ── ILLEGAL: joker in pair ──
-    { tiles: ['4B', 'J', null, null], legal: false,
-      verdict: '✗ Illegal!',
-      explain: 'Jokers cannot be used in pairs. A pair must be exactly two identical natural tiles — no substitutes.' },
-    { tiles: ['E', 'J', null, null], legal: false,
-      verdict: '✗ Illegal!',
-      explain: 'Even wind pairs must be two identical tiles. No jokers in pairs.' },
-    { tiles: ['WD', 'J', null, null], legal: false,
-      verdict: '✗ Illegal!',
-      explain: 'Dragon pairs cannot use jokers. Pairs always need to be two matching natural tiles.' },
+function genNews(jokerCount) {
+    const base = ['N', 'E', 'W', 'S'];
+    if (jokerCount === 0) {
+        return { tiles: [...base], legal: true, verdict: '✓ Legal!', rule: RULES.clean };
+    }
+    return { tiles: insertJokers(base, jokerCount), legal: false, verdict: '✗ Illegal!', rule: seqRule() };
+}
 
-    // ── ILLEGAL: joker in NEWS ──
-    { tiles: ['N', 'J', 'W', 'S'], legal: false,
-      verdict: '✗ Illegal!',
-      explain: 'NEWS (North · East · West · South) is a sequence — each tile must be its specific wind. Jokers cannot substitute in any sequence.' },
-    { tiles: ['N', 'E', 'J', 'S'], legal: false,
-      verdict: '✗ Illegal!',
-      explain: 'Even one joker in NEWS makes it illegal. Sequences require every tile to be its natural value.' },
+function genRun(size, jokerCount) {
+    const suit  = pickSuit();
+    const start = pickNum(1, 10 - size);
+    const base  = Array.from({length: size}, (_, i) => (start + i) + suit);
+    if (jokerCount === 0) {
+        return { tiles: size === 3 ? [...base, null] : base, legal: true, verdict: '✓ Legal!', rule: RULES.clean };
+    }
+    const withJ = insertJokers(base, jokerCount);
+    return { tiles: size === 3 ? [...withJ, null] : withJ, legal: false, verdict: '✗ Illegal!', rule: seqRule() };
+}
 
-    // ── ILLEGAL: joker in consecutive run ──
-    { tiles: ['1B', '2B', 'J', '4B'], legal: false,
-      verdict: '✗ Illegal!',
-      explain: 'A run (1·2·3·4) is a sequence of consecutive numbers. Jokers cannot substitute in runs.' },
-    { tiles: ['7C', '8C', 'J', null], legal: false,
-      verdict: '✗ Illegal!',
-      explain: 'A run (7·8·9) is a consecutive sequence. Jokers cannot substitute.' },
+function genOdds(size, jokerCount) {
+    const starts = size === 3 ? [1, 3, 5] : [1, 3];
+    const start  = pick(starts);
+    const suit   = pickSuit();
+    const base   = Array.from({length: size}, (_, i) => (start + i * 2) + suit);
+    if (jokerCount === 0) {
+        return { tiles: size === 3 ? [...base, null] : base, legal: true, verdict: '✓ Legal!', rule: RULES.clean };
+    }
+    const withJ = insertJokers(base, jokerCount);
+    return { tiles: size === 3 ? [...withJ, null] : withJ, legal: false, verdict: '✗ Illegal!', rule: seqRule() };
+}
 
-    // ── ILLEGAL: joker in odd sequence ──
-    { tiles: ['1D', '3D', 'J', '7D'], legal: false,
-      verdict: '✗ Illegal!',
-      explain: '1·3·5·7 is a sequence of odd numbers. Every tile in a sequence must be its natural value.' },
-    { tiles: ['J', '5B', '7B', null], legal: false,
-      verdict: '✗ Illegal!',
-      explain: '3·5·7 is an odd-number sequence. Jokers cannot substitute in sequences.' },
+function genEvens(size, jokerCount) {
+    const starts = size === 3 ? [2, 4] : [2];
+    const start  = pick(starts);
+    const suit   = pickSuit();
+    const base   = Array.from({length: size}, (_, i) => (start + i * 2) + suit);
+    if (jokerCount === 0) {
+        return { tiles: size === 3 ? [...base, null] : base, legal: true, verdict: '✓ Legal!', rule: RULES.clean };
+    }
+    const withJ = insertJokers(base, jokerCount);
+    return { tiles: size === 3 ? [...withJ, null] : withJ, legal: false, verdict: '✗ Illegal!', rule: seqRule() };
+}
 
-    // ── ILLEGAL: joker in even sequence ──
-    { tiles: ['2C', 'J', '6C', '8C'], legal: false,
-      verdict: '✗ Illegal!',
-      explain: '2·4·6·8 is a sequence of even numbers. Jokers cannot substitute in sequences.' },
-    { tiles: ['2D', 'J', '6D', null], legal: false,
-      verdict: '✗ Illegal!',
-      explain: '2·4·6 is an even-number sequence. Jokers cannot substitute.' },
+function gen369(jokerCount) {
+    const suit = pickSuit();
+    const base = ['3'+suit, '6'+suit, '9'+suit];
+    if (jokerCount === 0) {
+        return { tiles: [...base, null], legal: true, verdict: '✓ Legal!', rule: RULES.clean };
+    }
+    return { tiles: [...insertJokers(base, jokerCount), null], legal: false, verdict: '✗ Illegal!', rule: seqRule() };
+}
 
-    // ── ILLEGAL: joker in 369 ──
-    { tiles: ['3C', 'J', '9C', null], legal: false,
-      verdict: '✗ Illegal!',
-      explain: '3·6·9 is a sequence. Jokers cannot take the place of any tile in a sequence — including the 6.' },
+function gen2026(jokerCount) {
+    const suit = pickSuit();
+    const base = ['2'+suit, 'WD', '2'+suit, '6'+suit];
+    if (jokerCount === 0) {
+        return { tiles: [...base], legal: true, verdict: '✓ Legal!', rule: RULES.clean };
+    }
+    return { tiles: insertJokers(base, jokerCount), legal: false, verdict: '✗ Illegal!', rule: seqRule() };
+}
 
-    // ── ILLEGAL: joker in 2026 ──
-    { tiles: ['2B', 'J', 'WD', '6B'], legal: false,
-      verdict: '✗ Illegal!',
-      explain: '2·0·2·6 (where 0 = White Dragon/Soap) is a sequence. Jokers cannot substitute in it — not even for one of the 2s.' },
-];
+// ── Main generator ────────────────────────────────────────────────────────────
+
+function generateScenario() {
+    const jokers = pickJokerCount(3);
+
+    if (jokers === 0) {
+        // Clean group — all legal
+        const type = pick(['pair','pung','kong','news','run3','run4','odds3','odds4','evens3','evens4','369','2026']);
+        switch (type) {
+            case 'pair':   return genPair(false);
+            case 'pung':   return genPung(0);
+            case 'kong':   return genKong(0);
+            case 'news':   return genNews(0);
+            case 'run3':   return genRun(3, 0);
+            case 'run4':   return genRun(4, 0);
+            case 'odds3':  return genOdds(3, 0);
+            case 'odds4':  return genOdds(4, 0);
+            case 'evens3': return genEvens(3, 0);
+            case 'evens4': return genEvens(4, 0);
+            case '369':    return gen369(0);
+            case '2026':   return gen2026(0);
+        }
+    }
+
+    if (jokers >= 2) {
+        // 2–3 jokers: legal kong, or illegal sequence with 2 jokers
+        if (Math.random() < 0.6) return genKong(jokers);
+        const seqType = pick(['news','run3','run4','odds3','odds4','evens3','evens4','369','2026']);
+        return genSeq(seqType, Math.min(jokers, 2));
+    }
+
+    // 1 joker: 50/50 legal vs illegal
+    if (Math.random() < 0.5) {
+        return Math.random() < 0.5 ? genPung(1) : genKong(1);
+    }
+    // Illegal: pair or sequence
+    if (Math.random() < 0.25) return genPair(true);
+    const seqType = pick(['news','run3','run4','odds3','odds4','evens3','evens4','369','2026']);
+    return genSeq(seqType, 1);
+}
+
+function genSeq(type, jokerCount) {
+    switch (type) {
+        case 'news':   return genNews(jokerCount);
+        case 'run3':   return genRun(3, jokerCount);
+        case 'run4':   return genRun(4, jokerCount);
+        case 'odds3':  return genOdds(3, jokerCount);
+        case 'odds4':  return genOdds(4, jokerCount);
+        case 'evens3': return genEvens(3, jokerCount);
+        case 'evens4': return genEvens(4, jokerCount);
+        case '369':    return gen369(jokerCount);
+        case '2026':   return gen2026(jokerCount);
+    }
+}
 
 // ── Spin pool ─────────────────────────────────────────────────────────────────
 
@@ -555,58 +761,56 @@ function randomTile() {
     return SPIN_POOL[Math.floor(Math.random() * SPIN_POOL.length)];
 }
 
+// ── Game constants ────────────────────────────────────────────────────────────
+
+const SPIN_COST   = 5;
+const START_COINS = 100;
+const GOAL        = 500;
+
 // ── Game state ────────────────────────────────────────────────────────────────
 
-let gameState      = 'idle'; // 'idle' | 'spinning' | 'landed' | 'answered'
+let gameState       = 'idle'; // 'idle' | 'spinning' | 'landed'
 let currentScenario = null;
-let scenarioQueue  = [];
-let correct        = 0;
-let total          = 0;
+let bank            = START_COINS;
 const spinIntervals = [null, null, null, null];
 
-function buildQueue() {
-    const arr = [...SCENARIOS];
-    for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
+function groupValue(tiles) {
+    const count = tiles.filter(t => t !== null).length;
+    if (count === 2) return 15;
+    if (count === 3) return 25;
+    return 40;
+}
+
+function updateCoinDisplay() {
+    document.getElementById('coinDisplay').textContent = '🪙 ' + bank;
+}
+
+function showFeedback(text, style) {
+    // style: 'earned' | 'penalty' | 'missed'
+    const fb    = document.getElementById('feedback');
+    const badge = document.getElementById('feedbackBadge');
+    badge.className = 'feedback-badge ' + style;
+    badge.textContent = text;
+    fb.className = 'feedback visible';
+}
+
+function hideFeedback() {
+    document.getElementById('feedback').className = 'feedback';
 }
 
 function setReelTile(idx, tile) {
     const win = document.getElementById('reel' + idx);
     win.innerHTML = '';
-    if (!tile) {
-        win.classList.add('blank');
-        return;
-    }
+    if (!tile) { win.classList.add('blank'); return; }
     win.classList.remove('blank');
     win.appendChild(makeTileEl(tile));
 }
 
 function renderScenarioTiles(scenario) {
-    for (let i = 0; i < 4; i++) {
-        setReelTile(i, scenario.tiles[i]);
-    }
+    for (let i = 0; i < 4; i++) setReelTile(i, scenario.tiles[i]);
 }
 
-function nextScenario() {
-    if (scenarioQueue.length === 0) scenarioQueue = buildQueue();
-    currentScenario = scenarioQueue.shift();
-    gameState = 'idle';
-
-    // Reset UI
-    document.getElementById('answerRow').style.display = 'none';
-    document.getElementById('btnLegal').disabled   = false;
-    document.getElementById('btnIllegal').disabled = false;
-    document.getElementById('feedback').className  = 'feedback';
-    document.getElementById('feedbackVerdict').textContent = '';
-    document.getElementById('feedbackExplain').textContent = '';
-    document.getElementById('bottomBar').style.display = 'none';
-    document.getElementById('spinBtn').disabled    = false;
-    document.getElementById('spinBtn').textContent = 'SPIN';
-
-    // Dim all reels and lights
+function resetReels() {
     for (let i = 0; i < 4; i++) {
         const win = document.getElementById('reel' + i);
         win.innerHTML = '';
@@ -618,13 +822,29 @@ function nextScenario() {
 
 // ── Spin animation ────────────────────────────────────────────────────────────
 
-function spin() {
-    if (gameState !== 'idle') return;
-    gameState = 'spinning';
-    document.getElementById('spinBtn').disabled = true;
-    document.getElementById('answerRow').style.display = 'none';
+function doFirstSpin() {
+    // Initial spin from idle — no coin deduction yet, first spin is free entry
+    // Actually per spec: user starts with 100, first spin costs 5 → 95
+    bank -= SPIN_COST;
+    updateCoinDisplay();
+    hideFeedback();
+    document.getElementById('spinBtn').style.display = 'none';
+    triggerSpin();
+}
 
-    // Start all 4 reels cycling
+function triggerSpin(awManMsg) {
+    // awManMsg: optional string to show while reels spin
+    gameState = 'spinning';
+    document.getElementById('answerRow').style.display = 'none';
+    document.getElementById('btnBank').disabled     = true;
+    document.getElementById('btnSpinAway').disabled = true;
+    resetReels();
+
+    if (awManMsg) showFeedback(awManMsg, 'missed');
+    else hideFeedback();
+
+    currentScenario = generateScenario();
+
     for (let i = 0; i < 4; i++) {
         const win = document.getElementById('reel' + i);
         win.classList.remove('blank');
@@ -634,7 +854,6 @@ function spin() {
         }, 80);
     }
 
-    // Stop reels left-to-right, staggered
     const stopDelays = [1100, 1550, 2000, 2450];
     stopDelays.forEach((delay, i) => {
         setTimeout(() => stopReel(i), delay);
@@ -644,59 +863,110 @@ function spin() {
 function stopReel(i) {
     clearInterval(spinIntervals[i]);
     setReelTile(i, currentScenario.tiles[i]);
+    if (currentScenario.tiles[i]) document.getElementById('light' + i).classList.add('lit');
 
-    // Light up if this reel has a tile
-    if (currentScenario.tiles[i]) {
-        document.getElementById('light' + i).classList.add('lit');
-    }
-
-    // Bounce animation
     const win = document.getElementById('reel' + i);
     win.classList.remove('bounce');
-    void win.offsetWidth; // force reflow
+    void win.offsetWidth;
     win.classList.add('bounce');
 
-    // After last reel lands, reveal answer buttons
     if (i === 3) {
         setTimeout(() => {
             gameState = 'landed';
+            hideFeedback();
             document.getElementById('answerRow').style.display = 'flex';
+            document.getElementById('btnBank').disabled     = false;
+            document.getElementById('btnSpinAway').disabled = false;
         }, 300);
     }
 }
 
-// ── Answering ─────────────────────────────────────────────────────────────────
+// ── Player actions ────────────────────────────────────────────────────────────
 
-function answer(playerSaysLegal) {
+function doBank() {
     if (gameState !== 'landed') return;
-    gameState = 'answered';
+    document.getElementById('answerRow').style.display = 'none';
 
-    const isCorrect = (playerSaysLegal === currentScenario.legal);
-    total++;
-    if (isCorrect) correct++;
+    if (currentScenario.legal) {
+        const val = groupValue(currentScenario.tiles);
+        bank += val;
+        updateCoinDisplay();
+        showFeedback('✓ Banked ' + val + ' coins!', 'earned');
+        checkWin();
+    } else {
+        const lost = Math.floor(bank * 0.5);
+        bank = bank - lost;
+        updateCoinDisplay();
+        showFeedback('Yow! That illegal group cost you ' + lost + ' coins!', 'penalty');
+        checkBankrupt();
+    }
 
-    document.getElementById('scoreDisplay').textContent = correct + ' / ' + total;
-    document.getElementById('btnLegal').disabled   = true;
-    document.getElementById('btnIllegal').disabled = true;
-
-    const fb = document.getElementById('feedback');
-    fb.className = 'feedback ' + (isCorrect ? 'correct' : 'wrong');
-    document.getElementById('feedbackVerdict').textContent = isCorrect
-        ? currentScenario.verdict
-        : (currentScenario.legal ? '✗ That was actually legal.' : '✗ That was actually illegal.');
-    document.getElementById('feedbackExplain').textContent = currentScenario.explain;
-
-    document.getElementById('bottomBar').style.display = 'flex';
-    document.getElementById('barHint').innerHTML =
-        'Score: <strong>' + correct + '</strong> / ' + total;
+    // Re-enable spin for next group
+    gameState = 'idle';
+    document.getElementById('spinBtn').style.display = '';
+    document.getElementById('spinBtn').disabled = false;
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+function doSpin() {
+    if (gameState !== 'landed') return;
+    const wasLegal = currentScenario.legal;
+    const wasWorth = groupValue(currentScenario.tiles);
 
-window.addEventListener('load', () => {
-    scenarioQueue = buildQueue();
-    nextScenario();
-});
+    bank -= SPIN_COST;
+    updateCoinDisplay();
+
+    if (checkBankrupt()) return;
+
+    const awMan = wasLegal
+        ? 'Aw man! That was a legal group worth ' + wasWorth + ' coins!'
+        : null;
+
+    triggerSpin(awMan);
+}
+
+// ── End state checks ──────────────────────────────────────────────────────────
+
+function checkWin() {
+    if (bank >= GOAL) {
+        document.getElementById('endStars').textContent = '🌟🃏🌟';
+        document.getElementById('endTitle').className = 'end-title win';
+        document.getElementById('endTitle').textContent = 'JACKPOT!';
+        document.getElementById('endSubtitle').textContent =
+            'You reached ' + bank + ' coins. You\'ve got the joker rule down!';
+        document.getElementById('endOverlay').className = 'end-overlay visible';
+        return true;
+    }
+    return false;
+}
+
+function checkBankrupt() {
+    if (bank < SPIN_COST) {
+        document.getElementById('endStars').textContent = '🃏';
+        document.getElementById('endTitle').className = 'end-title lose';
+        document.getElementById('endTitle').textContent = 'Bankrupt!';
+        document.getElementById('endSubtitle').textContent =
+            'Better luck next time — you finished with ' + bank + ' coins.';
+        document.getElementById('endOverlay').className = 'end-overlay visible';
+        return true;
+    }
+    return false;
+}
+
+// ── Init / restart ────────────────────────────────────────────────────────────
+
+function startGame() {
+    bank = START_COINS;
+    gameState = 'idle';
+    updateCoinDisplay();
+    hideFeedback();
+    resetReels();
+    document.getElementById('answerRow').style.display = 'none';
+    document.getElementById('spinBtn').style.display   = '';
+    document.getElementById('spinBtn').disabled        = false;
+    document.getElementById('endOverlay').className    = 'end-overlay';
+}
+
+window.addEventListener('load', () => startGame());
 </script>
 
 </body>
