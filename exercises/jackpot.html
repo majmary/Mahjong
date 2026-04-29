@@ -671,42 +671,24 @@ function gen2026(jokerCount) {
 // ── Main generator ────────────────────────────────────────────────────────────
 
 function generateScenario() {
-    const jokers = pickJokerCount(3);
-
-    if (jokers === 0) {
-        // Clean group — all legal
-        const type = pick(['pair','pung','kong','news','run3','run4','odds3','odds4','evens3','evens4','369','2026']);
-        switch (type) {
-            case 'pair':   return genPair(false);
-            case 'pung':   return genPung(0);
-            case 'kong':   return genKong(0);
-            case 'news':   return genNews(0);
-            case 'run3':   return genRun(3, 0);
-            case 'run4':   return genRun(4, 0);
-            case 'odds3':  return genOdds(3, 0);
-            case 'odds4':  return genOdds(4, 0);
-            case 'evens3': return genEvens(3, 0);
-            case 'evens4': return genEvens(4, 0);
-            case '369':    return gen369(0);
-            case '2026':   return gen2026(0);
-        }
-    }
-
-    if (jokers >= 2) {
-        // 2–3 jokers: legal kong, or illegal sequence with 2 jokers
-        if (Math.random() < 0.6) return genKong(jokers);
-        const seqType = pick(['news','run3','run4','odds3','odds4','evens3','evens4','369','2026']);
-        return genSeq(seqType, Math.min(jokers, 2));
-    }
-
-    // 1 joker: 50/50 legal vs illegal
     if (Math.random() < 0.5) {
-        return Math.random() < 0.5 ? genPung(1) : genKong(1);
+        // ── Legal 50% ──
+        // Equal weight across: pair, pung, kong, clean sequence
+        const type = pick(['pair', 'pung', 'kong', 'seq_clean']);
+        switch (type) {
+            case 'pair':      return genPair(false);
+            case 'pung':      return genPung(pickJokerCount(2));
+            case 'kong':      return genKong(pickJokerCount(3));
+            case 'seq_clean': return genSeq(pick(['news','run3','run4','odds3','odds4','evens3','evens4','369','2026']), 0);
+        }
+    } else {
+        // ── Illegal 50% ── equally weighted across all illegal types
+        const type = pick(['pair','news','run3','run4','odds3','odds4','evens3','evens4','369','2026']);
+        if (type === 'pair') return genPair(true);
+        // Sequences: 1 joker 70%, 2 jokers 30%
+        const jokers = Math.random() < 0.7 ? 1 : 2;
+        return genSeq(type, jokers);
     }
-    // Illegal: pair or sequence
-    if (Math.random() < 0.25) return genPair(true);
-    const seqType = pick(['news','run3','run4','odds3','odds4','evens3','evens4','369','2026']);
-    return genSeq(seqType, 1);
 }
 
 function genSeq(type, jokerCount) {
@@ -861,7 +843,7 @@ function doBank() {
         const lost = Math.floor(bank * 0.5);
         bank = bank - lost;
         updateCoinDisplay();
-        showFeedback('Oh Snap! That illegal group cost you ' + lost + ' coins!', 'penalty');
+        showFeedback('Yow! That illegal group cost you ' + lost + ' coins!', 'penalty');
         if (checkBankrupt()) return;
     }
 
