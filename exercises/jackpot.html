@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Joker Jackpot – Mary on Mahjong</title>
-    <link rel="stylesheet" href="/mahjong/css/shared.css">
+    <link rel="stylesheet" href="/Mahjong/css/shared.css">
     <style>
         /* ── Layout ── */
         .main {
@@ -312,11 +312,16 @@
     </div>
     <div class="header-right">
         <span id="scoreDisplay" style="color:rgba(255,255,255,0.85);font-size:14px;font-weight:700;letter-spacing:0.05em;">0 / 0</span>
-        <a href="/mahjong/index.html" class="back-link">← Home</a>
+        <a href="/Mahjong/index.html" class="back-link">← Home</a>
     </div>
 </header>
 
 <div class="main">
+
+    <div class="instructions">
+        Spin the reels, then decide: are the jokers used <strong>legally</strong> or <strong>illegally</strong>?
+        Jokers are legal only in groups of 3 or more identical tiles (pungs and kongs). They are never legal in pairs or sequences.
+    </div>
 
     <div class="slot-machine">
         <div class="slot-housing">
@@ -421,10 +426,10 @@ function makeTileEl(tile) {
             const wrap = document.createElement('div');
             wrap.className = 'trad-tile';
             const bg = document.createElement('img');
-            bg.src = '/mahjong/tiles/background/bone.svg';
+            bg.src = '/Mahjong/tiles/background/bone.svg';
             bg.alt = '';
             const face = document.createElement('img');
-            face.src = '/mahjong/tiles/traditional/' + name;
+            face.src = '/Mahjong/tiles/traditional/' + name;
             face.alt = tile;
             wrap.appendChild(bg);
             wrap.appendChild(face);
