@@ -11,11 +11,12 @@
         table { border-collapse: collapse; width: 100%; margin-bottom: 24px; }
         th, td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; }
         th { background: #eee; }
-        td.score { text-align: center; font-weight: bold; }
-        td.best { background: #c8e6c9; }
-        td.second { background: #fff9c4; }
-        .hand-label { font-weight: bold; margin-top: 16px; margin-bottom: 4px; }
+        td.score { text-align: center; }
+        td.best-best { background: #c8e6c9; font-weight: bold; }
+        td.best-count { background: #fff9c4; font-weight: bold; }
         button { margin: 4px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
+        label { font-size: 13px; margin-left: 12px; }
+        .subhead { font-size: 10px; color: #666; display: block; font-weight: normal; }
     </style>
 </head>
 <body>
@@ -23,6 +24,8 @@
 <button onclick="runHands(5)">5 Hands</button>
 <button onclick="runHands(20)">20 Hands</button>
 <button onclick="runHands(50)">50 Hands</button>
+<label>Threshold: <input id="thresh" type="number" value="6" min="1" max="13" style="width:40px;"> tiles</label>
+<p style="font-size:12px;color:#555;">Each section shows two numbers: <strong>Best</strong> (max tiles matched by any single hand) · <strong>Count</strong> (how many hands in the section meet the threshold). Green = top by best; yellow = top by count (if different).</p>
 <div id="output"></div>
 
 <script>
@@ -72,12 +75,12 @@ function sortHand(hand) {
 
 // ── Scoring ───────────────────────────────────────────────────────────────────
 
-function scoreSections(hand) {
+function scoreSections(hand, threshold) {
     const card = window.ACTIVE_CARD;
     const sections = [...new Set(card.map(h => h.Section))];
     const results = {};
 
-    sections.forEach(s => { results[s] = { best: 0, pattern: null }; });
+    sections.forEach(s => { results[s] = { best: 0, count: 0 }; });
 
     card.forEach(handDef => {
         try {
@@ -88,53 +91,58 @@ function scoreSections(hand) {
             if (jokers > 0) r = useJokersForScoring(r, jokers);
             const filled = r.totalFilled || 0;
             const sec = handDef.Section;
-            if (filled > results[sec].best) {
-                results[sec].best = filled;
-                results[sec].pattern = handDef.displaypattern || handDef.code;
-            }
+            if (filled > results[sec].best) results[sec].best = filled;
+            if (filled >= threshold) results[sec].count++;
         } catch(e) { /* skip */ }
     });
 
-    return sections.map(s => ({ section: s, score: results[s].best, pattern: results[s].pattern }))
-                   .sort((a, b) => b.score - a.score);
+    return sections.map(s => ({ section: s, best: results[s].best, count: results[s].count }));
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
 
 function runHands(n) {
     const out = document.getElementById('output');
+    const threshold = parseInt(document.getElementById('thresh').value) || 6;
     out.innerHTML = '<em>Running…</em>';
 
-    // Use setTimeout so the "Running…" renders before the heavy work
     setTimeout(() => {
         const sections = [...new Set(window.ACTIVE_CARD.map(h => h.Section))];
         const rows = [];
 
         for (let i = 0; i < n; i++) {
             const hand = sortHand(dealHand());
-            const scores = scoreSections(hand);
+            const scores = scoreSections(hand, threshold);
             rows.push({ hand, scores });
         }
 
-        // Build one big table: rows = hands, cols = sections (sorted by original card order)
+        // Header: one column-pair per section
         let html = '<table><thead><tr><th>Hand</th>';
-        sections.forEach(s => { html += `<th>${s}</th>`; });
+        sections.forEach(s => {
+            html += `<th colspan="2" style="text-align:center">${s}</th>`;
+        });
+        html += '</tr><tr><th></th>';
+        sections.forEach(() => {
+            html += '<th style="text-align:center;font-size:11px;">Best</th><th style="text-align:center;font-size:11px;">Count≥' + threshold + '</th>';
+        });
         html += '</tr></thead><tbody>';
 
-        rows.forEach(({ hand, scores }, idx) => {
+        rows.forEach(({ hand, scores }) => {
+            const byBest  = [...scores].sort((a,b) => b.best  - a.best);
+            const byCount = [...scores].sort((a,b) => b.count - a.count);
+            const top1Best  = byBest[0]?.section;
+            const top1Count = byCount[0]?.section;
+
             const scoreMap = {};
-            scores.forEach(s => { scoreMap[s.section] = s.score; });
-            const sorted = [...scores].sort((a,b) => b.score - a.score);
-            const top1 = sorted[0]?.section;
-            const top2 = sorted[1]?.section;
+            scores.forEach(s => { scoreMap[s.section] = s; });
 
             html += `<tr><td style="white-space:nowrap;font-size:11px;">${hand.join(' ')}</td>`;
             sections.forEach(s => {
-                const v = scoreMap[s] || 0;
-                let cls = 'score';
-                if (s === top1) cls += ' best';
-                else if (s === top2) cls += ' second';
-                html += `<td class="${cls}">${v}</td>`;
+                const v = scoreMap[s] || { best: 0, count: 0 };
+                const bestCls  = s === top1Best  ? ' style="background:#c8e6c9;font-weight:bold"' : '';
+                const countCls = s === top1Count && s !== top1Best ? ' style="background:#fff9c4;font-weight:bold"' : '';
+                html += `<td class="score"${bestCls}>${v.best}</td>`;
+                html += `<td class="score"${countCls}>${v.count}</td>`;
             });
             html += '</tr>';
         });
