@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Dragon Dance – Mary on Mahjong</title>
+    <script src="js/sound.js"></script>
+    <link rel="stylesheet" href="css/shared.css">
+    <style>
+
+        /* ── Main layout ── */
+        .main {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 16px 16px 90px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        /* ── Prompt card ── */
+        .prompt-card {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #4a3000;
+            text-align: center;
+            line-height: 1.45;
+            min-height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ── Two-pool row ── */
+        .pools-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .pool {
+            background: var(--color-table);
+            border: 1px solid #c5d9c5;
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .pool-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        /* ── Dragon pool ── */
+        .pool-dragons {
+            flex: 0 0 auto;
+        }
+
+        .dragons-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dragon-wrap {
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+
+        .dragon-wrap.dragon-active .tile {
+            box-shadow: 0 0 0 3px #f9a825,
+                        0 0 14px 4px rgba(249,168,37,0.45);
+            transform: scale(1.1);
+            transition: box-shadow 0.3s, transform 0.3s;
+        }
+
+        .dragon-wrap.dragon-dim {
+            opacity: 0.28;
+        }
+
+        /* ── Suited tile pool ── */
+        .pool-suited {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .suited-pool-tiles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        /* ── Suited tile interaction states ── */
+        .suited-wrap {
+            cursor: pointer;
+            border-radius: 7px;
+            transition: transform 0.15s ease;
+            position: relative;
+        }
+
+        .suited-wrap:hover:not(.tile-correct) {
+            transform: translateY(-3px);
+        }
+
+        .suited-wrap.tile-correct .tile {
+            box-shadow: 0 0 0 3px var(--color-correct),
+                        0 4px 12px rgba(46,125,50,0.35);
+            transform: scale(1.08) translateY(-3px);
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .suited-wrap.tile-wrong {
+            animation: wrongShake 0.45s ease both;
+        }
+
+        @keyframes wrongShake {
+            0%   { transform: translateX(0); }
+            18%  { transform: translateX(-7px); }
+            36%  { transform: translateX(7px); }
+            54%  { transform: translateX(-5px); }
+            72%  { transform: translateX(5px); }
+            100% { transform: translateX(0); }
+        }
+
+        /* ── Win message ── */
+        .win-message {
+            display: none;
+            background: var(--color-success-light);
+            border: 2px solid var(--color-success);
+            border-radius: 12px;
+            padding: 18px 20px;
+            text-align: center;
+            animation: fadeSlideIn 0.35s ease both;
+        }
+
+        .win-message.visible {
+            display: block;
+        }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .win-message h2 {
+            margin: 0 0 8px;
+            font-size: 21px;
+            color: var(--color-success);
+        }
+
+        .win-message p {
+            margin: 0 0 16px;
+            font-size: 14px;
+            color: #2d5a2e;
+            line-height: 1.55;
+        }
+
+        .play-again-btn {
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 30px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .play-again-btn:hover { background: var(--color-primary-dark); }
+
+        /* ── Mobile portrait ── */
+        @media (orientation: portrait) and (max-width: 500px) {
+            .pools-row { gap: 8px; }
+            .pool      { padding: 8px 8px 10px; }
+            .prompt-card { font-size: 14px; padding: 12px 14px; }
+            .suited-pool-tiles { gap: 4px; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <header class="page-header">
+        <div>
+            <h1>🐉 Dragon Dance</h1>
+            <div class="subtitle">Match dragons to their suits</div>
+        </div>
+        <div class="header-right">
+            <a href="index.html" class="back-link">← Back</a>
+        </div>
+    </header>
+
+    <div class="main">
+
+        <!-- Prompt -->
+        <div class="prompt-card" id="promptCard">Loading…</div>
+
+        <!-- Two pools -->
+        <div class="pools-row">
+
+            <!-- Left: Dragons -->
+            <div class="pool pool-dragons">
+                <div class="pool-label">Dragons</div>
+                <div class="dragons-stack" id="dragonsStack"></div>
+            </div>
+
+            <!-- Right: Suited tiles -->
+            <div class="pool pool-suited">
+                <div class="pool-label">Suited Tiles</div>
+                <div class="suited-pool-tiles" id="suitedPool"></div>
+            </div>
+
+        </div>
+
+        <!-- Win message -->
+        <div class="win-message" id="winMessage">
+            <h2>🎉 Dragon Dance!</h2>
+            <p id="winText"></p>
+            <button class="play-again-btn" onclick="newRound()">Play Again</button>
+        </div>
+
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="page-bottom-bar">
+        <div class="bar-hint-text">Score: <strong id="scoreDisplay">0 / 0</strong></div>
+        <button class="bar-action-btn" onclick="SoundEngine.toggleMute()" id="muteBtn">🔊 Mute</button>
+    </div>
+
+    <script>
+    // ── Constants ────────────────────────────────────────────────────────────────
+
+    const DRAGON_SUIT = { GD: 'B', RD: 'C', WD: 'D' };
+    const SUIT_NAME   = { B: 'Bam', C: 'Crack', D: 'Dot' };
+    const DRAGON_NAME = { GD: 'Green Dragon', RD: 'Red Dragon', WD: 'White Dragon' };
+
+    // ── State ────────────────────────────────────────────────────────────────────
+
+    let currentDragon = null;  // 'GD' | 'RD' | 'WD'
+    let questionType  = null;  // 'matching' | 'opposing'
+    let suitedTiles   = [];    // all tile codes shown in right pool
+    let correctTiles  = null;  // Set of tile codes that are correct answers
+    let selectedTiles = null;  // Set of tile codes currently glowing (correct clicks)
+    let targetCount   = 0;     // opposing only: minimum correct selections to win
+    let won           = false;
+
+    let scoreCorrect = 0;
+    let scoreTotal   = 0;
+
+    // ── Tile rendering (mirrors wrong.html pattern) ──────────────────────────────
+
+    function getTileDisplay(tile) {
+        if (tile === 'WD') return { number: 'O', label: 'White',  colorClass: 'tile-WD' };
+        if (tile === 'GD') return { number: 'G', label: 'Green',  colorClass: 'tile-GD' };
+        if (tile === 'RD') return { number: 'R', label: 'Red',    colorClass: 'tile-RD' };
+        if (tile.length === 2 && tile[1] === 'B') return { number: tile[0], label: 'Bam',   colorClass: 'tile-B' };
+        if (tile.length === 2 && tile[1] === 'D') return { number: tile[0], label: 'Dot',   colorClass: 'tile-D' };
+        if (tile.length === 2 && tile[1] === 'C') return { number: tile[0], label: 'Crack', colorClass: 'tile-C' };
+        return { number: tile, label: '', colorClass: '' };
+    }
+
+    function makeTileEl(tile) {
+        const d = getTileDisplay(tile);
+        const div = document.createElement('div');
+        div.className = 'tile ' + d.colorClass;
+        const numDiv = document.createElement('div');
+        numDiv.className = 'tile-number';
+        numDiv.textContent = d.number;
+        const lblDiv = document.createElement('div');
+        lblDiv.className = 'tile-label';
+        lblDiv.textContent = d.label;
+        div.appendChild(numDiv);
+        div.appendChild(lblDiv);
+        return div;
+    }
+
+    // ── Round generation ──────────────────────────────────────────────────────────
+
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function generateSuitedTiles() {
+        // 2–4 tiles per suit, unique numbers within each suit, all shuffled together
+        const tiles = [];
+        for (const suit of ['B', 'C', 'D']) {
+            const count = 2 + Math.floor(Math.random() * 3); // 2, 3, or 4
+            const nums = shuffle([1,2,3,4,5,6,7,8,9]).slice(0, count);
+            nums.forEach(n => tiles.push(n + suit));
+        }
+        return shuffle(tiles);
+    }
+
+    function newRound() {
+        won           = false;
+        selectedTiles = new Set();
+
+        currentDragon = pick(['GD', 'RD', 'WD']);
+        questionType  = pick(['matching', 'opposing']);
+        suitedTiles   = generateSuitedTiles();
+
+        const matchingSuit = DRAGON_SUIT[currentDragon];
+
+        if (questionType === 'matching') {
+            correctTiles = new Set(suitedTiles.filter(t => t[1] === matchingSuit));
+        } else {
+            // Opposing: all tiles NOT of the dragon's suit
+            correctTiles = new Set(suitedTiles.filter(t => t[1] !== matchingSuit));
+            // Compute minimum selection required to guarantee both opposing suits are covered.
+            // X = max(count_suit1, count_suit2) + 1 ensures any X-tile subset must include
+            // at least one of each opposing suit (pigeon-hole principle).
+            const opposingSuits = ['B', 'C', 'D'].filter(s => s !== matchingSuit);
+            const counts = opposingSuits.map(s => suitedTiles.filter(t => t[1] === s).length);
+            targetCount = Math.max(...counts) + 1;
+        }
+
+        scoreTotal++;
+        updateScore();
+        render();
+    }
+
+    // ── Render ───────────────────────────────────────────────────────────────────
+
+    function render() {
+        renderPrompt();
+        renderDragons();
+        renderSuitedPool();
+        document.getElementById('winMessage').classList.remove('visible');
+    }
+
+    function renderPrompt() {
+        const name = DRAGON_NAME[currentDragon];
+        let text;
+        if (questionType === 'matching') {
+            const n = correctTiles.size;
+            text = `Find all ${n} matching tile${n !== 1 ? 's' : ''} for the ${name}!`;
+        } else {
+            text = `Find at least ${targetCount} opposing tile${targetCount !== 1 ? 's' : ''} for the ${name}!`;
+        }
+        document.getElementById('promptCard').textContent = text;
+    }
+
+    function renderDragons() {
+        const stack = document.getElementById('dragonsStack');
+        stack.innerHTML = '';
+        for (const dragon of ['GD', 'RD', 'WD']) {
+            const wrap = document.createElement('div');
+            wrap.className = 'dragon-wrap ' + (dragon === currentDragon ? 'dragon-active' : 'dragon-dim');
+            wrap.appendChild(makeTileEl(dragon));
+            stack.appendChild(wrap);
+        }
+    }
+
+    function renderSuitedPool() {
+        const pool = document.getElementById('suitedPool');
+        pool.innerHTML = '';
+        suitedTiles.forEach(tile => {
+            const wrap = document.createElement('div');
+            wrap.className = 'suited-wrap';
+            wrap.dataset.tile = tile;
+            wrap.appendChild(makeTileEl(tile));
+            wrap.addEventListener('click', () => handleTileClick(tile, wrap));
+            pool.appendChild(wrap);
+        });
+    }
+
+    // ── Interaction ───────────────────────────────────────────────────────────────
+
+    function handleTileClick(tile, wrap) {
+        if (won) return;
+        if (selectedTiles.has(tile)) return; // already glowing, ignore re-click
+
+        if (correctTiles.has(tile)) {
+            // Correct — glow and keep
+            selectedTiles.add(tile);
+            wrap.classList.add('tile-correct');
+            SoundEngine.jokerExchange();
+            checkWin();
+        } else {
+            // Wrong — shake and snap back
+            wrap.classList.remove('tile-wrong');
+            void wrap.offsetWidth; // force reflow to restart animation
+            wrap.classList.add('tile-wrong');
+            wrap.addEventListener('animationend', () => wrap.classList.remove('tile-wrong'), { once: true });
+        }
+    }
+
+    function checkWin() {
+        const didWin = questionType === 'matching'
+            ? selectedTiles.size === correctTiles.size
+            : selectedTiles.size >= targetCount;
+
+        if (didWin) {
+            won = true;
+            scoreCorrect++;
+            updateScore();
+            SoundEngine.playerWins();
+            showWin();
+        }
+    }
+
+    function showWin() {
+        const dragonName    = DRAGON_NAME[currentDragon];
+        const matchSuitName = SUIT_NAME[DRAGON_SUIT[currentDragon]];
+        const opposingNames = ['B','C','D']
+            .filter(s => s !== DRAGON_SUIT[currentDragon])
+            .map(s => SUIT_NAME[s])
+            .join(' and ');
+
+        const msg = questionType === 'matching'
+            ? `The ${dragonName} matches ${matchSuitName}! All ${matchSuitName} tiles are its pair.`
+            : `The ${dragonName} matches ${matchSuitName}, so ${opposingNames} tiles are its opponents.`;
+
+        document.getElementById('winText').textContent = msg;
+        document.getElementById('winMessage').classList.add('visible');
+    }
+
+    function updateScore() {
+        document.getElementById('scoreDisplay').textContent = `${scoreCorrect} / ${scoreTotal}`;
+    }
+
+    // ── Start ─────────────────────────────────────────────────────────────────────
+
+    newRound();
+    </script>
+
+</body>
+</html>
