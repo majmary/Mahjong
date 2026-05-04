@@ -118,7 +118,7 @@ function scoreSections(hand) {
             });
             return { tile, count };
         });
-        overlapScore = tileScores.reduce((sum, t) => sum + t.count, 0);
+        overlapScore = tileScores.reduce((sum, t) => sum + (t.count >= 2 ? t.count : 0), 0);
 
         return { section: s, overlapScore, top3, tileScores };
     });
