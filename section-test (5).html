@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Section Fill Diagnostic</title>
+    <script src="data/card-2026.js"></script>
+    <script src="js/card-loader.js"></script>
+    <script src="js/patterns.js"></script>
+    <style>
+        body { font-family: monospace; font-size: 13px; padding: 16px; }
+        table { border-collapse: collapse; margin-bottom: 24px; }
+        th, td { border: 1px solid #ccc; padding: 3px 7px; text-align: center; }
+        th { background: #eee; font-size: 11px; }
+        td.hand { text-align: left; white-space: nowrap; font-size: 10px; }
+        .top1 { background: #c8e6c9; font-weight: bold; }
+        .top2 { background: #fff9c4; font-weight: bold; }
+        button { margin: 4px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
+        .debug { background: #f5f5f5; border: 1px solid #ccc; padding: 10px; margin: 10px 0; font-size: 11px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+<h2>Section Diagnostic — 2026 Card</h2>
+<button onclick="runHands(5)">5 Hands</button>
+<button onclick="runHands(20)">20 Hands</button>
+<button onclick="runHands(50)">50 Hands</button>
+<p style="font-size:12px;color:#555;">
+    Each cell = useless tile count against the 3 best-fitting hands in that section. Jokers excluded.<br>
+    <span style="background:#c8e6c9;padding:0 4px">Green</span> = fewest useless. <span style="background:#fff9c4;padding:0 4px">Yellow</span> = second.<br>
+    Click any cell to see which top-3 hands were selected and what they matched.
+</p>
+<div id="debug" class="debug" style="display:none"></div>
+<div id="output"></div>
+
+<script>
+function buildPool() {
+    const pool = [];
+    for (const num of ['1','2','3','4','5','6','7','8','9'])
+        for (const suit of ['B','C','D'])
+            for (let i = 0; i < 4; i++) pool.push(num + suit);
+    for (const wind of ['N','E','W','S']) for (let i = 0; i < 4; i++) pool.push(wind);
+    for (const drag of ['GD','RD','WD'])  for (let i = 0; i < 4; i++) pool.push(drag);
+    for (let i = 0; i < 8; i++) pool.push('F');
+    for (let i = 0; i < 8; i++) pool.push('J');
+    return pool;
+}
+
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function dealHand() { return shuffle(buildPool()).slice(0, 13); }
+
+function sortHand(hand) {
+    const suitOrder = { B:0, C:1, D:2, F:3, N:4, E:4, W:4, S:4, GD:5, RD:6, WD:7, J:8 };
+    const windNum = { N:1, E:2, W:3, S:4 };
+    return [...hand].sort((a, b) => {
+        const sa = ['N','E','W','S'].includes(a) ? 'W' : (a.length===2 && 'BCD'.includes(a[1])) ? a[1] : a;
+        const sb = ['N','E','W','S'].includes(b) ? 'W' : (b.length===2 && 'BCD'.includes(b[1])) ? b[1] : b;
+        const oa = suitOrder[sa] ?? suitOrder[a] ?? 9;
+        const ob = suitOrder[sb] ?? suitOrder[b] ?? 9;
+        if (oa !== ob) return oa - ob;
+        const na = ['N','E','W','S'].includes(a) ? windNum[a] : (a.length===2 ? parseInt(a[0]) : 0);
+        const nb = ['N','E','W','S'].includes(b) ? windNum[b] : (b.length===2 ? parseInt(b[0]) : 0);
+        return na - nb;
+    });
+}
+
+function scoreSections(hand) {
+    const card = window.ACTIVE_CARD;
+    const sections = [...new Set(card.map(h => h.Section))];
+    const sectionHandScores = {};
+    sections.forEach(s => { sectionHandScores[s] = []; });
+
+    card.forEach(handDef => {
+        try {
+            const evalResults = evaluatePattern(hand, handDef.code);
+            if (!evalResults || !evalResults.length) return;
+            let r = evalResults[0];
+            const jokers = r.jokersRemaining || 0;
+            if (jokers > 0) r = useJokersForScoring(r, jokers);
+            sectionHandScores[handDef.Section].push({
+                filled: r.totalFilled || 0,
+                groups: r.groups,
+                handDef: handDef
+            });
+        } catch(e) {}
+    });
+
+    const nonJokers = hand.filter(t => t !== 'J');
+
+    return sections.map(s => {
+        const top3 = [...sectionHandScores[s]]
+            .sort((a, b) => b.filled - a.filled)
+            .slice(0, 3);
+
+        const useful = new Set();
+        top3.forEach(({ groups }) => {
+            groups.forEach(g => {
+                g.matchedTiles.forEach(t => {
+                    if (t && t !== '?' && t !== 'J') useful.add(t);
+                });
+            });
+        });
+
+        const useless = nonJokers.filter(t => !useful.has(t)).length;
+        return { section: s, useless, top3, useful: [...useful] };
+    });
+}
+
+function showDebug(hand, sectionData) {
+    const dbg = document.getElementById('debug');
+    dbg.style.display = 'block';
+    const nonJokers = hand.filter(t => t !== 'J');
+    let txt = 'HAND: ' + hand.join(' ') + '\n';
+    txt += 'SECTION: ' + sectionData.section + '  useless=' + sectionData.useless + '\n';
+    txt += 'Useful set: ' + sectionData.useful.join(', ') + '\n';
+    txt += 'Useless tiles: ' + nonJokers.filter(t => !sectionData.useful.includes(t)).join(', ') + '\n\n';
+    txt += 'TOP 3 HANDS:\n';
+    sectionData.top3.forEach((h, i) => {
+        const matched = h.groups.map(g => g.matchedTiles.join(',')).join(' | ');
+        txt += (i+1) + '. [' + h.handDef.Section + ' #' + h.handDef['hand number'] + '] filled=' + h.filled + '\n';
+        txt += '   code: ' + h.handDef.code + '\n';
+        txt += '   matched: ' + matched + '\n';
+    });
+    dbg.textContent = txt;
+}
+
+function runHands(n) {
+    const out = document.getElementById('output');
+    document.getElementById('debug').style.display = 'none';
+    out.innerHTML = '<em>Running...</em>';
+
+    setTimeout(() => {
+        const sections = [...new Set(window.ACTIVE_CARD.map(h => h.Section))];
+        const rows = [];
+
+        for (let i = 0; i < n; i++) {
+            const hand = sortHand(dealHand());
+            const scores = scoreSections(hand);
+            const sorted = [...scores].sort((a,b) => a.useless - b.useless);
+            rows.push({ hand, scores, top1: sorted[0]?.section, top2: sorted[1]?.section });
+        }
+
+        let html = '<table><thead><tr><th>Hand</th>';
+        sections.forEach(s => { html += '<th>' + s + '</th>'; });
+        html += '</tr></thead><tbody>';
+
+        rows.forEach(({ hand, scores, top1, top2 }, rowIdx) => {
+            const scoreMap = {};
+            scores.forEach(s => { scoreMap[s.section] = s; });
+
+            html += '<tr><td class="hand">' + hand.join(' ') + '</td>';
+            sections.forEach(s => {
+                const sd = scoreMap[s];
+                const v = sd ? sd.useless : '?';
+                let cls = s === top1 ? 'top1' : s === top2 ? 'top2' : '';
+                html += '<td class="' + cls + '" style="cursor:pointer" onclick="showDebug(' +
+                    JSON.stringify(hand) + ',' + JSON.stringify(sd) + ')">' + v + '</td>';
+            });
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        out.innerHTML = html;
+    }, 10);
+}
+
+window.addEventListener('load', () => {
+    loadCard('2026', () => runHands(10));
+});
+</script>
+</body>
+</html>
