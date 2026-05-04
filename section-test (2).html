@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Section Fill Diagnostic</title>
+    <script src="data/card-2026.js"></script>
+    <script src="js/card-loader.js"></script>
+    <script src="js/patterns.js"></script>
+    <style>
+        body { font-family: monospace; font-size: 13px; padding: 16px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 24px; }
+        th, td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; }
+        th { background: #eee; }
+        td.score { text-align: center; }
+        td.best-best { background: #c8e6c9; font-weight: bold; }
+        td.best-count { background: #fff9c4; font-weight: bold; }
+        button { margin: 4px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
+        label { font-size: 13px; margin-left: 12px; }
+        .subhead { font-size: 10px; color: #666; display: block; font-weight: normal; }
+    </style>
+</head>
+<body>
+<h2>Section Fill Diagnostic — 2026 Card</h2>
+<button onclick="runHands(5)">5 Hands</button>
+<button onclick="runHands(20)">20 Hands</button>
+<button onclick="runHands(50)">50 Hands</button>
+<p style="font-size:12px;color:#555;">Algorithm: (1) any 9+ tile match → winner; (2) highest threshold where ≥2 sections each have ≥3 hands meeting it; (3) fallback to best single match. Shows counts at @5 @6 @7 @8 for both top sections.</p>
+<div id="output"></div>
+
+<script>
+// ── Tile pool & hand generation ───────────────────────────────────────────────
+
+function buildPool() {
+    const pool = [];
+    for (const num of ['1','2','3','4','5','6','7','8','9']) {
+        for (const suit of ['B','C','D']) {
+            for (let i = 0; i < 4; i++) pool.push(num + suit);
+        }
+    }
+    for (const wind of ['N','E','W','S']) for (let i = 0; i < 4; i++) pool.push(wind);
+    for (const drag of ['GD','RD','WD'])  for (let i = 0; i < 4; i++) pool.push(drag);
+    for (let i = 0; i < 8; i++) pool.push('F');
+    for (let i = 0; i < 8; i++) pool.push('J');
+    return pool;
+}
+
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function dealHand() {
+    return shuffle(buildPool()).slice(0, 13);
+}
+
+function sortHand(hand) {
+    const suitOrder = { B:0, C:1, D:2, F:3, N:4, E:4, W:4, S:4, GD:5, RD:6, WD:7, J:8 };
+    const windNum = { N:1, E:2, W:3, S:4 };
+    return [...hand].sort((a, b) => {
+        const sa = ['N','E','W','S'].includes(a) ? 'W' : (a.length===2 && 'BCD'.includes(a[1])) ? a[1] : a;
+        const sb = ['N','E','W','S'].includes(b) ? 'W' : (b.length===2 && 'BCD'.includes(b[1])) ? b[1] : b;
+        const oa = suitOrder[sa] ?? suitOrder[a] ?? 9;
+        const ob = suitOrder[sb] ?? suitOrder[b] ?? 9;
+        if (oa !== ob) return oa - ob;
+        const na = ['N','E','W','S'].includes(a) ? windNum[a] : (a.length===2 ? parseInt(a[0]) : 0);
+        const nb = ['N','E','W','S'].includes(b) ? windNum[b] : (b.length===2 ? parseInt(b[0]) : 0);
+        return na - nb;
+    });
+}
+
+// ── Scoring ───────────────────────────────────────────────────────────────────
+
+function scoreSections(hand, threshold) {
+    const card = window.ACTIVE_CARD;
+    const sections = [...new Set(card.map(h => h.Section))];
+    const results = {};
+
+    sections.forEach(s => { results[s] = { best: 0, count: 0 }; });
+
+    card.forEach(handDef => {
+        try {
+            const evalResults = evaluatePattern(hand, handDef.code);
+            if (!evalResults || !evalResults.length) return;
+            let r = evalResults[0];
+            const jokers = r.jokersRemaining || 0;
+            if (jokers > 0) r = useJokersForScoring(r, jokers);
+            const filled = r.totalFilled || 0;
+            const sec = handDef.Section;
+            if (filled > results[sec].best) results[sec].best = filled;
+            if (filled >= threshold) results[sec].count++;
+        } catch(e) { /* skip */ }
+    });
+
+    return sections.map(s => ({ section: s, best: results[s].best, count: results[s].count }));
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+
+function findTopSections(scores) {
+    // Step 1: any 9+ best match?
+    const nineplus = scores.filter(s => s.best >= 9).sort((a,b) => b.best - a.best);
+    if (nineplus.length > 0) {
+        return { method: '9+ match', threshold: null, top: nineplus.slice(0,2) };
+    }
+
+    // Step 2: find highest threshold where >= 2 sections have count >= 3
+    for (let t = 8; t >= 4; t--) {
+        const qualifying = scores.filter(s => s.count >= 3 && s.best >= t)
+                                 .sort((a,b) => b.count - a.count || b.best - a.best);
+        if (qualifying.length >= 2) {
+            return { method: 'count≥3 at ' + t + '+', threshold: t, top: qualifying.slice(0,2) };
+        }
+    }
+
+    // Fallback: just top 2 by best
+    const fallback = [...scores].sort((a,b) => b.best - a.best);
+    return { method: 'fallback (best)', threshold: null, top: fallback.slice(0,2) };
+}
+
+function runHands(n) {
+    const out = document.getElementById('output');
+    out.innerHTML = '<em>Running…</em>';
+
+    setTimeout(() => {
+        const sections = [...new Set(window.ACTIVE_CARD.map(h => h.Section))];
+        const rows = [];
+
+        for (let i = 0; i < n; i++) {
+            const hand = sortHand(dealHand());
+            // Compute scores at all thresholds 4–9
+            const baseScores = scoreSections(hand, 4); // count at 4 as baseline
+            // Recompute counts at each threshold
+            const card = window.ACTIVE_CARD;
+            const secData = {};
+            sections.forEach(s => { secData[s] = { section: s, best: 0, counts: {} }; });
+            for (let t = 4; t <= 9; t++) {
+                sections.forEach(s => { secData[s].counts[t] = 0; });
+            }
+            card.forEach(handDef => {
+                try {
+                    const evalResults = evaluatePattern(hand, handDef.code);
+                    if (!evalResults || !evalResults.length) return;
+                    let r = evalResults[0];
+                    const jokers = r.jokersRemaining || 0;
+                    if (jokers > 0) r = useJokersForScoring(r, jokers);
+                    const filled = r.totalFilled || 0;
+                    const sec = handDef.Section;
+                    if (filled > secData[sec].best) secData[sec].best = filled;
+                    for (let t = 4; t <= 9; t++) {
+                        if (filled >= t) secData[sec].counts[t]++;
+                    }
+                } catch(e) {}
+            });
+
+            const scores = Object.values(secData);
+            const result = findTopSections(scores.map(s => ({ ...s, count: s.counts[6] })));
+            // Re-run findTopSections with the right count for each threshold
+            // Try all thresholds to find the right one
+            let finalResult = null;
+            const nineplus = scores.filter(s => s.best >= 9).sort((a,b) => b.best - a.best);
+            if (nineplus.length > 0) {
+                finalResult = { method: '9+ match', threshold: null, top: nineplus.slice(0,2) };
+            } else {
+                for (let t = 8; t >= 4; t--) {
+                    const qualifying = scores.filter(s => s.counts[t] >= 3)
+                                             .sort((a,b) => b.counts[t] - a.counts[t] || b.best - a.best);
+                    if (qualifying.length >= 2) {
+                        finalResult = { method: t + '+', threshold: t, top: qualifying.slice(0,2) };
+                        break;
+                    }
+                }
+                if (!finalResult) {
+                    const fallback = [...scores].sort((a,b) => b.best - a.best);
+                    finalResult = { method: 'fallback', threshold: null, top: fallback.slice(0,2) };
+                }
+            }
+
+            rows.push({ hand, scores: secData, finalResult });
+        }
+
+        // Table: hand | method | top1 (best, counts) | top2 (best, counts)
+        let html = '<table><thead><tr>';
+        html += '<th>Hand</th><th>Method</th>';
+        html += '<th>Top 1</th><th>Best</th><th>@5</th><th>@6</th><th>@7</th><th>@8</th>';
+        html += '<th>Top 2</th><th>Best</th><th>@5</th><th>@6</th><th>@7</th><th>@8</th>';
+        html += '</tr></thead><tbody>';
+
+        rows.forEach(({ hand, scores, finalResult }) => {
+            const [t1, t2] = finalResult.top;
+            const s1 = t1 ? scores[t1.section] : null;
+            const s2 = t2 ? scores[t2.section] : null;
+            html += `<tr>`;
+            html += `<td style="font-size:10px;white-space:nowrap;">${hand.join(' ')}</td>`;
+            html += `<td style="font-size:11px;font-weight:bold;">${finalResult.method}</td>`;
+            if (s1) {
+                html += `<td style="background:#c8e6c9;font-weight:bold">${s1.section}</td>`;
+                html += `<td style="text-align:center">${s1.best}</td>`;
+                html += `<td style="text-align:center">${s1.counts[5]}</td>`;
+                html += `<td style="text-align:center">${s1.counts[6]}</td>`;
+                html += `<td style="text-align:center">${s1.counts[7]}</td>`;
+                html += `<td style="text-align:center">${s1.counts[8]}</td>`;
+            } else {
+                html += '<td colspan="5">—</td>';
+            }
+            if (s2) {
+                html += `<td style="background:#fff9c4;font-weight:bold">${s2.section}</td>`;
+                html += `<td style="text-align:center">${s2.best}</td>`;
+                html += `<td style="text-align:center">${s2.counts[5]}</td>`;
+                html += `<td style="text-align:center">${s2.counts[6]}</td>`;
+                html += `<td style="text-align:center">${s2.counts[7]}</td>`;
+                html += `<td style="text-align:center">${s2.counts[8]}</td>`;
+            } else {
+                html += '<td colspan="5">—</td>';
+            }
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        out.innerHTML = html;
+    }, 10);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+window.addEventListener('load', () => {
+    loadCard('2026', () => runHands(10));
+});
+</script>
+</body>
+</html>
